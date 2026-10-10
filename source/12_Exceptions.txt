@@ -1,0 +1,1964 @@
+@@ md
+# 12 - Exceptions
+
+**What you will learn**
+
+- The three kinds of errors in a program.
+- The built-in errors you meet most often, and what causes each one.
+- How to catch an error with `try` and `except`, so the program does not crash.
+- The exact order in which `try`, `except`, `else` and `finally` run.
+- How to make your **own** exception class and `raise` it with a clear message.
+- Where to raise an exception and where to catch it.
+- The checks the exam asks for again and again: too many, too few, duplicate, not found, wrong format.
+
+**Why this matters for the exam**
+
+**Every** past paper has a question on exceptions.
+The pattern is always the same:
+
+1. Define `class XException(Exception): pass`.
+2. Inside a method, check something and `raise XException("a clear message")`.
+3. In the calling code, use `try` and `except XException as e:` and print `e`.
+
+There are also many "what does this print?" questions about `try`, `except` and `finally`.
+After this notebook you will be able to do all of these.
+
+@@ md
+## 1. Three kinds of errors
+
+| Kind | When you see it | Example |
+| --- | --- | --- |
+| **Syntax error** | Before the program even starts. Python cannot understand the code. | Missing `:` after `if x > 3` |
+| **Runtime error** | While the program runs. The code is valid, but something goes wrong. | Dividing by zero, `int("abc")` |
+| **Logic error** | Never! The program runs, but the answer is wrong. | Forgetting brackets in an average |
+
+A runtime error is also called an **exception**.
+Python creates an **exception object** that describes the problem.
+If nobody catches it, the program stops and shows the red error box.
+
+This notebook is about runtime errors, because those are the ones you can **catch** and handle.
+
+@@ predict A logic error
+This code is meant to print the average of 80 and 90.
+@@ run
+mark1 = 80
+mark2 = 90
+average = mark1 + mark2 / 2
+print(average)
+@@ output
+125.0
+@@ explain
+There is no red error box, so Python is happy.
+But the answer is wrong: the average should be `85.0`.
+`/` is done before `+`, so Python works out `80 + 45.0`.
+This is a **logic error**. Python cannot find it for you, you must test your code.
+
+@@ write Name the kind of error
+For each line, say if it is a **syntax**, **runtime** or **logic** error.
+
+1. `if price > 10` (no colon at the end)
+2. `total = price * qty` when the program was meant to add them
+3. `print(10 / count)` when `count` is `0`
+4. `x = int("twelve")`
+@@ answer
+1. **Syntax error.** The `:` is missing, so Python cannot even read the line.
+2. **Logic error.** The program runs, but gives the wrong answer.
+3. **Runtime error** (`ZeroDivisionError`). The code is valid, but it fails while running.
+4. **Runtime error** (`ValueError`). `int()` cannot turn "twelve" into a number.
+
+@@ md
+## 2. The built-in exceptions you must know
+
+| Exception | Usual cause | Example |
+| --- | --- | --- |
+| `ValueError` | Right type, wrong value | `int("abc")` |
+| `IndexError` | List position does not exist | `[1, 2, 3][5]` |
+| `KeyError` | Dictionary key does not exist | `{"a": 1}["b"]` |
+| `ZeroDivisionError` | Dividing by zero | `10 / 0` |
+| `TypeError` | Wrong type for the operation, or wrong number of arguments | `"Age: " + 19` |
+| `NameError` | A name that does not exist | `print(prise)` |
+| `AttributeError` | The object has no such attribute or method | `"hi".push()` |
+
+🎯 The exam often shows a few lines of code and asks:
+"Is there an error? If yes, which line and why? If not, what is printed?"
+The next predictions train exactly that.
+
+@@ predict ValueError
+@@ run raises=ValueError
+qty = int("3")
+print(qty)
+price = float("$4.50")
+print(price)
+@@ output
+3
+@@ explain
+`int("3")` works, so `3` is printed.
+`float("$4.50")` fails because of the `$` sign. The text is not a valid number.
+The type is right (text can become a float), but this **value** is wrong, so it is a `ValueError`.
+
+@@ predict IndexError
+@@ run raises=IndexError
+drinks = ["Tea", "Coffee", "Milo"]
+print(drinks[2])
+print(drinks[3])
+@@ output
+Milo
+@@ explain
+Positions start at 0, so the three drinks are at positions 0, 1 and 2.
+`drinks[2]` is `Milo`.
+There is no position 3, so `drinks[3]` raises an `IndexError`.
+
+@@ predict KeyError
+@@ run raises=KeyError
+fees = {"Chess": 20, "Drama": 35}
+print(fees.get("Soccer"))
+print(fees["Soccer"])
+@@ output
+None
+@@ explain
+`.get()` is safe: when the key is missing it gives `None`.
+Square brackets are not safe: a missing key raises a `KeyError`.
+
+@@ predict ZeroDivisionError
+@@ run raises=ZeroDivisionError
+total = 50
+count = 0
+print("Computing...")
+print(total / count)
+@@ output
+Computing...
+@@ explain
+Dividing by zero is not allowed, so Python raises a `ZeroDivisionError`.
+The first print already ran, so `Computing...` appears before the error.
+
+@@ predict TypeError
+@@ run raises=TypeError
+def addTax(price, rate):
+    return price * (1 + rate)
+
+print(addTax(10, 0.5))
+print(addTax(10))
+@@ output
+15.0
+@@ explain
+The first call passes 2 arguments, which matches the 2 parameters.
+The second call passes only 1 argument, so Python raises a `TypeError`:
+`addTax() missing 1 required positional argument: 'rate'`.
+Calling a function or method with the wrong number of arguments is always a `TypeError`.
+
+@@ predict NameError
+@@ run raises=NameError
+def makeBill():
+    bill = 5 + 5
+    return bill
+
+makeBill()
+print(bill)
+@@ explain
+`bill` is a **local** variable. It only exists inside `makeBill`.
+Outside the function there is no `bill`, so `print(bill)` raises a `NameError`.
+The fix is to keep the returned value: `result = makeBill()`.
+
+@@ predict AttributeError
+@@ run raises=AttributeError
+class CashCard:
+    def __init__(self, balance):
+        self.__balance = balance
+
+    @property
+    def balance(self):
+        return self.__balance
+
+card = CashCard(20)
+print(card.balance)
+print(card.__balance)
+@@ output
+20
+@@ explain
+Outside the class, the private attribute `__balance` cannot be reached by that name.
+So `card.__balance` raises an `AttributeError`.
+Use the property instead: `card.balance`.
+
+@@ md
+## 3. Catching an exception with `try` and `except`
+
+Put the risky code inside `try:`.
+If an exception happens, Python **jumps** straight to the `except:` block.
+The program then carries on normally instead of crashing.
+
+```python
+try:
+    # code that might fail
+except ValueError:
+    # what to do if it fails
+```
+
+@@ code
+text = "abc"
+try:
+    qty = int(text)
+    print("You ordered", qty)
+except ValueError:
+    print("Please type a whole number")
+print("The program is still running")
+
+@@ md
+Notice that `print("You ordered", qty)` did **not** run.
+As soon as `int(text)` failed, Python jumped to `except`.
+
+**Getting the message.**
+Write `except ValueError as e:`.
+Now `e` is the exception object, and `print(e)` shows its message.
+
+@@ code
+try:
+    qty = int("abc")
+except ValueError as e:
+    print("Error:", e)
+
+@@ predict Which lines run?
+@@ run
+try:
+    print("A")
+    x = 10 / 0
+    print("B")
+except ZeroDivisionError as e:
+    print("C", e)
+print("D")
+@@ output
+A
+C division by zero
+D
+@@ explain
+`A` is printed.
+The division fails, so Python jumps to `except` and skips `B`.
+`C` is printed with the message of the exception, `division by zero`.
+After the `try` / `except`, the program carries on, so `D` is printed.
+
+@@ exercise Safe conversion
+Complete `toNumber(text)`.
+
+- Try to turn `text` into a float and return it.
+- If that raises a `ValueError`, return `None` instead.
+@@ starter
+def toNumber(text):
+    ...
+
+print(toNumber("4.5"))
+print(toNumber("abc"))
+@@ check
+assert toNumber("4.5") == 4.5, "❌ toNumber(\"4.5\") should return 4.5"
+assert toNumber("10") == 10.0, "❌ toNumber(\"10\") should return 10.0"
+assert toNumber("abc") is None, "❌ toNumber(\"abc\") should return None"
+assert toNumber("") is None, "❌ toNumber(\"\") should return None"
+@@ hint
+```python
+try:
+    return float(text)
+except ValueError:
+    return None
+```
+@@ solution
+def toNumber(text):
+    try:
+        return float(text)
+    except ValueError:
+        return None
+
+print(toNumber("4.5"))
+print(toNumber("abc"))
+
+@@ exercise Safe division with a message
+Complete `safeDivide(a, b)`.
+
+- Return `a / b`.
+- If `b` is zero, catch the `ZeroDivisionError` **as e** and return the text `"Error: "` followed by the message of `e`.
+  For example, `safeDivide(5, 0)` returns `"Error: division by zero"`.
+@@ starter
+def safeDivide(a, b):
+    ...
+
+print(safeDivide(10, 4))
+print(safeDivide(5, 0))
+@@ check
+assert safeDivide(10, 4) == 2.5, "❌ safeDivide(10, 4) should return 2.5"
+assert safeDivide(5, 0) == "Error: division by zero", f"❌ safeDivide(5, 0) returned {safeDivide(5, 0)!r}"
+@@ hint
+Inside the `except` block, build the text with an f-string: `f"Error: {e}"`.
+@@ solution
+def safeDivide(a, b):
+    try:
+        return a / b
+    except ZeroDivisionError as e:
+        return f"Error: {e}"
+
+print(safeDivide(10, 4))
+print(safeDivide(5, 0))
+
+@@ md
+## 4. The full shape: `try`, `except`, `else`, `finally`
+
+```python
+try:
+    # risky code
+except SomeError as e:
+    # runs ONLY if that error happened
+else:
+    # runs ONLY if NO error happened
+finally:
+    # ALWAYS runs, error or not
+```
+
+`else` and `finally` are optional.
+
+| What happened in `try` | Blocks that run |
+| --- | --- |
+| No error | `try` (all of it), then `else`, then `finally` |
+| An error that is caught | `try` (up to the error), then `except`, then `finally` |
+
+💡 Remember: **`finally` always runs.**
+It runs even when there is a `return` inside `try` or `except`.
+
+The next four predictions come from the seminar slides.
+The exam has asked questions exactly like them.
+
+@@ predict Flow with no error
+@@ run
+def main(index):
+    x = [1, 2, 3]
+    try:
+        print("begin try")
+        x[index] = 4
+        print("end try")
+    except Exception as e:
+        print("except block")
+    else:
+        print("else block")
+    finally:
+        print("finally block")
+    print("end main")
+
+main(1)
+@@ output
+begin try
+end try
+else block
+finally block
+end main
+@@ explain
+Position 1 exists, so there is no error.
+All of `try` runs, then `else` (because there was no error), then `finally`, then the rest of the function.
+`except` is skipped.
+
+@@ predict Flow with an error
+The same function as before, but now the index is 3.
+@@ run
+def main(index):
+    x = [1, 2, 3]
+    try:
+        print("begin try")
+        x[index] = 4
+        print("end try")
+    except Exception as e:
+        print("except block")
+    else:
+        print("else block")
+    finally:
+        print("finally block")
+    print("end main")
+
+main(3)
+@@ output
+begin try
+except block
+finally block
+end main
+@@ explain
+Position 3 does not exist, so `x[index] = 4` raises an `IndexError`.
+Python skips `end try` and jumps to `except`.
+`else` is skipped because there **was** an error.
+`finally` always runs, then the function carries on to `end main`.
+
+@@ predict A return inside except
+@@ run
+def main(index):
+    x = [1, 2, 3]
+    try:
+        print("begin try")
+        x[index] = 4
+        print("end try")
+    except Exception as e:
+        print("except block")
+        return
+    else:
+        print("else block")
+    finally:
+        print("finally block")
+    print("end main")
+
+main(3)
+@@ output
+begin try
+except block
+finally block
+@@ explain
+The error sends Python to `except`, which prints `except block` and then hits `return`.
+Before the function really leaves, `finally` still runs.
+After that, the function ends, so `end main` is **not** printed.
+
+@@ predict A return inside try
+@@ run
+def main(index):
+    x = [1, 2, 3]
+    try:
+        print("begin try")
+        x[index] = 4
+        print("end try")
+        return
+    except Exception as e:
+        print("except block")
+    else:
+        print("else block")
+    finally:
+        print("finally block")
+    print("end main")
+
+main(1)
+@@ output
+begin try
+end try
+finally block
+@@ explain
+No error happens, so `try` runs all the way to `return`.
+Because the function returns from inside `try`, the `else` block is skipped.
+`finally` still runs before the function leaves.
+`end main` is never reached.
+
+@@ exercise Record the flow
+Complete `checkIndex(items, index)` so that it returns a **list of words** showing which blocks ran.
+
+- Inside `try`: add `"try"` to the list, then do `value = items[index]`.
+- If an `IndexError` happens: add `"except"`.
+- If no error happens: add `"else"`.
+- Always: add `"finally"`.
+- Return the list at the end.
+
+For example, `checkIndex([5, 6], 0)` returns `["try", "else", "finally"]`.
+@@ starter
+def checkIndex(items, index):
+    steps = []
+    # write try / except / else / finally here
+
+    return steps
+
+print(checkIndex([5, 6], 0))
+print(checkIndex([5, 6], 9))
+@@ check
+assert checkIndex([5, 6], 0) == ["try", "else", "finally"], f"❌ checkIndex([5, 6], 0) returned {checkIndex([5, 6], 0)}"
+assert checkIndex([5, 6], 9) == ["try", "except", "finally"], f"❌ checkIndex([5, 6], 9) returned {checkIndex([5, 6], 9)}"
+@@ hint
+Use `steps.append("try")` and so on.
+The `return steps` stays at the end, after the whole `try` block.
+@@ solution
+def checkIndex(items, index):
+    steps = []
+    try:
+        steps.append("try")
+        value = items[index]
+    except IndexError:
+        steps.append("except")
+    else:
+        steps.append("else")
+    finally:
+        steps.append("finally")
+    return steps
+
+print(checkIndex([5, 6], 0))
+print(checkIndex([5, 6], 9))
+
+@@ md
+## 5. Several `except` blocks, and why the order matters
+
+One `try` can have several `except` blocks, one for each kind of error.
+Python checks them **from top to bottom** and uses the **first one that matches**.
+
+`except Exception` matches **every** normal error.
+So if it comes first, the more specific blocks below it can never run.
+
+**Rule: put the specific exceptions first, and `Exception` last.**
+
+@@ code
+def readPrice(text):
+    try:
+        price = float(text)
+        return 100 / price
+    except ValueError:
+        return "not a number"
+    except ZeroDivisionError:
+        return "cannot be zero"
+    except Exception:
+        return "something else went wrong"
+
+print(readPrice("4"))
+print(readPrice("abc"))
+print(readPrice("0"))
+
+@@ predict General first
+@@ run
+try:
+    x = float("hello")
+except Exception as e:
+    print("Caught by Exception")
+except ValueError as e:
+    print("Caught by ValueError")
+@@ output
+Caught by Exception
+@@ explain
+A `ValueError` **is a kind of** `Exception`.
+Python checks the blocks from the top, and `except Exception` already matches.
+So the `except ValueError` block can never be reached. This is a mistake in the code.
+
+@@ exercise Fix the order
+`describe(text)` is meant to return:
+
+- `"ValueError"` when `text` is not a number,
+- `"ZeroDivisionError"` when `text` is `"0"`,
+- the result of `100 / number` otherwise.
+
+But it always returns `"Other error"` when something goes wrong.
+Fix it by changing the order of the `except` blocks. Keep all three blocks.
+@@ starter
+def describe(text):
+    try:
+        number = int(text)
+        return 100 / number
+    except Exception:
+        return "Other error"
+    except ZeroDivisionError:
+        return "ZeroDivisionError"
+    except ValueError:
+        return "ValueError"
+
+print(describe("abc"))
+print(describe("0"))
+print(describe("4"))
+@@ check
+assert describe("abc") == "ValueError", f"❌ describe(\"abc\") returned {describe('abc')!r}"
+assert describe("0") == "ZeroDivisionError", f"❌ describe(\"0\") returned {describe('0')!r}"
+assert describe("4") == 25.0, "❌ describe(\"4\") should return 25.0"
+@@ hint
+Move `except Exception:` (and its `return` line) to the **bottom**.
+@@ solution
+def describe(text):
+    try:
+        number = int(text)
+        return 100 / number
+    except ZeroDivisionError:
+        return "ZeroDivisionError"
+    except ValueError:
+        return "ValueError"
+    except Exception:
+        return "Other error"
+
+print(describe("abc"))
+print(describe("0"))
+print(describe("4"))
+
+@@ md
+### The exception family tree
+
+Exceptions are classes, and they use **inheritance** (notebook 10).
+Here is part of the family tree:
+
+```text
+Exception
+ +-- ArithmeticError
+ |    +-- ZeroDivisionError
+ +-- LookupError
+ |    +-- IndexError
+ |    +-- KeyError
+ +-- ValueError
+ +-- TypeError
+ +-- AttributeError
+ +-- NameError
+```
+
+`except X` catches `X` **and every class below it** in the tree.
+So `except LookupError` catches both `IndexError` and `KeyError`.
+
+@@ predict Catching a parent class
+@@ run
+def test(data, key):
+    try:
+        print(data[key])
+    except LookupError:
+        print("not found")
+    except Exception:
+        print("other problem")
+
+test([10, 20], 5)
+test({"a": 1}, "b")
+test([10, 20], "x")
+@@ output
+not found
+not found
+other problem
+@@ explain
+`[10, 20][5]` raises an `IndexError`, which is a kind of `LookupError`.
+`{"a": 1}["b"]` raises a `KeyError`, which is also a kind of `LookupError`.
+`[10, 20]["x"]` raises a `TypeError` (a list position must be a number). That is not a `LookupError`, so the second block catches it.
+
+@@ md
+## 6. Your own exceptions and `raise`
+
+Python's errors are about Python problems, like dividing by zero.
+Your program also has **business rules**, for example:
+
+- A cash card balance cannot go below zero.
+- A student cannot join more than 3 CCAs.
+
+When a rule is broken, you **raise your own exception**.
+
+**Step 1: make the exception class.**
+It inherits from `Exception`. It needs nothing inside, so the body is just `pass`.
+
+```python
+class CashCardException(Exception):
+    pass
+```
+
+**Step 2: raise it with a clear message.**
+
+```python
+raise CashCardException("Insufficient balance")
+```
+
+`raise` stops the current code **immediately**, just like a built-in error.
+The message you give becomes the text of `e` when someone catches it.
+
+@@ code
+class CashCardException(Exception):
+    pass
+
+def checkAmount(amount):
+    if amount <= 0:
+        raise CashCardException("Amount must be positive")
+    print("Amount is OK")
+
+try:
+    checkAmount(10)
+    checkAmount(-5)
+    checkAmount(20)
+except CashCardException as e:
+    print("Error:", e)
+
+@@ md
+Notice that `checkAmount(20)` never ran.
+After the exception, Python jumped straight to `except`.
+
+⚠️ **`raise` is not `print`.**
+If the question says "raise an exception", printing a message is wrong and loses the marks.
+The method raises, and the **caller** decides whether to print.
+
+@@ exercise Your first exception class
+1. Create an exception class called `OrderException`.
+2. Complete `checkQty(qty)`.
+   If `qty` is less than 1, raise an `OrderException` with the message `"Quantity must be at least 1"`.
+   Otherwise, return `qty`.
+@@ starter
+# 1. create OrderException here
+
+
+# 2. complete checkQty
+def checkQty(qty):
+    ...
+@@ check
+assert issubclass(OrderException, Exception), "❌ OrderException should inherit from Exception"
+assert checkQty(3) == 3, "❌ checkQty(3) should return 3"
+try:
+    checkQty(0)
+except OrderException as e:
+    assert str(e) == "Quantity must be at least 1", f"❌ the message was {str(e)!r}"
+else:
+    assert False, "❌ checkQty(0) should raise an OrderException"
+@@ hint
+```python
+class OrderException(Exception):
+    pass
+```
+Inside `checkQty`, use `if qty < 1:` and then `raise OrderException("...")`.
+@@ solution
+class OrderException(Exception):
+    pass
+
+
+def checkQty(qty):
+    if qty < 1:
+        raise OrderException("Quantity must be at least 1")
+    return qty
+
+@@ md
+## 7. Raising inside a class
+
+In the exam, you raise exceptions inside **methods** of a class.
+There are three common places:
+
+1. **In `__init__`**, so a bad object is never created.
+2. **In a setter**, so a property cannot be set to a bad value.
+3. **In a normal method**, such as `deduct` or `add`.
+
+@@ code
+class CashCardException(Exception):
+    pass
+
+class CashCard:
+    def __init__(self, cardId, balance):
+        if balance < 0:
+            raise CashCardException("Balance cannot be negative")
+        self.__cardId = cardId
+        self.__balance = balance
+
+    @property
+    def balance(self):
+        return self.__balance
+
+    def deduct(self, amount):
+        if amount > self.__balance:
+            raise CashCardException(f"Insufficient balance: ${self.__balance:.2f}")
+        self.__balance -= amount
+
+    def __str__(self):
+        return f"Id: {self.__cardId} Balance: ${self.__balance:.2f}"
+
+try:
+    card = CashCard("C1", 10)
+    card.deduct(4)
+    print(card)
+    card.deduct(50)
+    print(card)
+except CashCardException as e:
+    print("Error:", e)
+
+@@ md
+The second `print(card)` never runs, because `deduct(50)` raised the exception first.
+
+💡 Look at the order inside `deduct`: **check first, then change**.
+If you subtract first and check afterwards, the balance is already wrong when the error is raised.
+
+@@ predict A bad object is never created
+@@ run raises=NameError
+class CashCardException(Exception):
+    pass
+
+class CashCard:
+    def __init__(self, cardId, balance):
+        if balance < 0:
+            raise CashCardException("Balance cannot be negative")
+        self.__cardId = cardId
+        self.__balance = balance
+
+try:
+    badCard = CashCard("C9", -5)
+    print("Card created")
+except CashCardException as e:
+    print(e)
+print(badCard)
+@@ output
+Balance cannot be negative
+@@ explain
+`__init__` raises the exception before it finishes, so no object is made.
+The assignment `badCard = ...` never happens, so `Card created` is skipped and the message is printed.
+On the last line, `badCard` does not exist, so Python raises a `NameError`.
+
+@@ exercise The Box (Lab 4 style)
+Write the class `Box` that holds a number of items.
+
+- Class variable `_MAX_ITEMS = 10`.
+- `__init__(self, numberOfItems)`: if `numberOfItems` is more than `Box._MAX_ITEMS`, raise a `BoxException` with the message `"Box cannot hold more than 10 items"`. Otherwise store it in `self.__numberOfItems`.
+- A property `numberOfItems` (getter only).
+- `add(self, items)`: if adding would make **more than** `Box._MAX_ITEMS`, raise `BoxException("Box is full")`. Otherwise add them.
+- `remove(self, items)`: if removing would make the number **negative**, raise `BoxException("Not enough items")`. Otherwise remove them.
+
+Use the class variable, do not type `10` in your checks.
+@@ starter
+class BoxException(Exception):
+    pass
+
+class Box:
+    _MAX_ITEMS = 10
+
+    def __init__(self, numberOfItems):
+        ...
+
+    @property
+    def numberOfItems(self):
+        ...
+
+    def add(self, items):
+        ...
+
+    def remove(self, items):
+        ...
+@@ check
+def _expectBoxError(action, message):
+    try:
+        action()
+    except BoxException as e:
+        assert str(e) == message, f"❌ the message was {str(e)!r}, it should be {message!r}"
+    else:
+        assert False, f"❌ this should raise BoxException({message!r})"
+
+box = Box(4)
+assert box.numberOfItems == 4, "❌ Box(4).numberOfItems should be 4"
+box.add(6)
+assert box.numberOfItems == 10, "❌ after add(6) there should be 10 items"
+_expectBoxError(lambda: box.add(1), "Box is full")
+assert box.numberOfItems == 10, "❌ a failed add must not change the number of items"
+box.remove(3)
+assert box.numberOfItems == 7, "❌ after remove(3) there should be 7 items"
+_expectBoxError(lambda: box.remove(8), "Not enough items")
+assert box.numberOfItems == 7, "❌ a failed remove must not change the number of items"
+_expectBoxError(lambda: Box(11), "Box cannot hold more than 10 items")
+@@ hint
+For `add`: `if self.__numberOfItems + items > Box._MAX_ITEMS:` then raise.
+For `remove`: `if self.__numberOfItems - items < 0:` then raise.
+Raise **before** you change the number.
+@@ solution
+class BoxException(Exception):
+    pass
+
+class Box:
+    _MAX_ITEMS = 10
+
+    def __init__(self, numberOfItems):
+        if numberOfItems > Box._MAX_ITEMS:
+            raise BoxException("Box cannot hold more than 10 items")
+        self.__numberOfItems = numberOfItems
+
+    @property
+    def numberOfItems(self):
+        return self.__numberOfItems
+
+    def add(self, items):
+        if self.__numberOfItems + items > Box._MAX_ITEMS:
+            raise BoxException("Box is full")
+        self.__numberOfItems += items
+
+    def remove(self, items):
+        if self.__numberOfItems - items < 0:
+            raise BoxException("Not enough items")
+        self.__numberOfItems -= items
+
+@@ exercise Raise in a setter
+Complete the `mark` setter of `Assessment`.
+
+- A mark must be between `0` and `Assessment._MAX` (both included).
+- If not, raise an `AssessmentException` with the message `"Mark can only be between 0 and 100"`.
+  Build the `100` from the class variable with an f-string, so the message is still right if `_MAX` changes.
+- Otherwise store the new mark.
+
+The `__init__` uses the setter (`self.mark = mark`), so a bad mark in the constructor is also caught.
+@@ starter
+class AssessmentException(Exception):
+    pass
+
+class Assessment:
+    _MAX = 100
+
+    def __init__(self, assessmentId, mark):
+        self.__assessmentId = assessmentId
+        self.mark = mark          # this calls the setter below
+
+    @property
+    def mark(self):
+        return self.__mark
+
+    @mark.setter
+    def mark(self, newMark):
+        ...
+@@ check
+a = Assessment("A1", 70)
+assert a.mark == 70, "❌ Assessment(\"A1\", 70).mark should be 70"
+a.mark = 100
+assert a.mark == 100, "❌ setting mark to 100 should work"
+for _bad in (101, -1):
+    try:
+        a.mark = _bad
+    except AssessmentException as e:
+        assert str(e) == "Mark can only be between 0 and 100", f"❌ the message was {str(e)!r}"
+    else:
+        assert False, f"❌ setting mark to {_bad} should raise AssessmentException"
+assert a.mark == 100, "❌ a bad mark must not be stored"
+try:
+    Assessment("A2", 150)
+except AssessmentException:
+    pass
+else:
+    assert False, "❌ Assessment(\"A2\", 150) should raise AssessmentException"
+Assessment._MAX = 50
+try:
+    a.mark = 60
+except AssessmentException as e:
+    assert str(e) == "Mark can only be between 0 and 50", "❌ use Assessment._MAX in the message, do not type 100"
+else:
+    assert False, "❌ use Assessment._MAX in your check, do not type 100"
+finally:
+    Assessment._MAX = 100
+@@ hint
+```python
+if newMark < 0 or newMark > Assessment._MAX:
+    raise AssessmentException(f"Mark can only be between 0 and {Assessment._MAX}")
+self.__mark = newMark
+```
+@@ solution
+class AssessmentException(Exception):
+    pass
+
+class Assessment:
+    _MAX = 100
+
+    def __init__(self, assessmentId, mark):
+        self.__assessmentId = assessmentId
+        self.mark = mark          # this calls the setter below
+
+    @property
+    def mark(self):
+        return self.__mark
+
+    @mark.setter
+    def mark(self, newMark):
+        if newMark < 0 or newMark > Assessment._MAX:
+            raise AssessmentException(f"Mark can only be between 0 and {Assessment._MAX}")
+        self.__mark = newMark
+
+@@ md
+## 8. Where to catch: the exception travels up
+
+When a method raises an exception and does **not** catch it, the exception leaves the method.
+It goes **up** to the code that called the method.
+If that code does not catch it either, it goes up again, until someone catches it or the program crashes.
+
+```text
+main()          <- try / except here catches it
+  calls addContact()       <- no try here, the exception passes through
+    calls Contact()        <- raise happens here
+```
+
+🎯 Exam questions often say **"Do not handle the exception in this method."**
+That means: **no `try` in that method**.
+Just `raise` (or let it pass through), and the caller will handle it.
+Writing a `try` there loses marks.
+
+@@ predict The exception passes through
+@@ run
+class PriceException(Exception):
+    pass
+
+def checkPrice(price):
+    print("checking", price)
+    if price < 0:
+        raise PriceException("Price cannot be negative")
+    print("price ok")
+
+def addItem(name, price):
+    checkPrice(price)
+    print("added", name)
+
+def main():
+    try:
+        addItem("Tea", 2)
+        addItem("Cake", -1)
+        addItem("Juice", 3)
+    except PriceException as e:
+        print("Error:", e)
+    print("done")
+
+main()
+@@ output
+checking 2
+price ok
+added Tea
+checking -1
+Error: Price cannot be negative
+done
+@@ explain
+The first item is fine, so three lines are printed.
+For `Cake`, `checkPrice` raises the exception. It does not catch it, so it leaves `checkPrice` at once (`price ok` is skipped).
+`addItem` does not catch it either, so `added Cake` is skipped too.
+`main` catches it and prints the message.
+`Juice` is never added, because Python jumped out of the `try` block.
+Finally `done` is printed.
+
+@@ exercise Do not handle it here (JUL 2024 style)
+A phone number is valid only if it has **exactly 8 characters**, all of them **digits**, and it **starts with 6, 8 or 9**.
+
+1. Complete `Contact.__init__`.
+   If the phone number is not valid, raise a `ContactException` with the message `"Invalid phone number"`.
+   **Do not handle the exception here** (no `try` inside the class).
+2. Complete `tryCreate(name, phone)`.
+   It must create a `Contact` inside `try`.
+   If it works, return the `Contact`.
+   If a `ContactException` happens, return the text `"Error: "` followed by the message.
+@@ starter
+class ContactException(Exception):
+    pass
+
+class Contact:
+    def __init__(self, name, phone):
+        # check the phone number here and raise if it is not valid
+        ...
+        self.__name = name
+        self.__phone = phone
+
+    @property
+    def phone(self):
+        return self.__phone
+
+
+def tryCreate(name, phone):
+    ...
+@@ check
+import inspect
+import re
+assert not re.search(r"\btry\s*:", inspect.getsource(Contact.__init__)), "❌ do not use try inside the Contact class"
+for _good in ("91234567", "61234567", "81234567"):
+    assert Contact("Amy", _good).phone == _good, f"❌ {_good} is a valid number"
+for _bad in ("71234567", "9123456", "912345678", "9123456a", ""):
+    try:
+        Contact("Amy", _bad)
+    except ContactException as e:
+        assert str(e) == "Invalid phone number", f"❌ the message was {str(e)!r}"
+    else:
+        assert False, f"❌ {_bad!r} is not a valid number, Contact should raise ContactException"
+assert isinstance(tryCreate("Amy", "91234567"), Contact), "❌ tryCreate should return the Contact when the number is valid"
+assert tryCreate("Amy", "123") == "Error: Invalid phone number", f"❌ tryCreate(\"Amy\", \"123\") returned {tryCreate('Amy', '123')!r}"
+@@ hint
+The phone is valid when all three are true:
+`len(phone) == 8`, `phone.isdigit()`, and `phone[0] in "689"`.
+So raise when **not** all of them are true:
+
+```python
+if not (len(phone) == 8 and phone.isdigit() and phone[0] in "689"):
+    raise ContactException("Invalid phone number")
+```
+
+Check the length first. Then `phone[0]` is safe, because an empty text never reaches it.
+@@ solution
+class ContactException(Exception):
+    pass
+
+class Contact:
+    def __init__(self, name, phone):
+        if not (len(phone) == 8 and phone.isdigit() and phone[0] in "689"):
+            raise ContactException("Invalid phone number")
+        self.__name = name
+        self.__phone = phone
+
+    @property
+    def phone(self):
+        return self.__phone
+
+
+def tryCreate(name, phone):
+    try:
+        return Contact(name, phone)
+    except ContactException as e:
+        return f"Error: {e}"
+
+@@ md
+## 9. The checks the exam always asks for
+
+These checks come up in almost every paper.
+Learn the exact `if` line for each one.
+
+| Rule in the question | The check |
+| --- | --- |
+| "This addition results in more than the maximum" | `if len(self.__items) + 1 > Shop._MAX:` |
+| "Fewer than the minimum after removal" | `if len(self.__items) - 1 < Shop._MIN:` |
+| "Total over a cap" | `if self.total() + item.price > Shop._CAP:` |
+| "Duplicate name" | search first: `if self.search(name) is not None:` |
+| "Not found" | `if item is None:` after searching |
+
+⚠️ Look at the maximum check carefully.
+"More than 3 **after** adding" is `len(...) + 1 > 3`.
+Writing `len(...) > 3` is wrong, because it lets the list grow to 4.
+
+⚠️ **Follow the order of the checks in the question.**
+If an item breaks two rules, only the **first** check raises.
+The sample output in the paper depends on that order.
+
+⚠️ **Copy the message text exactly** when the paper gives it, including capital letters and full stops.
+
+@@ predict Which check fires first?
+@@ run
+class ShopException(Exception):
+    pass
+
+def addItem(items, name):
+    if name in items:
+        raise ShopException(f"{name} is already in the cart")
+    if len(items) + 1 > 3:
+        raise ShopException("Cart cannot hold more than 3 items")
+    items.append(name)
+
+cart = ["Tea", "Cake", "Bun"]
+for name in ["Tea", "Juice"]:
+    try:
+        addItem(cart, name)
+    except ShopException as e:
+        print(e)
+print(cart)
+@@ output
+Tea is already in the cart
+Cart cannot hold more than 3 items
+['Tea', 'Cake', 'Bun']
+@@ explain
+`Tea` breaks **both** rules: it is a duplicate, and the cart is full.
+The duplicate check comes first, so that is the message we see.
+`Juice` is not a duplicate, so the second check runs and raises.
+Because the `try` is **inside** the loop, the loop carries on after each error.
+
+@@ exercise The Shop (max, duplicate, not found, minimum)
+Complete `Shop`.
+Every rule raises a `ShopException`. Do the checks **in the order shown**.
+
+`add(self, name)`:
+
+1. If `name` is already in the list, raise with `"<name> already exists"`, for example `"Tea already exists"`.
+2. If this addition results in more than `Shop._MAX` items, raise with `"Shop cannot have more than 3 items"`.
+3. Otherwise add `name` to the list.
+
+`remove(self, name)`:
+
+1. If `name` is not in the list, raise with `"<name> not found"`.
+2. If removing would leave fewer than `Shop._MIN` items, raise with `"Shop must have at least 1 item"`.
+3. Otherwise remove it.
+
+Build the numbers in the messages from the class variables.
+@@ starter
+class ShopException(Exception):
+    pass
+
+class Shop:
+    _MAX = 3
+    _MIN = 1
+
+    def __init__(self):
+        self.__items = []
+
+    @property
+    def items(self):
+        return self.__items
+
+    def add(self, name):
+        ...
+
+    def remove(self, name):
+        ...
+@@ check
+def _expectShopError(action, message):
+    try:
+        action()
+    except ShopException as e:
+        assert str(e) == message, f"❌ the message was {str(e)!r}, it should be {message!r}"
+    else:
+        assert False, f"❌ this should raise ShopException({message!r})"
+
+shop = Shop()
+shop.add("Tea")
+shop.add("Cake")
+assert shop.items == ["Tea", "Cake"], f"❌ items should be ['Tea', 'Cake'] but are {shop.items}"
+_expectShopError(lambda: shop.add("Tea"), "Tea already exists")
+shop.add("Bun")
+_expectShopError(lambda: shop.add("Tea"), "Tea already exists")
+_expectShopError(lambda: shop.add("Juice"), "Shop cannot have more than 3 items")
+assert shop.items == ["Tea", "Cake", "Bun"], "❌ a failed add must not change the list"
+_expectShopError(lambda: shop.remove("Pie"), "Pie not found")
+shop.remove("Cake")
+shop.remove("Tea")
+assert shop.items == ["Bun"], f"❌ items should be ['Bun'] but are {shop.items}"
+_expectShopError(lambda: shop.remove("Bun"), "Shop must have at least 1 item")
+_expectShopError(lambda: shop.remove("Tea"), "Tea not found")
+Shop._MAX = 2
+try:
+    _shop2 = Shop()
+    _shop2.add("A")
+    _shop2.add("B")
+    _expectShopError(lambda: _shop2.add("C"), "Shop cannot have more than 2 items")
+finally:
+    Shop._MAX = 3
+@@ hint
+In `add`:
+
+```python
+if name in self.__items:
+    raise ShopException(f"{name} already exists")
+if len(self.__items) + 1 > Shop._MAX:
+    raise ShopException(f"Shop cannot have more than {Shop._MAX} items")
+self.__items.append(name)
+```
+
+`remove` is the same idea, with `not in` and `len(self.__items) - 1 < Shop._MIN`.
+@@ solution
+class ShopException(Exception):
+    pass
+
+class Shop:
+    _MAX = 3
+    _MIN = 1
+
+    def __init__(self):
+        self.__items = []
+
+    @property
+    def items(self):
+        return self.__items
+
+    def add(self, name):
+        if name in self.__items:
+            raise ShopException(f"{name} already exists")
+        if len(self.__items) + 1 > Shop._MAX:
+            raise ShopException(f"Shop cannot have more than {Shop._MAX} items")
+        self.__items.append(name)
+
+    def remove(self, name):
+        if name not in self.__items:
+            raise ShopException(f"{name} not found")
+        if len(self.__items) - 1 < Shop._MIN:
+            raise ShopException(f"Shop must have at least {Shop._MIN} item")
+        self.__items.remove(name)
+
+@@ exercise Total over a cap
+Complete `addExpense(self, expense)` in `BudgetPlan`.
+
+- `expense` is a number.
+- If adding it would make the total of all expenses **more than** `BudgetPlan._LIMIT`, raise a `BudgetException` with the message `"Over budget by $X.XX"`, where `X.XX` is how much the new total would be over the limit.
+  For example, with a total of `90` and a limit of `100`, adding `25` raises `"Over budget by $15.00"`.
+- Otherwise add it to the list.
+@@ starter
+class BudgetException(Exception):
+    pass
+
+class BudgetPlan:
+    _LIMIT = 100
+
+    def __init__(self):
+        self.__expenses = []
+
+    def total(self):
+        result = 0
+        for amount in self.__expenses:
+            result += amount
+        return result
+
+    def addExpense(self, expense):
+        ...
+@@ check
+plan = BudgetPlan()
+plan.addExpense(60)
+plan.addExpense(30)
+assert plan.total() == 90, f"❌ total should be 90 but is {plan.total()}"
+try:
+    plan.addExpense(25)
+except BudgetException as e:
+    assert str(e) == "Over budget by $15.00", f"❌ the message was {str(e)!r}"
+else:
+    assert False, "❌ adding 25 to a total of 90 should raise BudgetException"
+assert plan.total() == 90, "❌ a failed add must not change the total"
+plan.addExpense(10)
+assert plan.total() == 100, "❌ a total of exactly 100 is allowed"
+@@ hint
+Work out `newTotal = self.total() + expense` first.
+Then `if newTotal > BudgetPlan._LIMIT:` raise with `f"Over budget by ${newTotal - BudgetPlan._LIMIT:.2f}"`.
+@@ solution
+class BudgetException(Exception):
+    pass
+
+class BudgetPlan:
+    _LIMIT = 100
+
+    def __init__(self):
+        self.__expenses = []
+
+    def total(self):
+        result = 0
+        for amount in self.__expenses:
+            result += amount
+        return result
+
+    def addExpense(self, expense):
+        newTotal = self.total() + expense
+        if newTotal > BudgetPlan._LIMIT:
+            raise BudgetException(f"Over budget by ${newTotal - BudgetPlan._LIMIT:.2f}")
+        self.__expenses.append(expense)
+
+@@ md
+## 10. The main program: keep going after an error
+
+In the exam, the last part often says: "Write a `main()` that creates objects, calls the methods, and handles the exceptions."
+
+**Where you put `try` decides what happens after an error.**
+
+- `try` **around** a loop: the first error stops the whole loop.
+- `try` **inside** a loop: each item gets its own chance, and the loop keeps going.
+
+@@ predict try outside the loop
+@@ run
+def half(text):
+    return int(text) / 2
+
+try:
+    for text in ["8", "x", "6"]:
+        print(half(text))
+except ValueError:
+    print("bad value")
+@@ output
+4.0
+bad value
+@@ explain
+The `try` is around the whole loop.
+When `"x"` fails, Python jumps out of the loop to `except`, so `"6"` is never processed.
+
+@@ predict try inside the loop
+@@ run
+def half(text):
+    return int(text) / 2
+
+for text in ["8", "x", "6"]:
+    try:
+        print(half(text))
+    except ValueError:
+        print("bad value")
+@@ output
+4.0
+bad value
+3.0
+@@ explain
+Now each item has its own `try`.
+When `"x"` fails, only that item is skipped, and the loop continues with `"6"`.
+
+@@ exercise main() for the Box
+Write `main()` so that it prints exactly the output below.
+It must use the `Box` class from your earlier exercise (run that cell first).
+
+1. Create `box = Box(5)` and print `"Start: 5"` using the property.
+2. For each amount in `[3, 4, 2]`, try `box.add(amount)`.
+   If it works, print `"Added 3"` (with the amount).
+   If a `BoxException` happens, print `"Error: "` followed by the message.
+3. At the end print `"End: 10"` using the property.
+
+Expected output:
+
+```text
+Start: 5
+Added 3
+Error: Box is full
+Added 2
+End: 10
+```
+@@ starter
+def main():
+    ...
+
+main()
+@@ check
+import io, contextlib
+_buffer = io.StringIO()
+with contextlib.redirect_stdout(_buffer):
+    main()
+_expected = "Start: 5\nAdded 3\nError: Box is full\nAdded 2\nEnd: 10\n"
+assert _buffer.getvalue() == _expected, f"❌ main() printed:\n{_buffer.getvalue()}"
+@@ hint
+Put the `try` **inside** the `for` loop, so the loop keeps going after the error.
+@@ solution
+def main():
+    box = Box(5)
+    print(f"Start: {box.numberOfItems}")
+    for amount in [3, 4, 2]:
+        try:
+            box.add(amount)
+            print(f"Added {amount}")
+        except BoxException as e:
+            print(f"Error: {e}")
+    print(f"End: {box.numberOfItems}")
+
+main()
+
+@@ md
+### Asking again until the input is valid
+
+A `while True` loop keeps asking until the user types something valid.
+`return` (or `break`) ends the loop.
+
+When you run the cell below, type something that is not a number first, then a number.
+
+@@ code inputs=abc|-2|4.5
+def readPositive(prompt):
+    while True:
+        text = input(prompt)
+        try:
+            value = float(text)
+            if value <= 0:
+                print("Must be more than 0")
+            else:
+                return value
+        except ValueError:
+            print("Please enter a number")
+
+price = readPositive("Price: ")
+print("You entered", price)
+
+@@ exercise Read a whole number
+Complete `readQuantity()`.
+
+- Keep asking with `input("Quantity: ")` until the user types a whole number.
+- If `int()` fails, print `"Not a whole number"` and ask again.
+- When it works, return the number.
+
+The check cell types `"two"`, then `"2.5"`, then `"3"` for you.
+@@ starter
+def readQuantity():
+    ...
+@@ check
+import io, contextlib
+_typed = ["two", "2.5", "3"]
+_savedInput = globals().get("input")
+input = lambda prompt="": _typed.pop(0)
+_buffer = io.StringIO()
+try:
+    with contextlib.redirect_stdout(_buffer):
+        _result = readQuantity()
+finally:
+    if _savedInput is None:
+        del input
+    else:
+        input = _savedInput
+assert _result == 3, f"❌ readQuantity() should return 3, it returned {_result!r}"
+assert _buffer.getvalue().count("Not a whole number") == 2, f"❌ expected \"Not a whole number\" twice, your function printed:\n{_buffer.getvalue()}"
+@@ hint
+```python
+while True:
+    text = input("Quantity: ")
+    try:
+        return int(text)
+    except ValueError:
+        print("Not a whole number")
+```
+@@ solution
+def readQuantity():
+    while True:
+        text = input("Quantity: ")
+        try:
+            return int(text)
+        except ValueError:
+            print("Not a whole number")
+
+@@ md
+### A menu that survives errors (Lab 4 and JAN 2023 style)
+
+This menu keeps running until the user chooses `3`.
+Each option is inside a `try`, so a mistake never ends the program.
+
+@@ code inputs=1|Amy|1|Amy|2|Bob|3
+class GroupException(Exception):
+    pass
+
+class TutorialGroup:
+    def __init__(self, name):
+        self.__name = name
+        self.__students = []
+
+    def addStudent(self, name):
+        if name in self.__students:
+            raise GroupException(f"{name} already added!")
+        self.__students.append(name)
+
+    def removeStudent(self, name):
+        if name not in self.__students:
+            raise GroupException(f"{name} not found!")
+        self.__students.remove(name)
+
+def main():
+    group = TutorialGroup("T01")
+    while True:
+        print("1. Add  2. Remove  3. Quit")
+        option = input("Enter option: ")
+        if option == "3":
+            break
+        try:
+            if option == "1":
+                group.addStudent(input("Name: "))
+                print("Added!")
+            elif option == "2":
+                group.removeStudent(input("Name: "))
+                print("Removed!")
+            else:
+                print("Invalid option")
+        except GroupException as e:
+            print(e)
+    print("Bye")
+
+main()
+
+@@ exercise Your own menu
+Complete `runMenu(group)` for the `TutorialGroup` above (run that cell first).
+
+- Loop forever. Each time, ask `input("Option: ")`.
+- `"A"`: ask `input("Name: ")`, call `group.addStudent(...)` and print `"Added"`.
+- `"R"`: ask `input("Name: ")`, call `group.removeStudent(...)` and print `"Removed"`.
+- `"Q"`: stop the loop.
+- If a `GroupException` happens, print the message, and keep looping.
+
+The check cell types: `A`, `Ali`, `A`, `Ali`, `R`, `Zoe`, `Q`.
+@@ starter
+def runMenu(group):
+    ...
+@@ check
+import io, contextlib
+_typed = ["A", "Ali", "A", "Ali", "R", "Zoe", "Q"]
+_savedInput = globals().get("input")
+input = lambda prompt="": _typed.pop(0)
+_buffer = io.StringIO()
+try:
+    with contextlib.redirect_stdout(_buffer):
+        runMenu(TutorialGroup("T02"))
+finally:
+    if _savedInput is None:
+        del input
+    else:
+        input = _savedInput
+_lines = _buffer.getvalue().splitlines()
+assert _lines == ["Added", "Ali already added!", "Zoe not found!"], f"❌ your menu printed {_lines}"
+@@ hint
+Use `while True:` and `break` for `"Q"`.
+Put the `try` **inside** the loop, around the `if` / `elif` part.
+@@ solution
+def runMenu(group):
+    while True:
+        option = input("Option: ")
+        if option == "Q":
+            break
+        try:
+            if option == "A":
+                group.addStudent(input("Name: "))
+                print("Added")
+            elif option == "R":
+                group.removeStudent(input("Name: "))
+                print("Removed")
+        except GroupException as e:
+            print(e)
+
+@@ md
+## 11. A family of your own exceptions
+
+A bigger program can have one **base** exception, with more specific ones below it.
+This uses inheritance, exactly like Python's own family tree.
+
+```python
+class VehicleException(Exception):
+    pass
+
+class SpeedingException(VehicleException):
+    pass
+```
+
+- `except SpeedingException` catches only speeding problems.
+- `except VehicleException` catches **both**, because a `SpeedingException` is a `VehicleException`.
+
+The same rule as before: the specific one goes **first**.
+
+@@ predict Catching a family
+@@ run
+class VehicleException(Exception):
+    pass
+
+class SpeedingException(VehicleException):
+    pass
+
+def check(speed, plate):
+    if plate == "":
+        raise VehicleException("No plate number")
+    if speed > 90:
+        raise SpeedingException(f"Too fast: {speed}")
+    return "OK"
+
+for speed, plate in [(80, "SBA1"), (120, "SBA2"), (50, "")]:
+    try:
+        print(check(speed, plate))
+    except SpeedingException as e:
+        print("Fine:", e)
+    except VehicleException as e:
+        print("Problem:", e)
+@@ output
+OK
+Fine: Too fast: 120
+Problem: No plate number
+@@ explain
+The first car is fine.
+The second raises a `SpeedingException`, which the first `except` matches.
+The third raises a plain `VehicleException`. It is not a `SpeedingException`, so the second `except` catches it.
+
+@@ predict Wrong order in the family
+@@ run
+class VehicleException(Exception):
+    pass
+
+class SpeedingException(VehicleException):
+    pass
+
+try:
+    raise SpeedingException("Too fast: 120")
+except VehicleException as e:
+    print("Problem:", e)
+except SpeedingException as e:
+    print("Fine:", e)
+@@ output
+Problem: Too fast: 120
+@@ explain
+A `SpeedingException` **is a** `VehicleException`, so the first block matches it.
+The `except SpeedingException` block is never reached. The order is wrong.
+
+@@ exercise Build an exception family
+1. Make a base class `BankException` (inherits from `Exception`).
+2. Make `InsufficientFundsException` and `InvalidAmountException`, both inheriting from `BankException`.
+3. Complete `withdraw(balance, amount)`, which returns the new balance:
+   - If `amount <= 0`, raise `InvalidAmountException("Amount must be positive")`.
+   - If `amount > balance`, raise `InsufficientFundsException("Insufficient funds")`.
+@@ starter
+# 1. and 2. write the three exception classes here
+
+
+def withdraw(balance, amount):
+    ...
+@@ check
+assert issubclass(BankException, Exception), "❌ BankException should inherit from Exception"
+assert issubclass(InsufficientFundsException, BankException), "❌ InsufficientFundsException should inherit from BankException"
+assert issubclass(InvalidAmountException, BankException), "❌ InvalidAmountException should inherit from BankException"
+assert withdraw(100, 30) == 70, "❌ withdraw(100, 30) should return 70"
+for _args, _cls, _msg in [((100, 0), InvalidAmountException, "Amount must be positive"),
+                          ((100, -5), InvalidAmountException, "Amount must be positive"),
+                          ((100, 200), InsufficientFundsException, "Insufficient funds")]:
+    try:
+        withdraw(*_args)
+    except _cls as e:
+        assert str(e) == _msg, f"❌ the message was {str(e)!r}"
+    else:
+        assert False, f"❌ withdraw{_args} should raise {_cls.__name__}"
+@@ solution
+class BankException(Exception):
+    pass
+
+class InsufficientFundsException(BankException):
+    pass
+
+class InvalidAmountException(BankException):
+    pass
+
+
+def withdraw(balance, amount):
+    if amount <= 0:
+        raise InvalidAmountException("Amount must be positive")
+    if amount > balance:
+        raise InsufficientFundsException("Insufficient funds")
+    return balance - amount
+
+@@ write Raise or print?
+A question says: "If the student already has 3 CCAs, the `enrol` method raises an `EnrolmentException` with the message `Cannot enrol more than 3 CCAs`."
+
+A classmate writes:
+
+```python
+def enrol(self, cca):
+    if len(self.__ccas) + 1 > Student._MAX_CCA:
+        print("Cannot enrol more than 3 CCAs")
+    self.__ccas.append(cca)
+```
+
+Give **two** things that are wrong.
+@@ answer
+1. It **prints** the message instead of raising an exception.
+   It should be `raise EnrolmentException("Cannot enrol more than 3 CCAs")`.
+   The caller then decides how to show the message.
+2. Even when the check fails, the CCA is still **added**, because nothing stops the method.
+   `raise` stops the method, so the `append` line is never reached.
+
+(Also good: the message could be built from `Student._MAX_CCA` so it stays right if the maximum changes.)
+
+@@ md
+## 12. Exam-style question: CCA enrolment
+
+This question is in the style of the JAN 2024 paper and Lab 4.
+Do it as if it were the exam: read all the parts first, then write the code.
+
+**(a)** Write the exception class `EnrolmentException`, a subclass of `Exception`.
+
+**(b)** The class `CCA` is given below. Run the cell.
+
+**(c)** Write the class `Student`:
+
+| Member | Description |
+| --- | --- |
+| `_MAX_CCA = 3` | class variable, the most CCAs a student can join |
+| `__init__(self, studentId, name)` | stores the id and name, and an **empty list** of CCAs |
+| `studentId` | property (getter only) |
+| `enrol(self, cca)` | adds a `CCA` object, with the checks below |
+| `withdraw(self, ccaName)` | removes the CCA with that name and **returns** it |
+| `totalFees(self)` | returns the sum of the fees of all the CCAs |
+| `__str__(self)` | see the format below |
+
+Checks in `enrol`, **in this order**:
+
+1. If the student already has a CCA with the same name (ignore upper and lower case), raise with `"Already enrolled in <name>"`.
+2. If this enrolment results in more than `_MAX_CCA` CCAs, raise with `"Cannot enrol more than 3 CCAs"` (build the 3 from the class variable).
+
+Check in `withdraw`:
+
+- If there is no CCA with that name (ignore case), raise with `"Not enrolled in <name>"`.
+
+`__str__` format (the fees with 2 decimal places):
+
+```text
+S001 Amy: 2 CCA(s), total fees $55.00
+```
+
+Do not handle the exceptions inside `Student`.
+
+@@ exercise Part (a): the exception class
+Write the class `EnrolmentException`.
+@@ starter
+# write EnrolmentException here
+
+@@ check
+assert issubclass(EnrolmentException, Exception), "❌ EnrolmentException should inherit from Exception"
+@@ solution
+class EnrolmentException(Exception):
+    pass
+
+@@ md
+**Part (b):** run this cell. The `CCA` class is given.
+
+@@ code
+class CCA:
+    def __init__(self, name, fees):
+        self.__name = name
+        self.__fees = fees
+
+    @property
+    def name(self):
+        return self.__name
+
+    @property
+    def fees(self):
+        return self.__fees
+
+    def __str__(self):
+        return f"{self.__name} ${self.__fees:.2f}"
+
+@@ exercise Part (c): the Student class
+Write the class `Student` as described in the table above.
+@@ starter
+class Student:
+    _MAX_CCA = 3
+
+    def __init__(self, studentId, name):
+        ...
+
+    @property
+    def studentId(self):
+        ...
+
+    def enrol(self, cca):
+        ...
+
+    def withdraw(self, ccaName):
+        ...
+
+    def totalFees(self):
+        ...
+
+    def __str__(self):
+        ...
+@@ check
+import inspect
+import re
+assert not re.search(r"\btry\s*:", inspect.getsource(Student.enrol) + inspect.getsource(Student.withdraw)), "❌ do not handle the exceptions inside Student"
+
+def _expectEnrolError(action, message):
+    try:
+        action()
+    except EnrolmentException as e:
+        assert str(e) == message, f"❌ the message was {str(e)!r}, it should be {message!r}"
+    else:
+        assert False, f"❌ this should raise EnrolmentException({message!r})"
+
+amy = Student("S001", "Amy")
+assert amy.studentId == "S001", "❌ the studentId property should return \"S001\""
+assert amy.totalFees() == 0, "❌ a new student should have total fees of 0"
+amy.enrol(CCA("Chess", 20))
+amy.enrol(CCA("Drama", 35))
+assert str(amy) == "S001 Amy: 2 CCA(s), total fees $55.00", f"❌ str(amy) is {str(amy)!r}"
+_expectEnrolError(lambda: amy.enrol(CCA("chess", 20)), "Already enrolled in chess")
+amy.enrol(CCA("Choir", 10))
+assert amy.totalFees() == 65, f"❌ totalFees() should be 65 but is {amy.totalFees()}"
+_expectEnrolError(lambda: amy.enrol(CCA("DRAMA", 35)), "Already enrolled in DRAMA")
+_expectEnrolError(lambda: amy.enrol(CCA("Soccer", 30)), "Cannot enrol more than 3 CCAs")
+_expectEnrolError(lambda: amy.withdraw("Golf"), "Not enrolled in Golf")
+_removed = amy.withdraw("drama")
+assert isinstance(_removed, CCA) and _removed.name == "Drama", "❌ withdraw(\"drama\") should return the Drama CCA object"
+assert str(amy) == "S001 Amy: 2 CCA(s), total fees $30.00", f"❌ after withdrawing, str(amy) is {str(amy)!r}"
+ben = Student("S002", "Ben")
+assert ben.totalFees() == 0, "❌ each Student needs its own list. Create the list inside __init__"
+Student._MAX_CCA = 2
+try:
+    _expectEnrolError(lambda: amy.enrol(CCA("Golf", 5)), "Cannot enrol more than 2 CCAs")
+finally:
+    Student._MAX_CCA = 3
+@@ hint
+Write a helper method first:
+
+```python
+def searchCCA(self, ccaName):
+    for cca in self.__ccas:
+        if cca.name.lower() == ccaName.lower():
+            return cca
+    return None
+```
+
+Then `enrol` can use `if self.searchCCA(cca.name) is not None:` for the duplicate check,
+and `withdraw` can use `if cca is None:` for the not found check.
+@@ solution
+class Student:
+    _MAX_CCA = 3
+
+    def __init__(self, studentId, name):
+        self.__studentId = studentId
+        self.__name = name
+        self.__ccas = []
+
+    @property
+    def studentId(self):
+        return self.__studentId
+
+    def searchCCA(self, ccaName):
+        for cca in self.__ccas:
+            if cca.name.lower() == ccaName.lower():
+                return cca
+        return None
+
+    def enrol(self, cca):
+        if self.searchCCA(cca.name) is not None:
+            raise EnrolmentException(f"Already enrolled in {cca.name}")
+        if len(self.__ccas) + 1 > Student._MAX_CCA:
+            raise EnrolmentException(f"Cannot enrol more than {Student._MAX_CCA} CCAs")
+        self.__ccas.append(cca)
+
+    def withdraw(self, ccaName):
+        cca = self.searchCCA(ccaName)
+        if cca is None:
+            raise EnrolmentException(f"Not enrolled in {ccaName}")
+        self.__ccas.remove(cca)
+        return cca
+
+    def totalFees(self):
+        total = 0
+        for cca in self.__ccas:
+            total += cca.fees
+        return total
+
+    def __str__(self):
+        return f"{self.__studentId} {self.__name}: {len(self.__ccas)} CCA(s), total fees ${self.totalFees():.2f}"
+
+@@ exercise Part (d): main()
+Write `main()` so that it prints exactly the output below.
+
+1. Create the student `"S001"`, `"Amy"`.
+2. For each of these CCAs, try to enrol Amy, and print `"Enrolled in <name>"` if it works:
+   `CCA("Chess", 20)`, `CCA("Drama", 35)`, `CCA("CHESS", 20)`, `CCA("Choir", 10)`, `CCA("Soccer", 30)`.
+3. Then try to withdraw `"Golf"` and then `"Drama"`. When a withdraw works, print `"Withdrew"` and the CCA it returned (use its `__str__`).
+4. Print the student.
+
+Whenever an `EnrolmentException` happens, print `"Error: "` and the message, and carry on.
+
+Expected output:
+
+```text
+Enrolled in Chess
+Enrolled in Drama
+Error: Already enrolled in CHESS
+Enrolled in Choir
+Error: Cannot enrol more than 3 CCAs
+Error: Not enrolled in Golf
+Withdrew Drama $35.00
+S001 Amy: 2 CCA(s), total fees $30.00
+```
+@@ starter
+def main():
+    ...
+
+main()
+@@ check
+import io, contextlib
+_buffer = io.StringIO()
+with contextlib.redirect_stdout(_buffer):
+    main()
+_expected = (
+    "Enrolled in Chess\n"
+    "Enrolled in Drama\n"
+    "Error: Already enrolled in CHESS\n"
+    "Enrolled in Choir\n"
+    "Error: Cannot enrol more than 3 CCAs\n"
+    "Error: Not enrolled in Golf\n"
+    "Withdrew Drama $35.00\n"
+    "S001 Amy: 2 CCA(s), total fees $30.00\n"
+)
+assert _buffer.getvalue() == _expected, f"❌ main() printed:\n{_buffer.getvalue()}"
+@@ hint
+Put the CCAs in a list and loop over it, with the `try` **inside** the loop.
+Do the same for the two names to withdraw.
+`print("Withdrew", cca)` prints the CCA using its `__str__`.
+@@ solution
+def main():
+    amy = Student("S001", "Amy")
+    ccas = [CCA("Chess", 20), CCA("Drama", 35), CCA("CHESS", 20), CCA("Choir", 10), CCA("Soccer", 30)]
+    for cca in ccas:
+        try:
+            amy.enrol(cca)
+            print(f"Enrolled in {cca.name}")
+        except EnrolmentException as e:
+            print(f"Error: {e}")
+    for name in ["Golf", "Drama"]:
+        try:
+            cca = amy.withdraw(name)
+            print("Withdrew", cca)
+        except EnrolmentException as e:
+            print(f"Error: {e}")
+    print(amy)
+
+main()
+
+@@ md
+## 📝 Key points
+
+- **Syntax** errors stop the program before it starts. **Runtime** errors (exceptions) happen while it runs. **Logic** errors give wrong answers with no message.
+- `try:` holds the risky code. `except X as e:` runs only if `X` happened, and `print(e)` shows the message.
+- `else` runs only if there was **no** error. `finally` **always** runs, even after a `return`.
+- Put specific `except` blocks first and `except Exception` last.
+- Your own exception: `class XException(Exception): pass`.
+- `raise XException("message")` stops the method at once. It does **not** print anything by itself.
+- An exception you do not catch travels **up** to the caller. "Do not handle it here" means no `try` in that method.
+- Check first, then change. Follow the order of checks in the question and copy the message text exactly.
+- `try` **inside** a loop lets the loop carry on after an error.
+
+## ⚠️ Common mistakes
+
+| Mistake | What goes wrong |
+| --- | --- |
+| `print("Too many")` instead of `raise ...` | No exception, and the bad change still happens |
+| `if len(self.__items) > MAX:` before adding | Lets the list grow one too big. Use `len(...) + 1 > MAX` |
+| `except Exception` first | The specific blocks below can never run |
+| `class XException:` (no `(Exception)`) | `TypeError` when you raise it |
+| A `try` inside the method when told not to handle it | Loses marks, and the caller never hears about the error |
+| Typing `3` instead of `Student._MAX_CCA` | Marker looks for the class variable |
+| Changing the list, then checking | The data is already wrong when the error is raised |
+
+Next: **13_GUI_with_tkinter**.

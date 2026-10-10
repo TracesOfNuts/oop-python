@@ -1,0 +1,5 @@
+# Everything needed to run the course notebooks and the build tool.
+notebook
+nbformat
+nbclient
+ipykernel

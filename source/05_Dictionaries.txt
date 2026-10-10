@@ -1,0 +1,840 @@
+@@ md
+# 05 - Dictionaries
+
+**What you will learn**
+
+- What a **dictionary** is: a collection of **key → value** pairs.
+- How to read, add, change and remove values.
+- How to loop over a dictionary.
+- Useful recipes: look up a fee, count things, add up the values, find the largest.
+- A quick look at **tuples**, fixed pairs like `("2024-12-29", "Shipped")`.
+
+**Why this matters for the exam**
+
+Many exam papers keep a dictionary, for example **fees for each major** or **budget for each type**.
+Later (notebook 08) you will put a dictionary inside a class and update it with a class method.
+In the GUI question, you may keep a dictionary of objects with the **email** as the key.
+After this notebook, those parts will feel familiar.
+
+@@ md
+## 1. What is a dictionary?
+
+Think of a real phone book.
+You look up a **name** (the key) and you get a **phone number** (the value).
+You never ask "what is entry number 3?". You ask "what is Joe's number?".
+
+A dictionary works the same way.
+You write it with curly brackets `{ }`.
+Each pair is written `key: value`, and pairs are separated by commas.
+
+@@ code
+phones = {"Peter": "91231234", "Joe": "81231234", "Amy": "61232310"}
+print(phones)
+print(len(phones))      # number of pairs
+
+@@ md
+More examples:
+
+```python
+fees = {"Business": 500, "Computing": 650, "Arts": 400}   # major -> fees
+stock = {"apple": 12, "pear": 0}                            # fruit -> how many
+empty = {}                                                  # an empty dictionary
+```
+
+- **Keys** are usually strings (sometimes numbers). Each key appears only **once**.
+- **Values** can be anything: numbers, text, lists, even objects.
+
+@@ md
+## 2. Reading a value
+
+Put the **key** in square brackets.
+
+@@ code
+fees = {"Business": 500, "Computing": 650, "Arts": 400}
+print(fees["Computing"])
+
+@@ md
+⚠️ If the key does not exist, Python stops with a **KeyError**.
+
+@@ code raises=KeyError
+fees = {"Business": 500, "Computing": 650, "Arts": 400}
+print(fees["Medicine"])
+
+@@ md
+Read the last line: `KeyError: 'Medicine'`.
+It means "there is no key called Medicine".
+
+💡 Keys are case sensitive. `fees["arts"]` is also a `KeyError`, because the key is `"Arts"`.
+
+**The safe way: `.get()`**
+
+`.get(key)` gives the value, or `None` if the key is missing.
+`.get(key, default)` gives `default` instead of `None` when the key is missing.
+
+@@ code
+fees = {"Business": 500, "Computing": 650, "Arts": 400}
+print(fees.get("Arts"))
+print(fees.get("Medicine"))
+print(fees.get("Medicine", 0))
+
+@@ md
+🎯 Template from past papers:
+
+```python
+@classmethod
+def getFees(cls, key):
+    return cls._FEES.get(key)   # None if missing
+```
+
+You will learn `@classmethod` and `cls` in notebook 08.
+The `.get()` part is what you are learning now.
+
+@@ predict Reading values
+@@ run
+stock = {"apple": 12, "pear": 0, "kiwi": 5}
+print(stock["kiwi"])
+print(stock.get("pear"))
+print(stock.get("mango", -1))
+print(stock.get("mango"))
+@@ output
+5
+0
+-1
+None
+@@ explain
+`stock["kiwi"]` is `5`.
+`stock.get("pear")` is `0` (the key exists, its value is 0).
+`"mango"` is not a key, so `.get("mango", -1)` gives the default `-1`, and `.get("mango")` gives `None`.
+
+@@ predict KeyError
+@@ run raises=KeyError
+prices = {"Tea": 2.5, "Coffee": 3.0}
+print(prices["Tea"])
+print(prices["tea"])
+@@ output
+2.5
+@@ explain
+`prices["Tea"]` works and prints `2.5`.
+`"tea"` with a small `t` is a **different** key, and it does not exist.
+So the third line raises a `KeyError`.
+
+@@ exercise Look up values
+Use the dictionary to fill in the variables.
+Do not type the numbers yourself.
+@@ starter
+capitals = {"Japan": "Tokyo", "Korea": "Seoul", "France": "Paris"}
+capitalOfKorea = ...
+capitalOfSpain = ...    # use .get() so that this is None (Spain is not in the dictionary)
+@@ check
+assert capitalOfKorea == "Seoul", f"❌ capitalOfKorea should be 'Seoul' but it is {capitalOfKorea!r}"
+assert capitalOfSpain is None, f"❌ capitalOfSpain should be None but it is {capitalOfSpain!r}. Did you use .get()?"
+@@ solution
+capitals = {"Japan": "Tokyo", "Korea": "Seoul", "France": "Paris"}
+capitalOfKorea = capitals["Korea"]
+capitalOfSpain = capitals.get("Spain")
+
+@@ exercise Fee lookup
+Complete `getFee(fees, major)`.
+It returns the fee for `major`, or `0` if the major is not in the dictionary.
+Use `.get()` with a default.
+@@ starter
+def getFee(fees, major):
+    ...
+
+courseFees = {"Business": 500, "Computing": 650}
+print(getFee(courseFees, "Computing"))
+print(getFee(courseFees, "Law"))
+@@ check
+_fees = {"Business": 500, "Computing": 650}
+assert getFee(_fees, "Computing") == 650, "❌ getFee should return 650 for Computing"
+assert getFee(_fees, "Business") == 500, "❌ getFee should return 500 for Business"
+assert getFee(_fees, "Law") == 0, f"❌ getFee should return 0 for a missing major, but got {getFee(_fees, 'Law')!r}"
+@@ hint
+`return fees.get(major, 0)`
+@@ solution
+def getFee(fees, major):
+    return fees.get(major, 0)
+
+courseFees = {"Business": 500, "Computing": 650}
+print(getFee(courseFees, "Computing"))
+print(getFee(courseFees, "Law"))
+
+@@ md
+## 3. Adding and changing values
+
+The same line does both jobs:
+
+```python
+fees["Law"] = 700
+```
+
+- If the key `"Law"` is **new**, the pair is **added**.
+- If the key `"Law"` **already exists**, its value is **replaced**.
+
+@@ code
+fees = {"Business": 500, "Computing": 650}
+fees["Law"] = 700          # new key: added
+print(fees)
+fees["Business"] = 550     # existing key: updated
+print(fees)
+
+@@ md
+You can also change a number value with `+=`, as long as the key exists.
+
+@@ code
+stock = {"apple": 12, "pear": 0}
+stock["apple"] -= 2
+stock["pear"] += 10
+print(stock)
+
+@@ md
+🎯 Past paper template:
+
+```python
+@classmethod
+def updateFees(cls, key, fees):
+    cls._FEES[key] = fees       # adds if new, updates if existing
+```
+
+The comment says exactly what you just learned.
+
+@@ predict Add or update?
+@@ run
+scores = {"Amy": 10}
+scores["Ben"] = 7
+scores["Amy"] = 3
+scores["Ben"] += 5
+print(scores)
+print(len(scores))
+@@ output
+{'Amy': 3, 'Ben': 12}
+2
+@@ explain
+`"Ben"` is new, so it is added with 7.
+`"Amy"` exists, so 10 is **replaced** by 3 (not added to).
+`scores["Ben"] += 5` makes Ben `12`.
+Each key appears only once, so there are 2 pairs.
+
+@@ exercise Update a price list
+Start with `menu = {"Tea": 2.5, "Coffee": 3.0}`.
+
+1. Add `"Juice"` with price `4.0`.
+2. Change the price of `"Tea"` to `2.8`.
+3. Increase the price of `"Coffee"` by `0.5` using `+=`.
+@@ starter
+menu = {"Tea": 2.5, "Coffee": 3.0}
+# 1.
+
+# 2.
+
+# 3.
+
+print(menu)
+@@ check
+assert menu.get("Juice") == 4.0, "❌ Juice should be added with price 4.0"
+assert menu.get("Tea") == 2.8, f"❌ Tea should be 2.8 but it is {menu.get('Tea')}"
+assert menu.get("Coffee") == 3.5, f"❌ Coffee should be 3.5 but it is {menu.get('Coffee')}"
+assert len(menu) == 3, f"❌ menu should have 3 items but it has {len(menu)}"
+@@ solution
+menu = {"Tea": 2.5, "Coffee": 3.0}
+menu["Juice"] = 4.0
+menu["Tea"] = 2.8
+menu["Coffee"] += 0.5
+print(menu)
+
+@@ md
+## 4. Checking and removing keys
+
+- `key in d` gives `True` if the key exists. It checks **keys**, not values.
+- `del d[key]` removes the pair. It raises a `KeyError` if the key is missing.
+- `d.pop(key)` removes the pair and gives back the value.
+
+@@ code
+phones = {"Peter": "91231234", "Joe": "81231234"}
+print("Joe" in phones)
+print("81231234" in phones)    # False: in checks keys, not values
+if "Joe" in phones:
+    del phones["Joe"]
+print(phones)
+
+@@ md
+💡 Same idea as lists: **check with `in` first**, then remove.
+
+```python
+if uid in cards:
+    del cards[uid]
+```
+
+This is straight from the course slides.
+
+@@ predict in checks keys
+@@ run
+ages = {"Amy": 20, "Ben": 25}
+print("Amy" in ages)
+print(20 in ages)
+print("Cara" not in ages)
+@@ output
+True
+False
+True
+@@ explain
+`"Amy"` is a key, so `True`.
+`20` is a **value**, not a key, so `in` gives `False`.
+`"Cara"` is not a key, so `not in` gives `True`.
+
+@@ exercise Update only if it exists
+Complete `updatePhone(phones, name, newPhone)`.
+
+- If `name` is a key, change its phone to `newPhone` and return `True`.
+- If not, do **not** add it. Return `False`.
+
+This is like `updateContact` from the course.
+@@ starter
+def updatePhone(phones, name, newPhone):
+    ...
+
+book = {"Peter": "91231234"}
+print(updatePhone(book, "Peter", "90000000"), book)
+print(updatePhone(book, "Zoe", "80000000"), book)
+@@ check
+_book = {"Peter": "91231234", "Joe": "81231234"}
+assert updatePhone(_book, "Peter", "90000000") is True, "❌ updatePhone should return True for an existing name"
+assert _book["Peter"] == "90000000", "❌ Peter's phone should be changed to 90000000"
+assert updatePhone(_book, "Zoe", "80000000") is False, "❌ updatePhone should return False for a missing name"
+assert "Zoe" not in _book, "❌ A missing name must NOT be added"
+@@ hint
+```python
+if name in phones:
+    phones[name] = newPhone
+    return True
+return False
+```
+@@ solution
+def updatePhone(phones, name, newPhone):
+    if name in phones:
+        phones[name] = newPhone
+        return True
+    return False
+
+book = {"Peter": "91231234"}
+print(updatePhone(book, "Peter", "90000000"), book)
+print(updatePhone(book, "Zoe", "80000000"), book)
+
+@@ exercise Add only if new
+Complete `addPhone(phones, name, phone)`.
+
+- If `name` is **already** a key, do not change anything and return `False`.
+- Otherwise add it and return `True`.
+
+🎯 Lab 6 asks for this: "Instructor already added!" when the same email is added twice.
+@@ starter
+def addPhone(phones, name, phone):
+    ...
+@@ check
+_book = {"Peter": "91231234"}
+assert addPhone(_book, "Amy", "61232310") is True, "❌ addPhone should return True for a new name"
+assert _book.get("Amy") == "61232310", "❌ Amy should be added"
+assert addPhone(_book, "Peter", "99999999") is False, "❌ addPhone should return False when the name is already there"
+assert _book["Peter"] == "91231234", "❌ An existing phone number must not be changed"
+@@ solution
+def addPhone(phones, name, phone):
+    if name in phones:
+        return False
+    phones[name] = phone
+    return True
+
+@@ exercise Remove a key safely
+Complete `removePhone(phones, name)`.
+It removes `name` and returns `True`, or returns `False` if the name is not there.
+It must never raise a `KeyError`.
+@@ starter
+def removePhone(phones, name):
+    ...
+@@ check
+_book = {"Peter": "91231234", "Joe": "81231234"}
+assert removePhone(_book, "Joe") is True, "❌ removePhone should return True when it removes Joe"
+assert _book == {"Peter": "91231234"}, f"❌ Joe should be removed, but the dictionary is {_book}"
+assert removePhone(_book, "Joe") is False, "❌ Removing Joe a second time should return False"
+@@ solution
+def removePhone(phones, name):
+    if name in phones:
+        del phones[name]
+        return True
+    return False
+
+@@ md
+## 5. Looping over a dictionary
+
+There are three ways, depending on what you need.
+
+@@ code
+fees = {"Business": 500, "Computing": 650, "Arts": 400}
+
+for major in fees:                  # 1. the keys
+    print(major)
+
+for amount in fees.values():        # 2. only the values
+    print(amount)
+
+for major, amount in fees.items():  # 3. key AND value together
+    print(f"{major}: ${amount:.2f}")
+
+@@ md
+- `for key in d:` gives the **keys**.
+- `for value in d.values():` gives the **values**.
+- `for key, value in d.items():` gives **both**. You name two loop variables, separated by a comma.
+
+💡 `.items()` is the most useful one. When in doubt, use it.
+
+🎯 The course slides loop over a dictionary of objects with `for c in cards.values():`.
+
+@@ predict Loop over keys
+@@ run
+stock = {"apple": 12, "pear": 0, "kiwi": 5}
+for fruit in stock:
+    print(fruit, stock[fruit])
+@@ output
+apple 12
+pear 0
+kiwi 5
+@@ explain
+Looping over a dictionary gives the **keys**, in the order they were added.
+`stock[fruit]` then looks up each value.
+
+@@ predict items
+@@ run
+marks = {"Amy": 72, "Ben": 45}
+for name, mark in marks.items():
+    if mark >= 50:
+        print(name, "passed")
+    else:
+        print(name, "failed")
+@@ output
+Amy passed
+Ben failed
+@@ explain
+`.items()` gives each pair.
+`name` gets the key and `mark` gets the value.
+
+@@ exercise Print a fee table
+Write a loop with `.items()` that prints each major and fee like this:
+
+```text
+Business: $500.00
+Computing: $650.00
+Arts: $400.00
+```
+
+There is no check cell. Compare with your eyes.
+@@ starter
+fees = {"Business": 500, "Computing": 650, "Arts": 400}
+# write your loop below
+
+@@ solution
+fees = {"Business": 500, "Computing": 650, "Arts": 400}
+for major, fee in fees.items():
+    print(f"{major}: ${fee:.2f}")
+
+@@ md
+## 6. Recipes with dictionaries
+
+The list recipes from notebook 04 work here too.
+
+**Total of the values**
+
+@@ code
+budget = {"Food": 300, "Transport": 120, "Fun": 80}
+total = 0
+for amount in budget.values():
+    total += amount
+print(total)
+
+@@ md
+**Counting with a dictionary**
+
+To count how many times each thing appears, use the thing as the key and the count as the value.
+
+@@ code
+votes = ["Tea", "Coffee", "Tea", "Juice", "Tea"]
+counts = {}
+for drink in votes:
+    if drink in counts:
+        counts[drink] += 1
+    else:
+        counts[drink] = 1
+print(counts)
+
+@@ md
+💡 Why the `if`? The first time we see `"Tea"`, there is no key yet, so `counts["Tea"] += 1` would be a `KeyError`.
+So the first time we set it to `1`.
+
+@@ exercise Total budget
+Complete `totalBudget(budget)`.
+It returns the sum of all the values in the dictionary.
+An empty dictionary gives `0`.
+@@ starter
+def totalBudget(budget):
+    ...
+
+print(totalBudget({"Food": 300, "Transport": 120, "Fun": 80}))
+@@ check
+assert totalBudget({"Food": 300, "Transport": 120, "Fun": 80}) == 500, "❌ The total should be 500"
+assert totalBudget({}) == 0, "❌ An empty dictionary should give 0"
+@@ hint
+Use the total recipe with `for amount in budget.values():`.
+@@ solution
+def totalBudget(budget):
+    total = 0
+    for amount in budget.values():
+        total += amount
+    return total
+
+print(totalBudget({"Food": 300, "Transport": 120, "Fun": 80}))
+
+@@ exercise Count the letters
+Complete `countGrades(grades)`.
+`grades` is a list like `["A", "B", "A", "C", "A"]`.
+Return a dictionary with how many times each grade appears, for example `{"A": 3, "B": 1, "C": 1}`.
+@@ starter
+def countGrades(grades):
+    counts = {}
+    ...
+    return counts
+
+print(countGrades(["A", "B", "A", "C", "A"]))
+@@ check
+assert countGrades(["A", "B", "A", "C", "A"]) == {"A": 3, "B": 1, "C": 1}, f"❌ Got {countGrades(['A', 'B', 'A', 'C', 'A'])}"
+assert countGrades([]) == {}, "❌ An empty list should give an empty dictionary {}"
+@@ solution
+def countGrades(grades):
+    counts = {}
+    for grade in grades:
+        if grade in counts:
+            counts[grade] += 1
+        else:
+            counts[grade] = 1
+    return counts
+
+print(countGrades(["A", "B", "A", "C", "A"]))
+
+@@ exercise Find the most expensive item
+Complete `mostExpensive(prices)`.
+`prices` is a dictionary of item to price.
+Return the **key** (the item name) with the highest price.
+Assume the dictionary is not empty.
+@@ starter
+def mostExpensive(prices):
+    ...
+
+print(mostExpensive({"Tea": 2.5, "Cake": 6.0, "Bun": 1.8}))
+@@ check
+assert mostExpensive({"Tea": 2.5, "Cake": 6.0, "Bun": 1.8}) == "Cake", "❌ The most expensive item is Cake"
+assert mostExpensive({"Tea": 2.5}) == "Tea", "❌ With only Tea, the answer is Tea"
+assert mostExpensive({"A": 1, "B": 9, "C": 3}) == "B", "❌ For A=1, B=9, C=3 the answer is B (return the key, not the price)"
+@@ hint
+Keep two variables: `bestItem = None` (nothing found yet) and `bestPrice = 0`.
+Loop with `for item, price in prices.items():`.
+If `bestItem is None or price > bestPrice`, update both variables.
+After the loop, return `bestItem`.
+@@ solution
+def mostExpensive(prices):
+    bestItem = None
+    bestPrice = 0
+    for item, price in prices.items():
+        if bestItem is None or price > bestPrice:
+            bestItem = item
+            bestPrice = price
+    return bestItem
+
+print(mostExpensive({"Tea": 2.5, "Cake": 6.0, "Bun": 1.8}))
+
+@@ exercise Items to restock
+Complete `toRestock(stock, minimum)`.
+It returns a **list** of the item names whose quantity is **below** `minimum`, in the order of the dictionary.
+@@ starter
+def toRestock(stock, minimum):
+    ...
+
+print(toRestock({"apple": 12, "pear": 0, "kiwi": 3}, 5))
+@@ check
+assert toRestock({"apple": 12, "pear": 0, "kiwi": 3}, 5) == ["pear", "kiwi"], f"❌ Got {toRestock({'apple': 12, 'pear': 0, 'kiwi': 3}, 5)}"
+assert toRestock({"apple": 12}, 5) == [], "❌ Nothing is below 5, so the answer is []"
+@@ hint
+Use the filter recipe: `result = []`, then loop with `.items()` and `append` the names you want.
+@@ solution
+def toRestock(stock, minimum):
+    result = []
+    for item, qty in stock.items():
+        if qty < minimum:
+            result.append(item)
+    return result
+
+print(toRestock({"apple": 12, "pear": 0, "kiwi": 3}, 5))
+
+@@ md
+## 7. Lists inside dictionaries
+
+A value can be a list.
+For example, each student can have a list of CCAs.
+
+@@ code
+ccas = {"Amy": ["Chess", "Choir"], "Ben": ["Soccer"]}
+print(ccas["Amy"])
+print(len(ccas["Amy"]))
+ccas["Ben"].append("Drama")
+print(ccas)
+
+@@ predict A list as a value
+@@ run
+orders = {"T1": ["Tea"], "T2": []}
+orders["T2"].append("Cake")
+orders["T1"].append("Bun")
+print(orders["T1"])
+print(len(orders["T2"]))
+@@ output
+['Tea', 'Bun']
+1
+@@ explain
+`orders["T2"]` is a list, so `.append("Cake")` adds to it.
+`orders["T1"]` becomes `['Tea', 'Bun']`.
+`orders["T2"]` has 1 item.
+
+@@ md
+## 8. Tuples: fixed pairs
+
+A **tuple** is like a list, but written with round brackets `( )`, and it **cannot be changed** after it is made.
+It is good for things that belong together, like a date and a status.
+
+@@ code
+step = ("2024-12-29", "Shipped")
+print(step[0])
+print(step[1])
+date, status = step        # unpacking: give each part a name
+print(status, "on", date)
+
+@@ md
+⚠️ You cannot change a tuple.
+
+@@ code raises=TypeError
+step = ("2024-12-29", "Shipped")
+step[1] = "Delivered"
+
+@@ md
+🎯 The JUL 2025 paper has a tracking history that is a **list of tuples**:
+
+```text
+[('2024-12-29', 'Initialized'), ('2024-12-29', 'Awaiting Pickup')]
+```
+
+Each time the status changes, a new tuple is **appended** to the list.
+You loop over it just like the `[item, qty]` pairs in notebook 04.
+
+@@ code
+history = []
+history.append(("2024-12-29", "Initialized"))
+history.append(("2024-12-30", "Awaiting Pickup"))
+print(history)
+for date, status in history:
+    print(date, "-", status)
+
+@@ predict Tuples and items
+.items() actually gives you tuples.
+@@ run
+prices = {"Tea": 2.5}
+for pair in prices.items():
+    print(pair)
+    print(pair[0])
+@@ output
+('Tea', 2.5)
+Tea
+@@ explain
+Each thing from `.items()` is a tuple `(key, value)`.
+That is why you can unpack it with two names: `for key, value in d.items():`.
+
+@@ exercise Latest status
+Complete `latestStatus(history)`.
+`history` is a list of `(date, status)` tuples, oldest first.
+Return the **status** of the last tuple, or `None` if the list is empty.
+@@ starter
+def latestStatus(history):
+    ...
+
+print(latestStatus([("2024-12-29", "Initialized"), ("2024-12-30", "Shipped")]))
+@@ check
+assert latestStatus([("2024-12-29", "Initialized"), ("2024-12-30", "Shipped")]) == "Shipped", "❌ The latest status should be 'Shipped'"
+assert latestStatus([("2024-12-29", "Initialized")]) == "Initialized", "❌ With one tuple, the answer is 'Initialized'"
+assert latestStatus([]) is None, "❌ An empty history should give None"
+@@ hint
+The last tuple is `history[-1]`, and its status is `history[-1][1]`.
+Check `len(history) == 0` first.
+@@ solution
+def latestStatus(history):
+    if len(history) == 0:
+        return None
+    return history[-1][1]
+
+print(latestStatus([("2024-12-29", "Initialized"), ("2024-12-30", "Shipped")]))
+
+@@ md
+## 9. Exam-style practice
+
+@@ exercise Budget plan (exam style)
+A budget plan keeps a dictionary of **category → amount**.
+Write these functions.
+
+1. `setBudget(plan, category, amount)` sets the amount for a category.
+   It adds the category if it is new, and updates it if it exists.
+2. `spend(plan, category, amount)` takes `amount` away from that category and returns `True`.
+   If the category does not exist, or there is not enough money left in it, it changes nothing and returns `False`.
+3. `planReport(plan)` returns one string with one line per category, then the total, like this:
+
+```text
+Food: $300.00
+Fun: $80.00
+Total: $380.00
+```
+
+No new line at the very end.
+@@ starter
+def setBudget(plan, category, amount):
+    ...
+
+def spend(plan, category, amount):
+    ...
+
+def planReport(plan):
+    ...
+
+myPlan = {}
+setBudget(myPlan, "Food", 300)
+setBudget(myPlan, "Fun", 100)
+spend(myPlan, "Fun", 20)
+print(planReport(myPlan))
+@@ check
+_plan = {}
+setBudget(_plan, "Food", 300)
+setBudget(_plan, "Fun", 50)
+setBudget(_plan, "Fun", 100)
+assert _plan == {"Food": 300, "Fun": 100}, f"❌ After setting Food 300 and Fun 100, the plan is {_plan}"
+assert spend(_plan, "Fun", 20) is True, "❌ Spending 20 from Fun (100) should work"
+assert _plan["Fun"] == 80, f"❌ Fun should be 80 after spending 20, but it is {_plan['Fun']}"
+assert spend(_plan, "Fun", 500) is False, "❌ Spending more than is left should return False"
+assert _plan["Fun"] == 80, "❌ A failed spend must not change the amount"
+assert spend(_plan, "Travel", 5) is False, "❌ Spending from a missing category should return False"
+assert "Travel" not in _plan, "❌ A missing category must not be added by spend"
+_expected = "Food: $300.00\nFun: $80.00\nTotal: $380.00"
+assert planReport(_plan) == _expected, f"❌ The report should be:\n{_expected}\n\nbut got:\n{planReport(_plan)}"
+assert planReport({}) == "Total: $0.00", f"❌ An empty plan should give 'Total: $0.00' but got {planReport({})!r}"
+@@ hint
+`spend` needs two checks: `if category not in plan` and `if plan[category] < amount`.
+For `planReport`, build a list of lines in a loop with `.items()`, add up a total, append the total line, then `return "\n".join(lines)`.
+@@ solution
+def setBudget(plan, category, amount):
+    plan[category] = amount
+
+def spend(plan, category, amount):
+    if category not in plan:
+        return False
+    if plan[category] < amount:
+        return False
+    plan[category] -= amount
+    return True
+
+def planReport(plan):
+    lines = []
+    total = 0
+    for category, amount in plan.items():
+        lines.append(f"{category}: ${amount:.2f}")
+        total += amount
+    lines.append(f"Total: ${total:.2f}")
+    return "\n".join(lines)
+
+myPlan = {}
+setBudget(myPlan, "Food", 300)
+setBudget(myPlan, "Fun", 100)
+spend(myPlan, "Fun", 20)
+print(planReport(myPlan))
+
+@@ exercise CCA enrolment (exam style)
+A school keeps a dictionary of **student name → list of CCAs**.
+A student may join at most `MAX_CCA = 3` CCAs.
+
+Complete `enrol(records, name, cca)`:
+
+1. If the student is not in `records` yet, add them with an empty list first.
+2. If the student already has this CCA, return `"Already enrolled"`.
+3. If adding this CCA would give the student **more than** `MAX_CCA` CCAs, return `"Cannot enrol more than 3 CCAs"`.
+4. Otherwise add the CCA to the student's list and return `"Enrolled"`.
+
+Do the checks in exactly this order.
+@@ starter
+MAX_CCA = 3
+
+def enrol(records, name, cca):
+    ...
+
+school = {}
+print(enrol(school, "Amy", "Chess"))
+print(enrol(school, "Amy", "Chess"))
+print(school)
+@@ check
+_r = {}
+assert enrol(_r, "Amy", "Chess") == "Enrolled", "❌ Amy's first CCA should give 'Enrolled'"
+assert _r == {"Amy": ["Chess"]}, f"❌ records should be {{'Amy': ['Chess']}} but it is {_r}"
+assert enrol(_r, "Amy", "Chess") == "Already enrolled", "❌ The same CCA twice should give 'Already enrolled'"
+assert enrol(_r, "Amy", "Choir") == "Enrolled", "❌ A second CCA should be fine"
+assert enrol(_r, "Amy", "Drama") == "Enrolled", "❌ A third CCA should be fine"
+assert enrol(_r, "Amy", "Soccer") == "Cannot enrol more than 3 CCAs", "❌ A fourth CCA should give 'Cannot enrol more than 3 CCAs'"
+assert _r["Amy"] == ["Chess", "Choir", "Drama"], f"❌ Amy should have 3 CCAs but has {_r['Amy']}"
+assert enrol(_r, "Ben", "Chess") == "Enrolled", "❌ Ben is a new student and should be enrolled"
+assert _r["Ben"] == ["Chess"], "❌ Ben should have ['Chess']"
+@@ hint
+```python
+if name not in records:
+    records[name] = []
+if cca in records[name]:
+    ...
+if len(records[name]) + 1 > MAX_CCA:
+    ...
+```
+@@ solution
+MAX_CCA = 3
+
+def enrol(records, name, cca):
+    if name not in records:
+        records[name] = []
+    if cca in records[name]:
+        return "Already enrolled"
+    if len(records[name]) + 1 > MAX_CCA:
+        return "Cannot enrol more than 3 CCAs"
+    records[name].append(cca)
+    return "Enrolled"
+
+school = {}
+print(enrol(school, "Amy", "Chess"))
+print(enrol(school, "Amy", "Chess"))
+print(school)
+
+@@ md
+## 📝 Key points
+
+- A dictionary maps **keys** to **values**: `fees = {"Arts": 400}`.
+- Read: `fees["Arts"]` (`KeyError` if missing) or `fees.get("Arts")` (`None` if missing).
+- `fees.get("Law", 0)` gives a default when the key is missing.
+- `fees["Law"] = 700` **adds** a new key or **updates** an existing one.
+- `"Law" in fees` checks the **keys**. `del fees["Law"]` removes a pair.
+- Loop: `for key in d`, `for value in d.values()`, `for key, value in d.items()`.
+- A tuple `(date, status)` is a fixed pair. Unpack it with `date, status = pair`.
+
+## ⚠️ Common mistakes
+
+| Mistake | What happens |
+| --- | --- |
+| `fees["Medicine"]` when the key is missing | `KeyError` |
+| `fees["arts"]` when the key is `"Arts"` | `KeyError` (keys are case sensitive) |
+| `counts[x] += 1` the first time you see `x` | `KeyError` (set it to 1 first) |
+| `20 in ages` to look for a value | `False` (`in` checks keys only) |
+| `for k, v in d:` without `.items()` | `ValueError` (too many values to unpack) |
+| Changing a tuple: `pair[1] = "x"` | `TypeError` |
+
+Next: **06_Classes_and_Objects**.

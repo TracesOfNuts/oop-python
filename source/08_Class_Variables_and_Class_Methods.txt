@@ -1,0 +1,1165 @@
+@@ md
+# 08 - Class Variables and Class Methods
+
+**What you will learn**
+
+- What a **class variable** is, and how it is different from an instance variable.
+- The three ways to read a class variable inside a method.
+- The big trap: changing a class variable through `self` instead of through the class.
+- How to give every new object its own running id, like `1`, `2`, `3` or `PY214_1`.
+- How to write **class methods** with `@classmethod` and `cls`.
+- How to keep and update a dictionary that belongs to the whole class.
+- Why Python has no real "overloading", and how default parameters fix it.
+
+**Why this matters for the exam**
+
+Almost every paper has class variables such as `_MAX_PIZZA`, `_FEES_PER_ROUND` or `_NEXT_ORDER_ID`.
+The marker looks for the class variable in your code, not a hard coded number.
+Four of the six past papers also ask for a `@classmethod`, and one asks you to fix "overloading".
+These are easy marks once you know the patterns.
+
+@@ md
+## 1. One copy for everyone
+
+So far, every variable we stored with `self.` belonged to **one object**.
+These are **instance variables**.
+Each object has its own copy.
+
+Sometimes a value is the same for **every** object.
+For example, every cash card gets a 1% bonus for a top up of 100 dollars or more.
+It would be silly to store `0.01` inside every single card.
+
+A **class variable** is written inside the class, but **outside** every method.
+There is only **one copy**, and all the objects share it.
+
+@@ code
+class CashCard:
+    _bonusRate = 0.01      # class variable: one copy, shared by every card
+    _bonusAmount = 100     # top ups of 100 or more get the bonus
+
+    def __init__(self, id, amount):
+        self.__id = id               # instance variable: each card has its own
+        self.__balance = amount      # instance variable: each card has its own
+
+    @property
+    def balance(self):
+        return self.__balance
+
+    def topUp(self, amount):
+        if amount > 0:
+            self.__balance += amount
+            if amount >= type(self)._bonusAmount:
+                self.__balance += amount * type(self)._bonusRate
+
+c1 = CashCard("1", 10.0)
+c2 = CashCard("2", 50.0)
+c2.topUp(200)
+print(c1.balance, c2.balance)
+
+@@ md
+Here is a picture of what is stored:
+
+```text
+        CashCard  (the class)
+        _bonusRate   = 0.01     <- ONE shared copy
+        _bonusAmount = 100      <- ONE shared copy
+
+   c1  (an object)              c2  (an object)
+   __id      = "1"              __id      = "2"
+   __balance = 10.0             __balance = 252.0
+```
+
+`c2` topped up 200, which is at least 100, so it got a bonus of `200 * 0.01 = 2`.
+
+💡 Class variables usually start with one underscore `_`.
+Constants (values that never change) are often written in capitals, like `_MAX_PIZZA`.
+The course sometimes writes `__sides` with two underscores, which works the same way inside the class.
+
+@@ predict Who sees the class variable?
+@@ run
+class Cup:
+    _size = "M"
+
+    def __init__(self, drink):
+        self.drink = drink
+
+a = Cup("Tea")
+b = Cup("Coffee")
+print(a._size, b._size, Cup._size)
+@@ output
+M M M
+@@ explain
+`_size` belongs to the class.
+`a` and `b` do not have their own `_size`, so Python looks in the class and finds `"M"`.
+You can read it through an object (`a._size`) or through the class (`Cup._size`).
+
+@@ exercise Add a class variable
+Every order in a bubble tea shop may have at most 5 cups.
+Add a class variable `_MAX_CUPS` with the value `5` to the class `Order`.
+Put it inside the class, but outside `__init__`.
+@@ starter
+class Order:
+    # add the class variable here
+
+    def __init__(self, customer):
+        self.customer = customer
+@@ check
+assert "_MAX_CUPS" in vars(Order), "❌ Order should have a class variable _MAX_CUPS (inside the class, outside __init__)"
+assert Order._MAX_CUPS == 5, f"❌ _MAX_CUPS should be 5, but it is {Order._MAX_CUPS}"
+assert "_MAX_CUPS" not in vars(Order("Amy")), "❌ _MAX_CUPS should not be stored with self. It belongs to the class."
+@@ hint
+Write `_MAX_CUPS = 5` on its own line, indented once, just under `class Order:`.
+@@ solution
+class Order:
+    _MAX_CUPS = 5
+
+    def __init__(self, customer):
+        self.customer = customer
+
+@@ md
+## 2. Reading a class variable inside a method
+
+Inside a method, there are three ways to reach a class variable.
+All three give the same value when you only **read** it.
+
+@@ code
+class Item:
+    _TAX = 0.09
+
+    def __init__(self, price):
+        self.__price = price
+
+    def taxWay1(self):
+        return self.__price * Item._TAX          # 1. the class name
+
+    def taxWay2(self):
+        return self.__price * type(self)._TAX    # 2. type(self) means "the class of this object"
+
+    def taxWay3(self):
+        return self.__price * self._TAX          # 3. through self (for reading only!)
+
+i = Item(200)
+print(f"{i.taxWay1():.2f} {i.taxWay2():.2f} {i.taxWay3():.2f}")
+
+@@ md
+💡 The course notes use `type(self)._TAX`.
+Using the class name, `Item._TAX`, is also fine and is easy to read.
+Pick one and use it every time.
+
+⚠️ You **cannot** write just `_TAX` on its own inside a method.
+Python looks for a normal variable called `_TAX` and does not find one.
+
+@@ predict Forgetting the class name
+@@ run raises=NameError
+class Item:
+    _TAX = 0.09
+
+    def __init__(self, price):
+        self.__price = price
+
+    def tax(self):
+        return self.__price * _TAX
+
+i = Item(100)
+print("Created the item")
+print(i.tax())
+@@ output
+Created the item
+@@ explain
+Creating the object works, so `Created the item` is printed.
+Inside `tax()`, the name `_TAX` is used on its own.
+A class variable must be reached through the class (`Item._TAX` or `type(self)._TAX`) or through `self`.
+So Python raises a `NameError: name '_TAX' is not defined`.
+
+@@ exercise Use the class constant
+Complete `addPizza(n)`.
+
+- If adding `n` pizzas would make `qty` **more than** `_MAX_PIZZA`, return `False` and do not add anything.
+- Otherwise, add `n` to the quantity and return `True`.
+
+🎯 Use the class variable. Do **not** type `12` in your method.
+The check will change `_MAX_PIZZA` to see if your method follows it.
+@@ starter
+class PizzaOrder:
+    _MAX_PIZZA = 12
+
+    def __init__(self, customer):
+        self.__customer = customer
+        self.__qty = 0
+
+    @property
+    def qty(self):
+        return self.__qty
+
+    def addPizza(self, n):
+        ...
+@@ check
+_o = PizzaOrder("Amy")
+assert _o.addPizza(10) is True, "❌ adding 10 pizzas to an empty order should return True"
+assert _o.qty == 10, f"❌ qty should be 10 after adding 10, but it is {_o.qty}"
+assert _o.addPizza(3) is False, "❌ 10 + 3 = 13 is more than 12, so addPizza(3) should return False"
+assert _o.qty == 10, "❌ qty should stay 10 when the pizzas are not added"
+assert _o.addPizza(2) is True, "❌ 10 + 2 = 12 is allowed (it is not MORE than 12)"
+assert _o.qty == 12, f"❌ qty should be 12, but it is {_o.qty}"
+try:
+    PizzaOrder._MAX_PIZZA = 3
+    assert PizzaOrder("Ben").addPizza(4) is False, "❌ use PizzaOrder._MAX_PIZZA in your method, not the number 12"
+finally:
+    PizzaOrder._MAX_PIZZA = 12
+@@ hint
+```python
+if self.__qty + n > PizzaOrder._MAX_PIZZA:
+    return False
+```
+Then add `n` to `self.__qty` and return `True`.
+@@ solution
+class PizzaOrder:
+    _MAX_PIZZA = 12
+
+    def __init__(self, customer):
+        self.__customer = customer
+        self.__qty = 0
+
+    @property
+    def qty(self):
+        return self.__qty
+
+    def addPizza(self, n):
+        if self.__qty + n > PizzaOrder._MAX_PIZZA:
+            return False
+        self.__qty += n
+        return True
+
+@@ exercise Price with tax
+Complete `priceWithTax()`.
+It returns the price plus tax, which is `price * (1 + _TAX)`.
+Use `type(self)._TAX` this time.
+@@ starter
+class Product:
+    _TAX = 0.09
+
+    def __init__(self, name, price):
+        self.__name = name
+        self.__price = price
+
+    def priceWithTax(self):
+        ...
+@@ check
+_p = Product("Kettle", 50.0)
+assert _p.priceWithTax() is not None, "❌ priceWithTax() should return a number (did you forget return?)"
+assert abs(_p.priceWithTax() - 54.5) < 0.0001, f"❌ 50 with 9% tax should be 54.5, but you returned {_p.priceWithTax()}"
+try:
+    Product._TAX = 0.5
+    assert abs(_p.priceWithTax() - 75.0) < 0.0001, "❌ use the class variable _TAX, not the number 0.09"
+finally:
+    Product._TAX = 0.09
+@@ solution
+class Product:
+    _TAX = 0.09
+
+    def __init__(self, name, price):
+        self.__name = name
+        self.__price = price
+
+    def priceWithTax(self):
+        return self.__price * (1 + type(self)._TAX)
+
+@@ md
+## 3. Changing a class variable: the big trap
+
+**Reading** a class variable through `self` is fine.
+**Changing** it is where people lose marks.
+
+- `ClassName._x = value` changes the shared copy, so **every** object sees the new value.
+- `self._x = value` or `obj._x = value` does **not** change the shared copy.
+  It creates a **new instance variable** on that one object, which hides the class one.
+
+When Python reads `obj._x`, it first looks inside the object.
+Only if the object has no `_x` of its own does it look in the class.
+
+Work through the next five predictions slowly.
+This exact idea appears in past papers.
+
+@@ predict Change it through the class
+@@ run
+class CashCard:
+    _bonusRate = 0.01
+
+    def __init__(self, id):
+        self.id = id
+
+c1 = CashCard("1")
+c2 = CashCard("2")
+CashCard._bonusRate = 0.05
+print(c1._bonusRate, c2._bonusRate, CashCard._bonusRate)
+@@ output
+0.05 0.05 0.05
+@@ explain
+`CashCard._bonusRate = 0.05` changes the one shared copy.
+Neither card has its own `_bonusRate`, so both read the new class value.
+
+@@ predict Change it through one object
+@@ run
+class CashCard:
+    _bonusRate = 0.01
+
+    def __init__(self, id):
+        self.id = id
+
+c1 = CashCard("1")
+c2 = CashCard("2")
+c1._bonusRate = 0.5
+print(c1._bonusRate, c2._bonusRate, CashCard._bonusRate)
+@@ output
+0.5 0.01 0.01
+@@ explain
+`c1._bonusRate = 0.5` creates a **new instance variable** inside `c1` only.
+The class variable is not touched, so it is still `0.01`.
+`c2` has no copy of its own, so it reads the class value `0.01`.
+
+@@ predict Copies and counts
+@@ run
+class Book:
+    _count = 0
+
+    def __init__(self, title):
+        self.title = title
+        self._copies = 1
+        Book._count += 1
+
+a = Book("Dune")
+b = Book("Emma")
+a._copies = 5
+a._count = 99
+print(a._copies, b._copies)
+print(a._count, b._count, Book._count)
+@@ output
+5 1
+99 2 2
+@@ explain
+`_copies` is an instance variable, so changing `a._copies` does not affect `b`.
+Each `Book(...)` runs `Book._count += 1` on the class, so after two books the class value is `2`.
+`a._count = 99` creates a new instance variable inside `a` only.
+So `a._count` is `99`, but `b._count` and `Book._count` are still `2`.
+
+@@ predict The order matters
+@@ run
+class Shop:
+    _discount = 0.1
+
+s1 = Shop()
+s2 = Shop()
+s1._discount = 0.3
+Shop._discount = 0.2
+print(s1._discount, s2._discount)
+@@ output
+0.3 0.2
+@@ explain
+`s1` got its own `_discount` of `0.3`, so it no longer looks at the class.
+Then the class value changes to `0.2`.
+`s2` has no copy of its own, so it sees the new class value `0.2`.
+`s1` still sees its own `0.3`.
+
+@@ predict A counter that does not count
+@@ run
+class Ticket:
+    _count = 0
+
+    def __init__(self):
+        self._count += 1
+
+t1 = Ticket()
+t2 = Ticket()
+print(t1._count, t2._count, Ticket._count)
+@@ output
+1 1 0
+@@ explain
+`self._count += 1` means `self._count = self._count + 1`.
+The right side **reads** `self._count`, finds the class value `0`, and adds 1.
+The left side **stores** `1` as a new instance variable inside that ticket.
+So each ticket has its own `_count` of `1`, and the class value stays `0`.
+To count for the whole class, write `Ticket._count += 1` or `type(self)._count += 1`.
+
+@@ exercise Fix the discount for every shop
+`setDiscountForAll(rate)` should change the discount for **all** shops.
+It has a bug: it only changes the shop it was called on.
+Fix the one line inside `setDiscountForAll`.
+@@ starter
+class Shop:
+    _discount = 0.1
+
+    def __init__(self, name):
+        self.__name = name
+
+    def discount(self):
+        return self._discount
+
+    def setDiscountForAll(self, rate):
+        self._discount = rate      # bug: this only changes ONE shop
+@@ check
+Shop._discount = 0.1
+_a = Shop("North")
+_b = Shop("South")
+_a.setDiscountForAll(0.2)
+assert _b.discount() == 0.2, "❌ after a.setDiscountForAll(0.2), shop b should also have discount 0.2"
+assert Shop._discount == 0.2, "❌ the class variable Shop._discount should now be 0.2"
+assert "_discount" not in vars(_a), "❌ shop a should not get its own _discount. Change the class variable instead."
+Shop._discount = 0.1
+@@ hint
+Change the class, not the object: `type(self)._discount = rate` or `Shop._discount = rate`.
+@@ solution
+class Shop:
+    _discount = 0.1
+
+    def __init__(self, name):
+        self.__name = name
+
+    def discount(self):
+        return self._discount
+
+    def setDiscountForAll(self, rate):
+        type(self)._discount = rate
+
+@@ md
+## 4. Running ids: a counter in the class
+
+A very common exam task: "every new order gets the next order id".
+The trick is a class variable that holds **the next id to give out**.
+
+Inside `__init__`, do two steps:
+
+1. Give the new object the current value.
+2. Add 1 to the class variable, ready for the next object.
+
+@@ code
+class Order:
+    _nextId = 1     # the id that the NEXT order will get
+
+    def __init__(self, customer):
+        self.__orderId = Order._nextId    # 1. take the next id
+        Order._nextId += 1                # 2. move the counter on for the next order
+        self.__customer = customer
+
+    @property
+    def orderId(self):
+        return self.__orderId
+
+o1 = Order("Amy")
+o2 = Order("Ben")
+o3 = Order("Chen")
+print(o1.orderId, o2.orderId, o3.orderId)
+
+@@ predict Forgot to increment
+@@ run
+class Order:
+    _nextId = 1
+
+    def __init__(self, customer):
+        self.orderId = Order._nextId
+        self.customer = customer
+
+a = Order("Amy")
+b = Order("Ben")
+print(a.orderId, b.orderId, Order._nextId)
+@@ output
+1 1 1
+@@ explain
+Nothing ever adds 1 to `Order._nextId`.
+So every order gets the id `1`.
+Forgetting `Order._nextId += 1` is one of the most common exam mistakes.
+
+@@ predict Increment first
+@@ run
+class Order:
+    _nextId = 1
+
+    def __init__(self):
+        Order._nextId += 1
+        self.orderId = Order._nextId
+
+a = Order()
+b = Order()
+print(a.orderId, b.orderId)
+@@ output
+2 3
+@@ explain
+This time the counter is increased **before** it is used.
+The first order makes the counter `2` and then takes `2`.
+The second order makes it `3` and takes `3`.
+So the order of the two lines matters: take first, then add 1, if the first id should be `1`.
+
+@@ exercise Ticket numbers
+Each ticket gets a number from the class variable `_nextNumber`, starting at `100`.
+Complete `__init__` so that the first ticket gets `100`, the next gets `101`, and so on.
+Also write a read only property `number`.
+@@ starter
+class Ticket:
+    _nextNumber = 100
+
+    def __init__(self, movie):
+        self.__movie = movie
+        # give this ticket the next number, then move the counter on
+
+    # write the number property here
+@@ check
+Ticket._nextNumber = 100
+_t1 = Ticket("Up")
+_t2 = Ticket("Coco")
+_t3 = Ticket("Cars")
+assert (_t1.number, _t2.number, _t3.number) == (100, 101, 102), f"❌ the numbers should be 100, 101, 102 but they are {_t1.number}, {_t2.number}, {_t3.number}"
+assert Ticket._nextNumber == 103, f"❌ after 3 tickets, Ticket._nextNumber should be 103, but it is {Ticket._nextNumber}"
+Ticket._nextNumber = 100
+@@ hint
+In `__init__`:
+```python
+self.__number = Ticket._nextNumber
+Ticket._nextNumber += 1
+```
+Then write a `@property` called `number` that returns `self.__number`.
+@@ solution
+class Ticket:
+    _nextNumber = 100
+
+    def __init__(self, movie):
+        self.__movie = movie
+        self.__number = Ticket._nextNumber
+        Ticket._nextNumber += 1
+
+    @property
+    def number(self):
+        return self.__number
+
+@@ exercise Schedule ids like PY214_1 (from Lab 6)
+A training provider schedules courses.
+The `scheduleId` is the course code, an underscore, then the running number in `_schId`.
+
+- The first schedule for `"PY214"` gets `"PY214_1"`.
+- The next schedule, for `"JA201"`, gets `"JA201_2"`.
+
+Complete `__init__` and write a read only property `scheduleId`.
+@@ starter
+class CourseSchedule:
+    _schId = 1
+
+    def __init__(self, courseCode, days):
+        self.__days = days
+        # build the schedule id, then move the counter on
+
+    # write the scheduleId property here
+@@ check
+CourseSchedule._schId = 1
+_s1 = CourseSchedule("PY214", 3)
+_s2 = CourseSchedule("JA201", 2)
+assert _s1.scheduleId == "PY214_1", f"❌ the first id should be 'PY214_1' but it is {_s1.scheduleId!r}"
+assert _s2.scheduleId == "JA201_2", f"❌ the second id should be 'JA201_2' but it is {_s2.scheduleId!r}"
+assert CourseSchedule._schId == 3, "❌ _schId should go up by 1 for each schedule"
+CourseSchedule._schId = 1
+@@ hint
+`self.__scheduleId = f"{courseCode}_{CourseSchedule._schId}"`
+Then `CourseSchedule._schId += 1`.
+@@ solution
+class CourseSchedule:
+    _schId = 1
+
+    def __init__(self, courseCode, days):
+        self.__days = days
+        self.__scheduleId = f"{courseCode}_{CourseSchedule._schId}"
+        CourseSchedule._schId += 1
+
+    @property
+    def scheduleId(self):
+        return self.__scheduleId
+
+@@ md
+## 5. Class methods
+
+A normal method works on **one object**, so its first parameter is `self`.
+A **class method** works on the **class itself**, so its first parameter is `cls`.
+
+- Write `@classmethod` on the line above it.
+- The first parameter is `cls` (short for "class").
+- Call it with the class name: `Dice.setSides(10)`.
+
+Class methods are used to read or change class variables.
+
+@@ code
+from random import randint
+
+class Dice:
+    _sides = 6
+
+    def __init__(self):
+        self.__value = randint(1, type(self)._sides)
+
+    @property
+    def value(self):
+        return self.__value
+
+    @classmethod
+    def getSides(cls):
+        return cls._sides
+
+    @classmethod
+    def setSides(cls, sides):
+        cls._sides = sides
+
+print(Dice.getSides())
+Dice.setSides(10)
+print(Dice.getSides())
+d = Dice()
+print(1 <= d.value <= 10)
+
+@@ md
+Inside a class method, `cls._sides` means exactly the same as `Dice._sides`.
+Because `cls` is the class, `cls._sides = sides` changes the **shared** value, so there is no trap here.
+
+⚠️ There is **no `self`** inside a class method.
+A class method is not called on one object, so there is no object to talk about.
+
+@@ exercise Max mark (from Lab 4)
+Write two class methods for `Assessment`:
+
+- `getMaxMark()` returns the class variable `_max`.
+- `setMaxMark(mark)` sets the class variable `_max` to `mark`.
+@@ starter
+class Assessment:
+    _max = 100
+
+    def __init__(self, id, mark):
+        self.__id = id
+        self.__mark = mark
+
+    # write the class method getMaxMark here
+
+    # write the class method setMaxMark here
+@@ check
+Assessment._max = 100
+try:
+    assert isinstance(vars(Assessment).get("getMaxMark"), classmethod), "❌ getMaxMark needs @classmethod on the line above it"
+    assert isinstance(vars(Assessment).get("setMaxMark"), classmethod), "❌ setMaxMark needs @classmethod on the line above it"
+    assert Assessment.getMaxMark() == 100, "❌ getMaxMark() should return 100"
+    Assessment.setMaxMark(50)
+    assert Assessment._max == 50, "❌ after setMaxMark(50), Assessment._max should be 50"
+    assert Assessment.getMaxMark() == 50, "❌ getMaxMark() should now return 50"
+finally:
+    Assessment._max = 100
+@@ hint
+```python
+@classmethod
+def getMaxMark(cls):
+    return cls._max
+```
+`setMaxMark` looks the same, but has a second parameter `mark` and sets `cls._max = mark`.
+@@ solution
+class Assessment:
+    _max = 100
+
+    def __init__(self, id, mark):
+        self.__id = id
+        self.__mark = mark
+
+    @classmethod
+    def getMaxMark(cls):
+        return cls._max
+
+    @classmethod
+    def setMaxMark(cls, mark):
+        cls._max = mark
+
+@@ predict self inside a class method
+@@ run raises=NameError
+class Rate:
+    _rate = 0.05
+
+    @classmethod
+    def setRate(cls, newRate):
+        self._rate = newRate
+
+print(Rate._rate)
+Rate.setRate(0.08)
+print(Rate._rate)
+@@ output
+0.05
+@@ explain
+The first `print` works.
+Inside `setRate`, the parameters are `cls` and `newRate`. There is no `self`.
+So `self._rate` raises `NameError: name 'self' is not defined`.
+🎯 Past papers mark this exact mistake: a class method must use `cls`.
+
+@@ md
+## 6. A dictionary that belongs to the class
+
+Exam papers love this pattern: a class dictionary, plus class methods to update it and read from it.
+For example `updateFeesByMajor`, `updateBudgetByType` and `listBudget`.
+
+- `cls._FEES[key] = value` **adds** the key if it is new, or **replaces** the value if it is already there.
+- `cls._FEES.get(key)` returns the value, or `None` if the key is missing.
+  `cls._FEES.get(key, 0)` returns `0` instead of `None`.
+
+@@ predict Update and look up
+@@ run
+class Plan:
+    _FEES = {"Basic": 30.0, "Premium": 60.0}
+
+    @classmethod
+    def updateFees(cls, planType, fees):
+        cls._FEES[planType] = fees
+
+    @classmethod
+    def getFees(cls, planType):
+        return cls._FEES.get(planType)
+
+Plan.updateFees("Premium", 65.0)
+Plan.updateFees("Family", 90.0)
+print(Plan.getFees("Premium"))
+print(Plan.getFees("Family"))
+print(Plan.getFees("Gold"))
+print(len(Plan._FEES))
+@@ output
+65.0
+90.0
+None
+3
+@@ explain
+`"Premium"` was already a key, so its value is replaced by `65.0`.
+`"Family"` was new, so it is added. Now there are 3 keys.
+`"Gold"` is not a key, so `.get()` returns `None` instead of crashing.
+
+@@ exercise Fees by major (JAN 2024 style)
+Complete the class `Student`.
+
+- `fees()` returns the fees for this student's major from `_FEES_BY_MAJOR`.
+  If the major is not in the dictionary, return `0`.
+- `updateFeesByMajor(major, fees)` is a **class method**.
+  It adds the major with its fees, or updates the fees if the major is already there.
+@@ starter
+class Student:
+    _FEES_BY_MAJOR = {"IT": 1200.0, "Business": 1000.0}
+
+    def __init__(self, name, major):
+        self.__name = name
+        self.__major = major
+
+    def fees(self):
+        ...
+
+    # write the class method updateFeesByMajor here
+@@ check
+Student._FEES_BY_MAJOR = {"IT": 1200.0, "Business": 1000.0}
+_amy = Student("Amy", "IT")
+assert _amy.fees() == 1200.0, f"❌ an IT student should pay 1200.0, but fees() gave {_amy.fees()}"
+assert Student("Cal", "Law").fees() == 0, "❌ a major that is not in the dictionary should give 0"
+assert isinstance(vars(Student).get("updateFeesByMajor"), classmethod), "❌ updateFeesByMajor should be a @classmethod"
+Student.updateFeesByMajor("IT", 1500.0)
+assert _amy.fees() == 1500.0, "❌ after updateFeesByMajor('IT', 1500.0), Amy should pay 1500.0"
+Student.updateFeesByMajor("Art", 800.0)
+assert Student("Ben", "Art").fees() == 800.0, "❌ updateFeesByMajor('Art', 800.0) should add the new major"
+Student._FEES_BY_MAJOR = {"IT": 1200.0, "Business": 1000.0}
+@@ hint
+`fees()` can be one line: `return type(self)._FEES_BY_MAJOR.get(self.__major, 0)`
+The class method sets `cls._FEES_BY_MAJOR[major] = fees`.
+@@ solution
+class Student:
+    _FEES_BY_MAJOR = {"IT": 1200.0, "Business": 1000.0}
+
+    def __init__(self, name, major):
+        self.__name = name
+        self.__major = major
+
+    def fees(self):
+        return type(self)._FEES_BY_MAJOR.get(self.__major, 0)
+
+    @classmethod
+    def updateFeesByMajor(cls, major, fees):
+        cls._FEES_BY_MAJOR[major] = fees
+
+@@ exercise List the budget (JAN 2025 style)
+Write two class methods for `BudgetPlan`:
+
+- `updateBudgetByType(budgetType, amount)` adds or updates a budget type.
+- `listBudget()` **returns** a string with one line for each budget type, in the order they are stored, like this:
+
+```text
+Food: $300.00
+Transport: $120.00
+```
+@@ starter
+class BudgetPlan:
+    _BUDGET = {"Food": 300.0, "Transport": 120.0}
+
+    # write the class method updateBudgetByType here
+
+    # write the class method listBudget here
+@@ check
+BudgetPlan._BUDGET = {"Food": 300.0, "Transport": 120.0}
+_text = BudgetPlan.listBudget()
+assert isinstance(_text, str), "❌ listBudget() should RETURN a string, not print it"
+assert _text.strip("\n") == "Food: $300.00\nTransport: $120.00", f"❌ listBudget() returned {_text!r}"
+BudgetPlan.updateBudgetByType("Books", 50)
+BudgetPlan.updateBudgetByType("Food", 280.5)
+_text = BudgetPlan.listBudget()
+assert _text.strip("\n") == "Food: $280.50\nTransport: $120.00\nBooks: $50.00", f"❌ after the updates, listBudget() returned {_text!r}"
+BudgetPlan._BUDGET = {"Food": 300.0, "Transport": 120.0}
+@@ hint
+Start with `result = ""`.
+Loop with `for budgetType, amount in cls._BUDGET.items():`
+and add `f"{budgetType}: ${amount:.2f}\n"` to `result` each time.
+Return `result` at the end, after the loop.
+@@ solution
+class BudgetPlan:
+    _BUDGET = {"Food": 300.0, "Transport": 120.0}
+
+    @classmethod
+    def updateBudgetByType(cls, budgetType, amount):
+        cls._BUDGET[budgetType] = amount
+
+    @classmethod
+    def listBudget(cls):
+        result = ""
+        for budgetType, amount in cls._BUDGET.items():
+            result += f"{budgetType}: ${amount:.2f}\n"
+        return result
+
+@@ write Class variable or instance variable?
+In one or two sentences each, explain:
+
+1. The difference between a class variable and an instance variable.
+2. Why `_MAX_PIZZA = 12` should be a class variable and not an instance variable.
+@@ answer
+1. An instance variable belongs to one object, so every object has its own copy (for example each card's balance).
+   A class variable belongs to the class, so there is only one copy, shared by all the objects.
+2. The maximum is the same for every order.
+   Storing it once in the class avoids a copy in every object, and changing it in one place changes it for all orders.
+
+@@ md
+## 7. Overloading in Python
+
+In some languages you can write two methods with the **same name** but different parameters.
+This is called **overloading**.
+
+Python does **not** do this.
+If you define a method twice, the second one simply **replaces** the first one.
+
+@@ predict Two add methods
+@@ run raises=TypeError
+class Operation:
+    def add(self, x, y):
+        return x + y
+
+    def add(self, x, y, z):
+        return x + y + z
+
+op = Operation()
+print(op.add(1, 2, 3))
+print(op.add(1, 2))
+@@ output
+6
+@@ explain
+The second `add` replaces the first, so only `add(self, x, y, z)` exists.
+`op.add(1, 2, 3)` works and prints `6`.
+`op.add(1, 2)` gives only two numbers, but `z` is required.
+Python raises `TypeError: Operation.add() missing 1 required positional argument: 'z'`.
+
+@@ md
+**The fix: default parameters.**
+Give the extra parameter a default value, such as `None`.
+Then one method can be called in more than one way.
+This is how we "overload" in Python.
+
+@@ predict Defaults recap
+@@ run
+def makeTea(sugar=50, size="M"):
+    return f"{size} tea, sugar {sugar}%"
+
+print(makeTea())
+print(makeTea(0))
+print(makeTea(size="L"))
+@@ output
+M tea, sugar 50%
+M tea, sugar 0%
+L tea, sugar 50%
+@@ explain
+With no arguments, both defaults are used.
+`makeTea(0)` gives `sugar` the value `0`, and `size` keeps its default.
+`makeTea(size="L")` names the parameter, so only `size` changes.
+
+@@ exercise Fix the overloading (JUL 2025, 6 marks)
+The class below is meant to add **2 or 3** numbers.
+It does not work, because the second `add` replaces the first.
+
+Rewrite the class with **one** `add` method that works for both:
+
+- `op.add(1, 2)` returns `3`
+- `op.add(1, 2, 3)` returns `6`
+@@ starter
+class Operation:
+    def add(self, x, y):
+        return x + y
+
+    def add(self, x, y, z):
+        return x + y + z
+@@ check
+_op = Operation()
+assert _op.add(1, 2) == 3, "❌ add(1, 2) should return 3"
+assert _op.add(1, 2, 3) == 6, "❌ add(1, 2, 3) should return 6"
+assert _op.add(4, 5, 0) == 9, "❌ add(4, 5, 0) should return 9. Test z with 'is None', not just 'if z'"
+@@ hint
+```python
+def add(self, x, y, z=None):
+    if z is None:
+        ...
+```
+@@ solution
+class Operation:
+    def add(self, x, y, z=None):
+        if z is None:
+            return x + y
+        return x + y + z
+
+@@ write Explain the overloading bug
+In the exam, you may need to explain the bug in words as well as fix it.
+Explain why the original `Operation` class fails when you call `add(1, 2)`.
+@@ answer
+Python does not support method overloading.
+When two methods have the same name, the second definition replaces the first, so only `add(self, x, y, z)` exists.
+Calling `add(1, 2)` leaves out `z`, so Python raises a `TypeError` for the missing argument.
+The fix is one `add` method with a default parameter, `z=None`, that adds `z` only when it is given.
+
+@@ md
+Default parameters also work in constructors.
+The course example lets you create a card without saying the amount:
+
+```python
+class CashCard:
+    def __init__(self, id, amount=20):
+        ...
+
+c1 = CashCard("123", 10.0)   # amount is 10.0
+c2 = CashCard("124")         # amount is 20, the default
+```
+
+You will also see the `None` style from the course notes:
+
+```python
+def __init__(self, id, amount=None):
+    if amount is None:
+        amount = 20
+```
+
+@@ exercise Card with defaults
+Change the method headers so that:
+
+- `CashCard(id)` starts with a balance of `20` when no amount is given.
+- `deduct()` takes away `5` when no amount is given.
+- `topUp()` adds `10` when no amount is given. Use the `None` style for this one.
+
+Do not change how the methods work when an amount **is** given.
+@@ starter
+class CashCard:
+    def __init__(self, id, amount):      # give amount a default of 20
+        self.__id = id
+        self.__balance = amount
+
+    @property
+    def balance(self):
+        return self.__balance
+
+    def deduct(self, amount):            # give amount a default of 5
+        if self.__balance >= amount:
+            self.__balance -= amount
+            return True
+        return False
+
+    def topUp(self, amount):             # default None, and use 10 when it is None
+        self.__balance += amount
+@@ check
+_c = CashCard("1")
+assert _c.balance == 20, "❌ CashCard('1') should start with a balance of 20"
+assert _c.deduct() is True and _c.balance == 15, "❌ deduct() with no amount should take away 5"
+_c.topUp()
+assert _c.balance == 25, "❌ topUp() with no amount should add 10"
+_d = CashCard("2", 50.0)
+assert _d.deduct(20) is True and _d.balance == 30.0, "❌ deduct(20) should still take away 20"
+_d.topUp(7)
+assert _d.balance == 37.0, "❌ topUp(7) should still add 7"
+@@ hint
+`def __init__(self, id, amount=20):`
+`def deduct(self, amount=5):`
+For `topUp`, use `amount=None`, then `if amount is None: amount = 10` before adding.
+@@ solution
+class CashCard:
+    def __init__(self, id, amount=20):
+        self.__id = id
+        self.__balance = amount
+
+    @property
+    def balance(self):
+        return self.__balance
+
+    def deduct(self, amount=5):
+        if self.__balance >= amount:
+            self.__balance -= amount
+            return True
+        return False
+
+    def topUp(self, amount=None):
+        if amount is None:
+            amount = 10
+        self.__balance += amount
+
+@@ md
+## 8. Exam style: put it all together
+
+Exam questions give you a class diagram and a short description.
+Read every line, and use exactly the names given.
+
+```text
++---------------------------------------------+
+| Membership                                  |
++---------------------------------------------+
+| _nextId = 1                       (class)   |
+| _FEES = {"Gold": 100.0, "Silver": 60.0}     |
+|                                   (class)   |
+| __memberId                                  |
+| __name                                      |
+| __tier                                      |
++---------------------------------------------+
+| __init__(name, tier="Silver")               |
+| memberId   (property, read only)            |
+| tier       (property and setter)            |
+| fee()                                       |
+| updateFee(tier, fee)       {class method}   |
+| __str__()                                   |
++---------------------------------------------+
+```
+
+- `memberId` is `"M"` followed by the running number: `"M1"`, `"M2"`, and so on.
+- `fee()` returns the fee for this member's tier from `_FEES`, or `0.0` if the tier is not there.
+- `updateFee(tier, fee)` adds a new tier or updates an existing one.
+- `__str__()` returns, for example, `M1 Amy Gold $100.00` (id, name, tier, fee).
+
+@@ exercise Membership class
+Write the whole `Membership` class from the diagram above.
+@@ starter
+class Membership:
+    pass   # replace this with your class
+@@ check
+Membership._nextId = 1
+Membership._FEES = {"Gold": 100.0, "Silver": 60.0}
+_a = Membership("Amy", "Gold")
+_b = Membership("Ben")
+assert _a.memberId == "M1" and _b.memberId == "M2", f"❌ the ids should be M1 and M2, but they are {_a.memberId!r} and {_b.memberId!r}"
+assert _b.tier == "Silver", "❌ the default tier should be 'Silver'"
+assert str(_a) == "M1 Amy Gold $100.00", f"❌ str(a) is {str(_a)!r}"
+assert str(_b) == "M2 Ben Silver $60.00", f"❌ str(b) is {str(_b)!r}"
+assert isinstance(vars(Membership).get("updateFee"), classmethod), "❌ updateFee should be a @classmethod"
+Membership.updateFee("Gold", 120.0)
+assert _a.fee() == 120.0, "❌ after updateFee('Gold', 120.0), a Gold member should pay 120.0"
+_b.tier = "Gold"
+assert _b.tier == "Gold" and _b.fee() == 120.0, "❌ the tier setter should change the tier"
+_b.tier = "Bronze"
+assert _b.fee() == 0.0, "❌ fee() should be 0.0 for a tier that is not in _FEES"
+try:
+    _b.memberId = "X"
+    _readOnly = False
+except AttributeError:
+    _readOnly = True
+assert _readOnly, "❌ memberId should be read only (a property with no setter)"
+Membership._nextId = 1
+Membership._FEES = {"Gold": 100.0, "Silver": 60.0}
+@@ hint
+Build it one piece at a time and run the cell after each piece:
+the class variables, then `__init__` with the running id, then the properties, then `fee()`, then `updateFee`, then `__str__`.
+In `__str__`, call `self.fee()` for the fee.
+@@ solution
+class Membership:
+    _nextId = 1
+    _FEES = {"Gold": 100.0, "Silver": 60.0}
+
+    def __init__(self, name, tier="Silver"):
+        self.__memberId = f"M{Membership._nextId}"
+        Membership._nextId += 1
+        self.__name = name
+        self.__tier = tier
+
+    @property
+    def memberId(self):
+        return self.__memberId
+
+    @property
+    def tier(self):
+        return self.__tier
+
+    @tier.setter
+    def tier(self, newTier):
+        self.__tier = newTier
+
+    def fee(self):
+        return type(self)._FEES.get(self.__tier, 0.0)
+
+    @classmethod
+    def updateFee(cls, tier, fee):
+        cls._FEES[tier] = fee
+
+    def __str__(self):
+        return f"{self.__memberId} {self.__name} {self.__tier} ${self.fee():.2f}"
+
+@@ exercise Use the Membership class
+Use your `Membership` class from the exercise above (run that cell first).
+
+1. Set the Silver fee to `65.0` with the class method.
+2. Create three members in a list called `members`: `"Amy"` (Gold), `"Ben"` (Silver) and `"Chen"` (Silver).
+3. Use a loop to add up their fees into `totalFees`.
+@@ starter
+# 1. update the Silver fee
+
+# 2. create the list of members
+members = ...
+
+# 3. add up the fees
+totalFees = 0
+
+print(totalFees)
+@@ check
+assert isinstance(members, list) and len(members) == 3, "❌ members should be a list of 3 Membership objects"
+assert abs(totalFees - 230.0) < 0.0001, f"❌ totalFees should be 100 + 65 + 65 = 230.0, but it is {totalFees}"
+Membership._FEES = {"Gold": 100.0, "Silver": 60.0}
+@@ hint
+`Membership.updateFee("Silver", 65.0)`
+Then `members = [Membership("Amy", "Gold"), Membership("Ben"), Membership("Chen")]`
+and `for m in members: totalFees += m.fee()`.
+@@ solution
+Membership.updateFee("Silver", 65.0)
+
+members = [Membership("Amy", "Gold"), Membership("Ben"), Membership("Chen")]
+
+totalFees = 0
+for m in members:
+    totalFees += m.fee()
+
+print(totalFees)
+
+@@ md
+## 📝 Key points
+
+- A **class variable** is written inside the class, outside the methods. There is one shared copy.
+- Read it with `ClassName._X`, `type(self)._X` or `self._X`. Never `_X` on its own.
+- To **change** it for everyone, use `ClassName._X = ...`, `type(self)._X = ...` or `cls._X = ...`.
+- `self._X = ...` creates a new instance variable on one object only.
+- Running id: take `ClassName._nextId`, then do `ClassName._nextId += 1`.
+- `@classmethod` methods take `cls`, not `self`. Call them with the class name.
+- `cls._DICT[key] = value` adds or updates. `cls._DICT.get(key)` reads safely.
+- Python has no overloading. Use default parameters such as `z=None`.
+
+## ⚠️ Common mistakes
+
+| Mistake | What happens |
+| --- | --- |
+| Typing `12` instead of `_MAX_PIZZA` | Loses marks, and breaks if the maximum changes |
+| `_MAX` on its own inside a method | `NameError` |
+| `self._count += 1` for a counter | Each object gets its own count, the class value never changes |
+| Forgetting `Order._nextId += 1` | Every object gets the same id |
+| Using `self` inside a `@classmethod` | `NameError: name 'self' is not defined` |
+| Two methods with the same name | The second replaces the first |
+
+Next: **09_Composition_and_Collections**.

@@ -1,0 +1,941 @@
+@@ md
+# 11 - Abstract Classes and Polymorphism
+
+**What you will learn**
+
+- What an **abstract class** is, and why we need one.
+- How to write one with `ABC` and `@abstractmethod`.
+- When Python refuses to create an object (and which error it gives).
+- What **polymorphism** means, with the sentence to write in the exam.
+- What **duck typing** is.
+- The theory answers the exam asks for: abstraction, encapsulation, composition vs inheritance.
+
+**Why this matters for the exam**
+
+Every past paper has an abstract class question.
+You must write an abstract parent class and one or two child classes, often worth 30 marks or more.
+"Error or output?" questions also love abstract classes, for example "what happens when you create an object of an abstract class?".
+And the theory questions (polymorphism, composition vs inheritance) are easy marks if you learn the sentences.
+
+@@ md
+## 1. Why abstract classes?
+
+Imagine someone asks you: "What is the area of a **shape**?"
+You cannot answer.
+You can only work out the area of a **specific** shape: a circle, a rectangle, a triangle.
+
+So `Shape` is too general to be a real object.
+It is a **framework** (a plan) for the more specific classes.
+
+An **abstract class**:
+
+- is a parent class that is **too general** to have objects of its own,
+- can have **abstract methods**: methods with a header but no real code (just `pass`),
+- forces every child class to write those methods.
+
+You cannot create an object of an abstract class.
+You can only create objects of its child classes.
+
+@@ md
+## 2. Writing an abstract class
+
+You need three things.
+Learn them by heart:
+
+1. `from abc import ABC, abstractmethod` at the top.
+2. The class inherits from `ABC`: `class Shape(ABC):`
+3. Put `@abstractmethod` on the line above each abstract method. Its body is just `pass`.
+
+This is the course example.
+
+@@ code
+from abc import ABC, abstractmethod
+from math import pi
+
+
+class Shape(ABC):
+    def __init__(self, length):
+        self.__length = length
+
+    @property
+    def length(self):
+        return self.__length
+
+    @abstractmethod
+    def area(self):
+        pass
+
+
+class Rectangle(Shape):
+    def __init__(self, length, width):
+        super().__init__(length)
+        self.__width = width
+
+    @property
+    def width(self):
+        return self.__width
+
+    def area(self):
+        return self.length * self.__width
+
+
+class Circle(Shape):
+    def __init__(self, radius):
+        super().__init__(radius)
+
+    @property
+    def radius(self):
+        return self.length
+
+    def area(self):
+        return pi * self.radius ** 2
+
+
+r = Rectangle(2, 10)
+c = Circle(2)
+print(r.area())
+print(f"{c.area():.2f}")
+
+@@ md
+Notice:
+
+- `Shape` still has an `__init__` and a property. An abstract class can have normal code too.
+- `Rectangle` and `Circle` call `super().__init__(...)` like in notebook 10.
+- Each child writes its **own** `area()`. This is how they fill in the plan.
+
+@@ predict Making a Shape object
+This uses the classes from above.
+@@ run raises=TypeError
+s = Shape(5)
+print(s.length)
+@@ explain
+`Shape` is abstract, because it has an abstract method `area()` with no real code.
+Python refuses to create an object of an abstract class.
+It raises a **TypeError**, with a message like "Can't instantiate abstract class Shape ... abstract method 'area'".
+("Instantiate" means "create an object of".)
+The `print` line never runs.
+
+@@ predict A child that forgets the abstract method
+@@ run raises=TypeError
+class Square(Shape):
+    def __init__(self, side):
+        super().__init__(side)
+
+
+print("Square class created")
+sq = Square(3)
+print(sq.length)
+@@ output
+Square class created
+@@ explain
+Writing the class is fine, so `Square class created` is printed.
+But `Square` does not write `area()`.
+It inherits the abstract `area()` from `Shape`, so `Square` is **still abstract**.
+The error only appears when you try to **create** a `Square` object: a **TypeError**.
+
+⚠️ A child must write **every** abstract method, or it stays abstract.
+
+@@ exercise The Triangle class
+Write a class `Triangle` that **is a** `Shape` (the course example).
+
+- The constructor takes `base` and `height`. Pass `base` to the parent as the length.
+- Store `height` privately.
+- Add a property `base` that returns `self.length`, and a property `height`.
+- `area()` returns `0.5 * base * height`.
+
+Example: `Triangle(10, 5).area()` returns `25.0`.
+@@ starter
+class Triangle(Shape):
+    def __init__(self, base, height):
+        ...
+
+@@ check
+tri = Triangle(10, 5)
+assert isinstance(tri, Shape), "❌ Triangle must inherit from Shape"
+assert hasattr(tri, "base") and tri.base == 10, "❌ tri.base should be 10. Did you call super().__init__(base)?"
+assert hasattr(tri, "height") and tri.height == 5, "❌ tri.height should be 5"
+assert tri.area() == 25.0, f"❌ area() should return 25.0, not {tri.area()!r}"
+@@ hint
+```python
+def area(self):
+    return 0.5 * self.base * self.__height
+```
+@@ solution
+class Triangle(Shape):
+    def __init__(self, base, height):
+        super().__init__(base)
+        self.__height = height
+
+    @property
+    def base(self):
+        return self.length
+
+    @property
+    def height(self):
+        return self.__height
+
+    def area(self):
+        return 0.5 * self.base * self.__height
+
+@@ exercise The Square class
+Write a class `Square` that **is a** `Shape`.
+
+- The constructor takes `side` and passes it to the parent.
+- Add a property `side` that returns `self.length`.
+- `area()` returns the side times itself.
+
+Example: `Square(3).area()` returns `9`.
+@@ starter
+class Square(Shape):
+    def __init__(self, side):
+        super().__init__(side)
+
+@@ check
+sq = Square(3)
+assert isinstance(sq, Shape), "❌ Square must inherit from Shape"
+assert hasattr(sq, "side") and sq.side == 3, "❌ sq.side should be 3"
+assert sq.area() == 9, f"❌ area() should return 9, not {sq.area()!r}"
+@@ hint
+If you get a `TypeError` when you create a `Square`, you have not written `area()` yet.
+@@ solution
+class Square(Shape):
+    def __init__(self, side):
+        super().__init__(side)
+
+    @property
+    def side(self):
+        return self.length
+
+    def area(self):
+        return self.side ** 2
+
+@@ md
+## 3. Abstract methods inside normal methods
+
+An abstract class can have **normal** methods that call its **abstract** methods.
+The parent writes the general steps once.
+Each child only fills in the small part that is different.
+
+Here a library item works out a fine for a late return.
+`calcFine()` is the same for every item.
+But the fine **per day** depends on the kind of item, so `getDailyFine()` is abstract.
+
+@@ code
+class LibraryItem(ABC):
+    def __init__(self, itemId, title):
+        self.__itemId = itemId
+        self.__title = title
+
+    @property
+    def itemId(self):
+        return self.__itemId
+
+    @property
+    def title(self):
+        return self.__title
+
+    @abstractmethod
+    def getLoanDays(self):
+        pass
+
+    @abstractmethod
+    def getDailyFine(self):
+        pass
+
+    def calcFine(self, daysLate):             # a normal method
+        if daysLate <= 0:
+            return 0
+        return daysLate * self.getDailyFine()  # calls the child's version
+
+    def __str__(self):
+        return f"[{self.__itemId}] {self.__title}"
+
+@@ md
+When `calcFine()` runs for a book, `self` is a book, so `self.getDailyFine()` runs the **book's** version.
+You saw the same idea with `describe()` and `getPrice()` in notebook 10.
+
+@@ predict Only one of two abstract methods
+This uses the `LibraryItem` class from above.
+@@ run raises=TypeError
+class Magazine(LibraryItem):
+    def getLoanDays(self):
+        return 7
+
+
+mag = Magazine("M1", "Wired")
+print(mag.getLoanDays())
+@@ explain
+`LibraryItem` has **two** abstract methods.
+`Magazine` only writes `getLoanDays()`, not `getDailyFine()`.
+So `Magazine` is still abstract, and creating `Magazine("M1", "Wired")` raises a **TypeError**.
+
+@@ exercise The Book class
+Write a class `Book` that **is a** `LibraryItem`.
+
+- Class variables `_LOAN_DAYS = 21` and `_DAILY_FINE = 0.20`.
+- The constructor takes `itemId`, `title` and `author`. Add a property `author`.
+- `getLoanDays()` and `getDailyFine()` return the class variables (use `type(self)._LOAN_DAYS` and so on).
+
+Example: `Book("B1", "Dune", "Herbert").calcFine(5)` returns `1.0`, and `str()` of it is `[B1] Dune`.
+@@ starter
+class Book(LibraryItem):
+    _LOAN_DAYS = 21
+    _DAILY_FINE = 0.20
+
+    def __init__(self, itemId, title, author):
+        ...
+
+@@ check
+book = Book("B1", "Dune", "Herbert")
+assert isinstance(book, LibraryItem), "❌ Book must inherit from LibraryItem"
+assert hasattr(book, "title") and book.title == "Dune", "❌ book.title should be 'Dune'. Did you call super().__init__(itemId, title)?"
+assert hasattr(book, "author") and book.author == "Herbert", "❌ book.author should be 'Herbert'"
+assert book.getLoanDays() == 21, "❌ getLoanDays() should return 21"
+assert book.getDailyFine() == 0.20, "❌ getDailyFine() should return 0.20"
+assert abs(book.calcFine(5) - 1.0) < 0.0001, f"❌ calcFine(5) should be 1.0, not {book.calcFine(5)!r}"
+assert book.calcFine(0) == 0, "❌ calcFine(0) should be 0"
+assert str(book) == "[B1] Dune", f"❌ str(book) should be '[B1] Dune', not {str(book)!r}"
+@@ hint
+You do **not** write `calcFine()` or `__str__()` in `Book`.
+They are inherited from `LibraryItem`.
+You only write `__init__`, the `author` property, `getLoanDays()` and `getDailyFine()`.
+@@ solution
+class Book(LibraryItem):
+    _LOAN_DAYS = 21
+    _DAILY_FINE = 0.20
+
+    def __init__(self, itemId, title, author):
+        super().__init__(itemId, title)
+        self.__author = author
+
+    @property
+    def author(self):
+        return self.__author
+
+    def getLoanDays(self):
+        return type(self)._LOAN_DAYS
+
+    def getDailyFine(self):
+        return type(self)._DAILY_FINE
+
+@@ exercise The Dvd class (with a maximum fine)
+Write a class `Dvd` that **is a** `LibraryItem`.
+
+- Class variables `_LOAN_DAYS = 7`, `_DAILY_FINE = 1.50` and `_MAX_FINE = 15.00`.
+- The constructor takes `itemId`, `title` and `minutes`. Add a property `minutes`.
+- Write `getLoanDays()` and `getDailyFine()`.
+- Override `calcFine(daysLate)` by **refinement**: get the normal fine from `super().calcFine(daysLate)`, but if it is more than `_MAX_FINE`, return `_MAX_FINE` instead.
+
+Examples: 4 days late is `6.0`. 20 days late would be `30.0`, so it is capped at `15.0`.
+@@ starter
+class Dvd(LibraryItem):
+    _LOAN_DAYS = 7
+    _DAILY_FINE = 1.50
+    _MAX_FINE = 15.00
+
+    def __init__(self, itemId, title, minutes):
+        ...
+
+@@ check
+dvd = Dvd("D1", "Up", 96)
+assert isinstance(dvd, LibraryItem), "❌ Dvd must inherit from LibraryItem"
+assert hasattr(dvd, "minutes") and dvd.minutes == 96, "❌ dvd.minutes should be 96"
+assert dvd.getLoanDays() == 7, "❌ getLoanDays() should return 7"
+assert dvd.calcFine(4) == 6.0, f"❌ calcFine(4) should be 6.0, not {dvd.calcFine(4)!r}"
+assert dvd.calcFine(20) == 15.0, f"❌ calcFine(20) should be capped at 15.0, not {dvd.calcFine(20)!r}"
+assert dvd.calcFine(-1) == 0, "❌ calcFine(-1) should be 0"
+assert str(dvd) == "[D1] Up", f"❌ str(dvd) should be '[D1] Up', not {str(dvd)!r}"
+@@ hint
+```python
+def calcFine(self, daysLate):
+    fine = super().calcFine(daysLate)
+    if fine > type(self)._MAX_FINE:
+        return type(self)._MAX_FINE
+    return fine
+```
+@@ solution
+class Dvd(LibraryItem):
+    _LOAN_DAYS = 7
+    _DAILY_FINE = 1.50
+    _MAX_FINE = 15.00
+
+    def __init__(self, itemId, title, minutes):
+        super().__init__(itemId, title)
+        self.__minutes = minutes
+
+    @property
+    def minutes(self):
+        return self.__minutes
+
+    def getLoanDays(self):
+        return type(self)._LOAN_DAYS
+
+    def getDailyFine(self):
+        return type(self)._DAILY_FINE
+
+    def calcFine(self, daysLate):
+        fine = super().calcFine(daysLate)
+        if fine > type(self)._MAX_FINE:
+            return type(self)._MAX_FINE
+        return fine
+
+@@ predict A grandchild class
+@@ run
+class Animal(ABC):
+    @abstractmethod
+    def sound(self):
+        pass
+
+
+class Dog(Animal):
+    def sound(self):
+        return "Woof"
+
+
+class Puppy(Dog):
+    pass
+
+
+p = Puppy()
+print(p.sound())
+@@ output
+Woof
+@@ explain
+`Puppy` writes nothing.
+But it inherits `sound()` from `Dog`, and `Dog.sound()` is a real method with code.
+So the abstract rule is already satisfied, and `Puppy` is **not** abstract.
+There is no error.
+
+🎯 This is a favourite exam trap. Look up the whole family tree, not only the class itself.
+
+@@ predict Multiple choice: Cat
+This is in the style of the JUL 2025 paper.
+What is the output?
+
+- A. `Meow`
+- B. an empty line
+- C. `TypeError` because `Cat` cannot be created
+- D. `AttributeError: 'Cat' object has no attribute 'sound'`
+@@ run raises=TypeError
+class Animal(ABC):
+    @abstractmethod
+    def sound(self):
+        pass
+
+
+class Cat(Animal):
+    def speak(self):
+        return "Meow"
+
+
+kitty = Cat()
+print(kitty.speak())
+@@ explain
+The answer is **C**.
+`Cat` writes `speak()`, but the abstract method is called `sound()`.
+The names must match exactly.
+So `Cat` is still abstract, and `Cat()` raises a **TypeError** before anything is printed.
+
+@@ write Multiple choice: which part forces the rule?
+```python
+from abc import ABC, abstractmethod
+
+class AbstractVehicle(ABC):
+    @abstractmethod
+    def start(self):
+        pass
+
+class Bike(AbstractVehicle):
+    def start(self):
+        return "Pedal"
+```
+
+Which part of the code makes every subclass write its own `start()` method?
+
+- A. `class AbstractVehicle(ABC):`
+- B. `@abstractmethod`
+- C. `class Bike(AbstractVehicle):`
+- D. `def start(self):` inside `Bike`
+@@ answer
+**B.** `@abstractmethod` marks `start()` as a method that every subclass must write.
+`ABC` (option A) is also needed so that Python checks the rule, but the decorator is the part that names the method.
+
+@@ write Multiple choice: the flying bird
+```python
+class Animal(ABC):
+    @abstractmethod
+    def fly(self):
+        pass
+
+class Bird(Animal):
+    # which line goes here?
+
+b = Bird()
+print(b.fly())
+```
+
+The expected output is exactly `Flapping wings`.
+Which method should go in `Bird`?
+
+- A. `def fly(self): return "Flapping wings"`
+- B. `def flap(self): print("Flapping wings")`
+- C. `def fly(self): print("Flapping wings")`
+- D. `def flap(self): return "Flapping wings"`
+@@ hint
+Two things to check: does the method name match the abstract method?
+And does `print(b.fly())` print the text, or the text and then `None`?
+@@ answer
+**A.**
+B and D use the wrong name (`flap`), so `Bird` stays abstract and `Bird()` raises a `TypeError`.
+C prints `Flapping wings` inside the method but returns nothing, so `print(b.fly())` prints `Flapping wings` and then `None`.
+A returns the text, so `print(b.fly())` prints exactly `Flapping wings`.
+
+@@ md
+## 4. Polymorphism
+
+**Polymorphism** is a Greek word that means "**many forms**".
+
+Here is the course example.
+One list holds different kinds of shapes.
+One line of code, `s.area()`, works for all of them.
+
+@@ code
+shapes = [Circle(2), Rectangle(2, 10), Triangle(10, 5), Square(3)]
+for s in shapes:
+    print(f"{s.area():.2f}")
+
+@@ md
+🎯 **The sentences to learn for the exam:**
+
+> Polymorphism means that the same method call behaves differently depending on the class of the object.
+>
+> In `for s in shapes: print(s.area())`, the variable `s` is a **polymorphic variable**, because it can refer to a Circle, a Rectangle or a Triangle object.
+> The call `s.area()` is **polymorphic**, because which `area()` runs depends on the object that `s` refers to.
+
+Polymorphism works because of inheritance and overriding:
+every child class **overrides** the same method in its own way.
+
+@@ exercise Total area
+Write a function `totalArea(shapes)` that **returns** the total area of all the shapes in the list.
+@@ starter
+def totalArea(shapes):
+    ...
+
+@@ check
+sample = [Rectangle(2, 10), Square(3), Triangle(10, 5)]
+assert totalArea(sample) == 54.0, f"❌ The total should be 20 + 9 + 25 = 54, not {totalArea(sample)!r}"
+assert totalArea([]) == 0, "❌ An empty list should give 0"
+assert abs(totalArea([Circle(1)]) - pi) < 0.0001, "❌ One circle of radius 1 should give pi"
+@@ hint
+Start with `total = 0`, then add `s.area()` for each shape.
+@@ solution
+def totalArea(shapes):
+    total = 0
+    for s in shapes:
+        total += s.area()
+    return total
+
+@@ exercise The biggest shape
+Write a function `biggestShape(shapes)` that **returns the shape object** with the largest area.
+If the list is empty, return `None`.
+@@ starter
+def biggestShape(shapes):
+    ...
+
+@@ check
+small = Square(1)
+big = Rectangle(5, 6)
+middle = Circle(2)
+assert biggestShape([small, big, middle]) is big, "❌ The rectangle (area 30) is the biggest. Return the object, not its area."
+assert biggestShape([middle, small]) is middle, "❌ The circle (area 12.57) is bigger than the square (area 1)"
+assert biggestShape([]) is None, "❌ An empty list should give None"
+@@ hint
+```python
+biggest = None
+for s in shapes:
+    if biggest is None or s.area() > biggest.area():
+        biggest = s
+return biggest
+```
+@@ solution
+def biggestShape(shapes):
+    biggest = None
+    for s in shapes:
+        if biggest is None or s.area() > biggest.area():
+            biggest = s
+    return biggest
+
+@@ predict Staff pay
+@@ run
+class Staff(ABC):
+    def __init__(self, name):
+        self._name = name
+
+    @abstractmethod
+    def pay(self):
+        pass
+
+    def __str__(self):
+        return f"{self._name}: ${self.pay():.2f}"
+
+
+class FullTime(Staff):
+    def __init__(self, name, salary):
+        super().__init__(name)
+        self._salary = salary
+
+    def pay(self):
+        return self._salary
+
+
+class PartTime(Staff):
+    def __init__(self, name, hours, rate):
+        super().__init__(name)
+        self._hours = hours
+        self._rate = rate
+
+    def pay(self):
+        return self._hours * self._rate
+
+
+team = [FullTime("Ann", 3000), PartTime("Bob", 20, 12.5)]
+for person in team:
+    print(person)
+@@ output
+Ann: $3000.00
+Bob: $250.00
+@@ explain
+`__str__` is written once, in `Staff`, and it calls `self.pay()`.
+For Ann, `self` is a `FullTime`, so `pay()` returns the salary, `3000`.
+For Bob, `self` is a `PartTime`, so `pay()` returns `20 * 12.5 = 250`.
+This is polymorphism.
+
+@@ md
+## 5. Duck typing
+
+"If it walks like a duck and quacks like a duck, it is a duck."
+
+Python does not check the **class** of an object before calling a method.
+It only checks that the object **has** that method when the line runs.
+So even objects that are not related by inheritance can be used in the same loop, as long as they have the method.
+
+@@ predict Duck typing
+@@ run
+class Duck:
+    def speak(self):
+        return "Quack"
+
+
+class Robot:
+    def speak(self):
+        return "Beep"
+
+
+for thing in [Duck(), Robot()]:
+    print(thing.speak())
+@@ output
+Quack
+Beep
+@@ explain
+`Duck` and `Robot` have no common parent class.
+But both have a `speak()` method, so the loop works.
+This is duck typing.
+
+@@ write Explain polymorphism
+Explain polymorphism, and give **one line of code** from this notebook that shows it.
+@@ answer
+Polymorphism means that the same method call behaves differently depending on the class of the object it is called on.
+Example: in `for s in shapes: print(s.area())`, the call `s.area()` runs the `area()` of a Circle, a Rectangle or a Triangle, depending on the object that `s` refers to.
+
+@@ md
+## 6. Theory you must be able to write
+
+The exam asks short theory questions.
+Practise writing these answers in your own words.
+
+@@ write Abstraction
+What is **abstraction** in object oriented programming?
+@@ answer
+Abstraction means putting all the related data (attributes) and behaviour (methods) of a real-world thing into a class, and showing only what is important.
+For example, a `CashCard` class only keeps an id and a balance, and the methods `topUp` and `deduct`.
+An abstract class takes this further: it describes what all its children must be able to do, without saying how.
+
+@@ write Encapsulation
+What is **encapsulation**? How does Python support it?
+@@ answer
+Encapsulation means hiding an object's data inside the class, so that other code can only use it through the methods and properties.
+In Python we make attributes private with two underscores, for example `self.__balance`, and give access with `@property` getters and setters.
+
+@@ write Two kinds of reuse
+Explain **reuse by inheritance** and **reuse by composition**.
+@@ answer
+Reuse by inheritance: a child class reuses the attributes and methods of its parent class ("is a"). For example, `MemberCashCard` reuses `deduct()` from `CashCard`.
+Reuse by composition: a class reuses another class by having an object of it as an attribute and calling its methods ("has a"). For example, a `Customer` has a `CashCard` and calls the card's `topUp()`.
+
+@@ write Composition or inheritance?
+For each pair, say whether the relationship should be **composition** or **inheritance**, and give a one line reason.
+
+1. `Order` and `Pizza`
+2. `PartTimeTutor` and `Tutor`
+3. `DeliveryRound` and `Order`
+4. `ColdDeli` and `Deli`
+@@ answer
+1. **Composition.** An order **has** pizzas. A pizza is not a kind of order.
+2. **Inheritance.** A part-time tutor **is a** tutor.
+3. **Composition.** A delivery round **has** a list of orders.
+4. **Inheritance.** A cold deli **is a** deli.
+
+@@ write Find the design error
+A class diagram for a food delivery app shows:
+
+- `DeliveryPartner` is an abstract class.
+- `Cyclist` and `Driver` inherit from `DeliveryPartner`.
+- `DeliveryRound` also inherits from `DeliveryPartner`. A delivery round is done by one delivery partner and holds a list of orders.
+
+Find **one** design error and explain how to fix it.
+@@ hint
+Say the "is a" sentence for each arrow. Which one sounds wrong?
+@@ answer
+`DeliveryRound` should not inherit from `DeliveryPartner`, because a delivery round **is not a** delivery partner.
+A delivery round **has a** delivery partner.
+So it should use **composition**: `DeliveryRound` should have an attribute that holds a `DeliveryPartner` object (and a list of orders).
+
+@@ md
+## 7. Exam-style question: shipments
+
+This question is in the style of the JUL 2025 paper.
+
+A logistics company has different types of shipments.
+Each type works out its shipping cost in a different way.
+
+```text
++-----------------------------------------------+
+|           Shipment  (abstract)                |
++-----------------------------------------------+
+| base_cost = 1.5                   (class)     |
+| __id, __weight, __destination                 |
++-----------------------------------------------+
+| __init__(id, weight, destination)             |
+| weight                    (property)          |
+| calculate_cost()          {abstract}          |
+| __str__()                                     |
++-----------------------------------------------+
+              ^                        ^
+              |                        |
++-------------------------+  +-------------------------------+
+|   PriorityShipment      |  |   RefrigeratedShipment        |
++-------------------------+  +-------------------------------+
+| priority_fee = 10.0     |  | refrigeration_fee = 20.0      |
+|              (class)    |  |                   (class)     |
++-------------------------+  +-------------------------------+
+| calculate_cost()        |  | calculate_cost()              |
++-------------------------+  +-------------------------------+
+```
+
+- The cost of a priority shipment is `weight * base_cost + priority_fee`.
+- The cost of a refrigerated shipment is `weight * base_cost + refrigeration_fee`.
+
+Sample code:
+
+```python
+shipments = [PriorityShipment(101, 10, "New York"), RefrigeratedShipment(102, 5, "San Francisco")]
+for s in shipments:
+    print(s)
+```
+
+Expected output:
+
+```text
+Shipment ID 101 to New York: Cost = $25.00
+Shipment ID 102 to San Francisco: Cost = $27.50
+```
+
+(The names use underscores, like `calculate_cost`, because the exam paper used them. Always copy the names in the paper exactly.)
+
+@@ exercise (a) The abstract Shipment class
+Write the abstract class `Shipment`:
+
+- the class variable `base_cost = 1.5`,
+- `__init__(id, weight, destination)` storing three private attributes,
+- a property `weight`,
+- an abstract method `calculate_cost()`,
+- `__str__()` returning `Shipment ID 101 to New York: Cost = $25.00` (use `self.calculate_cost()` for the cost).
+@@ starter
+from abc import ABC, abstractmethod
+
+
+class Shipment:
+    ...
+
+@@ check
+try:
+    Shipment(1, 2, "X")
+    created = True
+except TypeError:
+    created = False
+assert not created, "❌ Shipment must be abstract: inherit from ABC and use @abstractmethod"
+assert Shipment.base_cost == 1.5, "❌ Shipment needs the class variable base_cost = 1.5"
+
+
+class _TestShipment(Shipment):
+    def calculate_cost(self):
+        return 9
+
+
+test = _TestShipment(7, 3, "Paris")
+assert test.weight == 3, "❌ The weight property should return the weight"
+assert str(test) == "Shipment ID 7 to Paris: Cost = $9.00", f"❌ str() gave {str(test)!r}"
+@@ hint
+```python
+class Shipment(ABC):
+    base_cost = 1.5
+
+    def __init__(self, id, weight, destination):
+        self.__id = id
+        ...
+
+    @abstractmethod
+    def calculate_cost(self):
+        pass
+```
+@@ solution
+from abc import ABC, abstractmethod
+
+
+class Shipment(ABC):
+    base_cost = 1.5
+
+    def __init__(self, id, weight, destination):
+        self.__id = id
+        self.__weight = weight
+        self.__destination = destination
+
+    @property
+    def weight(self):
+        return self.__weight
+
+    @abstractmethod
+    def calculate_cost(self):
+        pass
+
+    def __str__(self):
+        return f"Shipment ID {self.__id} to {self.__destination}: Cost = ${self.calculate_cost():.2f}"
+
+@@ exercise (b) The two subclasses
+Write `PriorityShipment` and `RefrigeratedShipment`.
+
+- Each has its own class variable for its fee.
+- Each writes `calculate_cost()`.
+- They do not need their own `__init__`, because they have no extra attributes. The parent's is inherited.
+
+Use the class variables, do not type the numbers into `calculate_cost()`.
+In a child, read the weight through the **property** `self.weight`, not `self.__weight`.
+@@ starter
+class PriorityShipment(Shipment):
+    priority_fee = 10.0
+
+
+class RefrigeratedShipment(Shipment):
+    refrigeration_fee = 20.0
+
+@@ check
+p = PriorityShipment(101, 10, "New York")
+r = RefrigeratedShipment(102, 5, "San Francisco")
+assert p.calculate_cost() == 25.0, f"❌ The priority shipment should cost 25.0, not {p.calculate_cost()!r}"
+assert r.calculate_cost() == 27.5, f"❌ The refrigerated shipment should cost 27.5, not {r.calculate_cost()!r}"
+assert str(p) == "Shipment ID 101 to New York: Cost = $25.00", f"❌ str(p) is {str(p)!r}"
+assert str(r) == "Shipment ID 102 to San Francisco: Cost = $27.50", f"❌ str(r) is {str(r)!r}"
+Shipment.base_cost = 2.0
+try:
+    assert p.calculate_cost() == 30.0, "❌ calculate_cost() must use the class variable base_cost, not the number 1.5"
+finally:
+    Shipment.base_cost = 1.5
+@@ hint
+```python
+def calculate_cost(self):
+    return self.weight * type(self).base_cost + type(self).priority_fee
+```
+`type(self).base_cost` finds `base_cost` in the parent, because the child does not have its own.
+@@ solution
+class PriorityShipment(Shipment):
+    priority_fee = 10.0
+
+    def calculate_cost(self):
+        return self.weight * type(self).base_cost + type(self).priority_fee
+
+
+class RefrigeratedShipment(Shipment):
+    refrigeration_fee = 20.0
+
+    def calculate_cost(self):
+        return self.weight * type(self).base_cost + type(self).refrigeration_fee
+
+@@ exercise (c) The cheapest shipment
+Write a function `cheapestShipment(shipments)` that **returns** the shipment object with the lowest cost.
+If the list is empty, return `None`.
+@@ starter
+def cheapestShipment(shipments):
+    ...
+
+@@ check
+a = PriorityShipment(101, 10, "New York")
+b = RefrigeratedShipment(102, 5, "San Francisco")
+c = PriorityShipment(103, 2, "Tokyo")
+assert cheapestShipment([a, b, c]) is c, "❌ Shipment 103 (cost 13.00) is the cheapest. Return the object."
+assert cheapestShipment([b, a]) is a, "❌ Shipment 101 (25.00) is cheaper than 102 (27.50)"
+assert cheapestShipment([]) is None, "❌ An empty list should give None"
+@@ hint
+This is the same pattern as `biggestShape`, but with `<` instead of `>`.
+@@ solution
+def cheapestShipment(shipments):
+    cheapest = None
+    for s in shipments:
+        if cheapest is None or s.calculate_cost() < cheapest.calculate_cost():
+            cheapest = s
+    return cheapest
+
+@@ predict (d) A shipment without a cost
+This uses the `Shipment` class from part (a).
+@@ run raises=TypeError
+class ExpressShipment(Shipment):
+    express_fee = 30.0
+
+    def calculate_price(self):
+        return self.weight * type(self).base_cost + type(self).express_fee
+
+
+print("Class written")
+e = ExpressShipment(104, 1, "Paris")
+print(e)
+@@ output
+Class written
+@@ explain
+The method is called `calculate_price`, not `calculate_cost`.
+So `ExpressShipment` has not written the abstract method, and it is still abstract.
+Creating `ExpressShipment(104, 1, "Paris")` raises a **TypeError**.
+
+@@ md
+## 📝 Key points
+
+- An **abstract class** is too general to have objects. It is a plan for its child classes.
+- Three steps: `from abc import ABC, abstractmethod`, `class X(ABC):`, and `@abstractmethod` above the method (body: `pass`).
+- Creating an object of an abstract class raises a **TypeError**.
+- A child that does not write **every** abstract method is still abstract (TypeError when you create it).
+- A child that **inherits** a real method from its parent is fine.
+- An abstract class can have `__init__`, properties and normal methods. Normal methods can call abstract ones.
+- **Polymorphism**: the same method call behaves differently depending on the class of the object.
+- **Duck typing**: Python only cares that the object has the method, not what class it is.
+- **Inheritance** = "is a". **Composition** = "has a".
+
+## ⚠️ Common mistakes
+
+| Mistake | What happens |
+| --- | --- |
+| Forgetting `(ABC)` after the class name | The class is **not** abstract, so objects can be created |
+| Forgetting `@abstractmethod` | That method is not abstract, so children do not have to write it |
+| Forgetting to import `ABC` or `abstractmethod` | `NameError` |
+| Spelling the child's method differently | The child stays abstract: `TypeError` when you create it |
+| Using `self.__weight` (the parent's private attribute) in a child | `AttributeError`. Use the property `self.weight` |
+| Answering "polymorphism" without an example | You lose marks. Always add one line of code |
+
+Next: **12_Exceptions**.

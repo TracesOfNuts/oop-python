@@ -1,0 +1,1384 @@
+@@ md
+# 10 - Inheritance
+
+**What you will learn**
+
+- What the "is a" relationship means.
+- How a child class gets everything from its parent class.
+- How to use `super().__init__(...)` to let the parent store its own data.
+- How to add new attributes and methods to a child class.
+- How to **override** a method, by **replacement** or by **refinement**.
+- Why a child cannot use the parent's `self.__private` attributes.
+- How a child class can have its own value for a class variable.
+- How to put parent and child objects in one list.
+
+**Why this matters for the exam**
+
+Every past paper has an inheritance question, worth about 20 to 30 marks.
+You must write a child class with `super().__init__(...)`, and override a method or `__str__`.
+Many papers also ask: "Is this overriding by **replacement** or by **refinement**? Explain."
+That question is worth 3 to 4 easy marks if you can say it in one sentence.
+
+@@ md
+## 1. The "is a" relationship
+
+A student **is a** person.
+A lecturer **is a** person.
+A tutor **is a** person.
+
+They all have a name, and they can all say hello.
+We do not want to write the same name code three times.
+So we write it **once**, in a `Person` class, and the other classes **inherit** it.
+
+```text
+               Person              <- general (the parent)
+          /      |       \
+   Lecturer    Tutor    Student    <- specific (the children)
+```
+
+New words:
+
+- **Parent class** (also called **superclass** or **base class**): the general class, here `Person`.
+- **Child class** (also called **subclass**): the specific class, here `Student`.
+- **Inherit**: the child gets all the attributes and methods of the parent, for free.
+
+@@ code
+class Person:
+    def __init__(self, name):
+        self.__name = name
+
+    @property
+    def name(self):
+        return self.__name
+
+    def greet(self):
+        return f"Hi, I am {self.__name}"
+
+
+class Student(Person):     # the brackets mean: Student is a Person
+    pass                   # nothing new yet
+
+
+s = Student("Aisha")
+print(s.name)
+print(s.greet())
+
+@@ md
+`Student` has no code inside, only `pass`.
+But a `Student` object still has a `name` and a `greet()` method.
+They came from `Person`.
+
+`class Student(Person):` is read as "**Student is a Person**".
+
+@@ predict A child with nothing inside
+@@ run
+class Animal:
+    def __init__(self, name):
+        self.__name = name
+
+    @property
+    def name(self):
+        return self.__name
+
+    def speak(self):
+        return f"{self.__name} makes a sound"
+
+
+class Dog(Animal):
+    pass
+
+
+d = Dog("Rex")
+print(d.name)
+print(d.speak())
+@@ output
+Rex
+Rex makes a sound
+@@ explain
+`Dog` is empty, but it inherits `__init__`, `name` and `speak()` from `Animal`.
+So `Dog("Rex")` runs the `__init__` of `Animal`, and the other two lines use the parent's code.
+
+@@ write Is a, or not?
+For each pair below, say if the first one **is a** kind of the second one.
+If it is, we would use inheritance.
+
+1. Manager and Employee
+2. Laptop and HardDisk
+3. Car and Vehicle
+4. Customer and CashCard
+@@ hint
+Say the sentence out loud: "A Manager is an Employee". Does it make sense?
+@@ answer
+1. Yes. A manager **is an** employee, so `Manager` can inherit from `Employee`.
+2. No. A laptop **has a** hard disk. That is composition (notebook 09), not inheritance.
+3. Yes. A car **is a** vehicle.
+4. No. A customer **has a** cash card. That is composition.
+
+@@ md
+## 2. Adding new things with `super().__init__()`
+
+A student also has a student ID.
+So `Student` needs its **own** `__init__` with one more parameter.
+
+But the name is still stored by `Person`.
+Inside the child's `__init__`, we ask the parent to do its part with `super().__init__(...)`.
+
+**`super()` means "my parent class".**
+
+@@ code
+class Student(Person):
+    def __init__(self, name, studentId):
+        super().__init__(name)          # 1. let Person store the name
+        self.__studentId = studentId    # 2. Student stores its own extra data
+
+    @property
+    def studentId(self):
+        return self.__studentId
+
+
+s = Student("Aisha", "S1001")
+print(s.name, s.studentId)
+print(s.greet())
+
+@@ md
+How to write a child constructor, every time:
+
+1. The parameters are the parent's ones **plus** the new ones: `(self, name, studentId)`.
+2. The **first** line calls `super().__init__(...)` with exactly what the parent's `__init__` needs (without `self`).
+3. Then store the new attributes.
+
+💡 A child **adds** to the parent.
+`Student` has everything `Person` has, plus `studentId`.
+
+@@ exercise The Lecturer class
+Write a class `Lecturer` that **is a** `Person`.
+
+- The constructor takes `name` and `staffId`.
+- It calls the parent constructor to store the name.
+- It stores `staffId` in a private attribute `self.__staffId`.
+- It has a property `staffId`.
+
+Example: `Lecturer("Dr Tan", "L01")` has `name` `"Dr Tan"` and `staffId` `"L01"`.
+@@ starter
+class Lecturer(Person):
+    def __init__(self, name, staffId):
+        ...   # 1. call the parent constructor with name
+              # 2. store staffId in self.__staffId
+
+    # 3. add a property called staffId
+
+@@ check
+lec = Lecturer("Dr Tan", "L01")
+assert isinstance(lec, Person), "❌ Lecturer must inherit from Person: class Lecturer(Person):"
+assert hasattr(lec, "name"), "❌ lec.name does not work. Did you call super().__init__(name)?"
+assert lec.name == "Dr Tan", f"❌ lec.name should be 'Dr Tan', but it is {lec.name!r}"
+assert hasattr(lec, "staffId"), "❌ lec.staffId does not work. Did you add the @property?"
+assert lec.staffId == "L01", f"❌ lec.staffId should be 'L01', but it is {lec.staffId!r}"
+assert lec.greet() == "Hi, I am Dr Tan", "❌ greet() should be inherited from Person"
+@@ hint
+Copy the shape of the `Student` class above.
+Change `studentId` to `staffId`.
+@@ solution
+class Lecturer(Person):
+    def __init__(self, name, staffId):
+        super().__init__(name)
+        self.__staffId = staffId
+
+    @property
+    def staffId(self):
+        return self.__staffId
+
+@@ exercise The Tutor class
+Write a class `Tutor` that **is a** `Person`.
+
+- The constructor takes `name` and `ratePerHour`.
+- Store `ratePerHour` privately, and add a property `ratePerHour`.
+- Add a **new** method `pay(hours)` that **returns** `hours` times the rate.
+
+Example: `Tutor("Mr Lim", 45.0).pay(3)` returns `135.0`.
+@@ starter
+class Tutor(Person):
+    def __init__(self, name, ratePerHour):
+        ...
+
+    # property ratePerHour
+
+    # method pay(hours)
+
+@@ check
+tut = Tutor("Mr Lim", 45.0)
+assert isinstance(tut, Person), "❌ Tutor must inherit from Person"
+assert hasattr(tut, "name") and tut.name == "Mr Lim", "❌ tut.name should be 'Mr Lim'. Did you call super().__init__(name)?"
+assert hasattr(tut, "ratePerHour") and tut.ratePerHour == 45.0, "❌ tut.ratePerHour should be 45.0"
+assert hasattr(tut, "pay"), "❌ Tutor needs a method called pay"
+assert tut.pay(3) == 135.0, f"❌ pay(3) should return 135.0, but it returned {tut.pay(3)!r}"
+assert tut.pay(0) == 0, "❌ pay(0) should return 0"
+@@ hint
+The method needs `self` as its first parameter: `def pay(self, hours):`
+Inside it, use `self.__ratePerHour`.
+Remember to `return`, not `print`.
+@@ solution
+class Tutor(Person):
+    def __init__(self, name, ratePerHour):
+        super().__init__(name)
+        self.__ratePerHour = ratePerHour
+
+    @property
+    def ratePerHour(self):
+        return self.__ratePerHour
+
+    def pay(self, hours):
+        return hours * self.__ratePerHour
+
+@@ predict Wrong arguments to super()
+@@ run raises=TypeError
+class Shop:
+    def __init__(self, name):
+        self.__name = name
+
+
+class Cafe(Shop):
+    def __init__(self, name, seats):
+        super().__init__(name, seats)
+        self.__seats = seats
+
+
+c = Cafe("Kopi Corner", 20)
+print("Cafe created")
+@@ explain
+The parent's `__init__` only takes `name`.
+But the child passes **two** values, `name` and `seats`, to it.
+Python stops with a `TypeError` that says something like `Shop.__init__() takes 2 positional arguments but 3 were given`.
+(Python counts `self` too, which is why the numbers look one bigger.)
+Only pass the parent what the **parent** needs.
+
+@@ predict Forgetting super().__init__()
+@@ run raises=AttributeError
+class Shop:
+    def __init__(self, name):
+        self.__name = name
+
+    @property
+    def name(self):
+        return self.__name
+
+
+class Cafe(Shop):
+    def __init__(self, name, seats):
+        self.__seats = seats
+
+
+c = Cafe("Kopi Corner", 20)
+print("Cafe created")
+print(c.name)
+@@ output
+Cafe created
+@@ explain
+Creating the object works, so `Cafe created` is printed.
+But the child's `__init__` never calls `super().__init__(name)`.
+So the parent's `__init__` never runs, and the name is never stored.
+When `c.name` tries to read it, Python raises an `AttributeError`.
+
+⚠️ This is one of the most common exam mistakes.
+The error only appears **later**, when you use the parent's data.
+
+@@ exercise Fix the Cafe
+The `Cafe` class below forgets to call the parent constructor.
+Fix it, and also add a property `seats`.
+
+`Cafe("Kopi Corner", 20)` should have `name` `"Kopi Corner"` and `seats` `20`.
+@@ starter
+class Shop:
+    def __init__(self, name):
+        self.__name = name
+
+    @property
+    def name(self):
+        return self.__name
+
+
+class Cafe(Shop):
+    def __init__(self, name, seats):
+        self.__seats = seats
+
+@@ check
+cafe = Cafe("Kopi Corner", 20)
+assert hasattr(cafe, "name"), "❌ cafe.name still fails. Call super().__init__(name) first in Cafe's __init__"
+assert cafe.name == "Kopi Corner", f"❌ cafe.name should be 'Kopi Corner', but it is {cafe.name!r}"
+assert hasattr(cafe, "seats"), "❌ Add a @property called seats"
+assert cafe.seats == 20, f"❌ cafe.seats should be 20, but it is {cafe.seats!r}"
+@@ solution
+class Shop:
+    def __init__(self, name):
+        self.__name = name
+
+    @property
+    def name(self):
+        return self.__name
+
+
+class Cafe(Shop):
+    def __init__(self, name, seats):
+        super().__init__(name)
+        self.__seats = seats
+
+    @property
+    def seats(self):
+        return self.__seats
+
+@@ md
+## 3. Overriding a method
+
+Sometimes the child should do something **differently** from the parent.
+Then the child writes a method with the **same name and the same parameters**.
+This is called **overriding**.
+For a child object, Python uses the child's version.
+
+There are two kinds of overriding.
+Learn these two sentences by heart:
+
+- **Overriding by replacement**: the child's method does **not** call the parent's version. It replaces it completely.
+- **Overriding by refinement**: the child's method **calls the parent's version** with `super().method()`, and then adds more.
+
+@@ code
+class Drink:
+    def __init__(self, name, price):
+        self.__name = name
+        self.__price = price
+
+    @property
+    def name(self):
+        return self.__name
+
+    def getPrice(self):
+        return self.__price
+
+    def describe(self):
+        return f"{self.__name} ${self.getPrice():.2f}"
+
+
+class IcedDrink(Drink):
+    def getPrice(self):                    # refinement: starts from the parent's answer
+        return super().getPrice() + 0.50
+
+
+class FreeDrink(Drink):
+    def getPrice(self):                    # replacement: ignores the parent completely
+        return 0.0
+
+
+print(Drink("Kopi", 1.80).describe())
+print(IcedDrink("Kopi Peng", 1.80).describe())
+print(FreeDrink("Water", 1.00).describe())
+
+@@ md
+Look closely at `describe()`.
+It is written only once, in `Drink`, and it calls `self.getPrice()`.
+When `self` is an `IcedDrink`, Python runs the **IcedDrink** version of `getPrice()`.
+So the same `describe()` gives a different price for each kind of drink.
+
+💡 Python always starts looking for a method in the object's **own** class.
+If it is not there, it looks in the parent.
+
+@@ predict Refining describe()
+This uses the `Drink` class from above.
+@@ run
+class HotDrink(Drink):
+    def describe(self):
+        return super().describe() + " (hot)"
+
+
+h = HotDrink("Teh", 1.60)
+print(h.describe())
+print(h.getPrice())
+@@ output
+Teh $1.60 (hot)
+1.6
+@@ explain
+`HotDrink.describe()` first calls the parent's `describe()`, which gives `"Teh $1.60"`.
+Then it adds `" (hot)"`.
+That is overriding by **refinement**.
+`getPrice()` is not overridden, so the parent's version is used and returns `1.6`.
+
+@@ write Which kind of overriding?
+In the `Drink` example above:
+
+1. What kind of overriding is `IcedDrink.getPrice()`? Why?
+2. What kind of overriding is `FreeDrink.getPrice()`? Why?
+@@ answer
+1. **Refinement**, because it calls the parent's method with `super().getPrice()` and then adds 0.50 to it.
+2. **Replacement**, because it does not call `super().getPrice()`. It returns a completely new value (0.0).
+
+@@ exercise A large drink (refinement)
+Write a class `LargeDrink` that **is a** `Drink`.
+Override `getPrice()` by **refinement**: a large drink costs the normal price **plus 1.00**.
+
+Example: `LargeDrink("Milo", 2.00).getPrice()` returns `3.0`, and its `describe()` returns `"Milo $3.00"`.
+@@ starter
+class LargeDrink(Drink):
+    ...
+
+@@ check
+import inspect
+big = LargeDrink("Milo", 2.00)
+assert isinstance(big, Drink), "❌ LargeDrink must inherit from Drink"
+assert abs(big.getPrice() - 3.0) < 0.0001, f"❌ getPrice() should return 3.0, but it returned {big.getPrice()!r}"
+assert big.describe() == "Milo $3.00", f"❌ describe() should return 'Milo $3.00', but it returned {big.describe()!r}"
+assert "super()" in inspect.getsource(LargeDrink.getPrice), "❌ Use super().getPrice() so that it is refinement"
+@@ hint
+Look at `IcedDrink`.
+You only need one method, `getPrice(self)`.
+@@ solution
+class LargeDrink(Drink):
+    def getPrice(self):
+        return super().getPrice() + 1.00
+
+@@ exercise A promotion drink (replacement)
+Write a class `PromoDrink` that **is a** `Drink`.
+Override `getPrice()` by **replacement**: every promotion drink costs exactly **1.00**, whatever its normal price.
+
+Example: `PromoDrink("Bandung", 2.40).describe()` returns `"Bandung $1.00"`.
+@@ starter
+class PromoDrink(Drink):
+    ...
+
+@@ check
+import inspect
+promo = PromoDrink("Bandung", 2.40)
+assert isinstance(promo, Drink), "❌ PromoDrink must inherit from Drink"
+assert promo.getPrice() == 1.00, f"❌ getPrice() should return 1.0, but it returned {promo.getPrice()!r}"
+assert promo.describe() == "Bandung $1.00", f"❌ describe() returned {promo.describe()!r}"
+assert "super()" not in inspect.getsource(PromoDrink.getPrice), "❌ Replacement must NOT call super()"
+@@ solution
+class PromoDrink(Drink):
+    def getPrice(self):
+        return 1.00
+
+@@ md
+### Overriding `__str__`
+
+Every class in Python secretly inherits from a built-in class called `object`.
+`object` already has a `__str__` method.
+That is why printing an object without `__str__` shows something ugly like `<__main__.Drink object at 0x000001>`.
+
+- When **your** class writes `__str__`, it **replaces** the one from `object`. That is overriding by **replacement**.
+- When a **child** writes `__str__` that calls `super().__str__()` and adds more, that is overriding by **refinement**.
+
+🎯 Both of these appear in the exam.
+
+## 4. The course example: CashCard and MemberCashCard
+
+Here is the `CashCard` class from the course.
+Run it, because the next exercises build on it.
+
+@@ code
+class CashCard:
+    def __init__(self, id, amount):
+        self.__id = id
+        self.__balance = amount
+
+    @property
+    def id(self):
+        return self.__id
+
+    @property
+    def balance(self):
+        return self.__balance
+
+    def topUp(self, amount):
+        if amount > 0:
+            self.__balance += amount
+
+    def deduct(self, amount):
+        if self.__balance >= amount:
+            self.__balance -= amount
+            return True
+        return False
+
+    def __str__(self):
+        return f"Id: {self.__id} Balance: ${self.__balance:.2f}"
+
+
+card = CashCard("C1", 20)
+print(card.deduct(5))
+print(card)
+
+@@ md
+A **member cash card** is issued by an organisation, like NTUC.
+It **is a** cash card, but it also collects **points**: one point for every whole dollar spent.
+
+```text
+         CashCard                      MemberCashCard  (is a CashCard)
+   ---------------------          ------------------------------------
+   id, balance                    + organisation, points
+   topUp(amount)                  (inherits topUp)
+   deduct(amount)                 deduct(amount)       <- refinement
+   __str__()                      __str__()            <- refinement
+                                  + redeemPoints(pts)  <- new method
+```
+
+We will build it in three steps.
+
+@@ exercise MemberCashCard step 1: the constructor
+Write `MemberCashCard`, a child of `CashCard`.
+
+- The constructor takes `organisation`, `id`, `amount` **in this order** (the same order as the course).
+- Call the parent constructor with `id` and `amount`.
+- Store `organisation` privately. Points always start at `0`.
+- Add properties `organisation` and `points`.
+@@ starter
+class MemberCashCard(CashCard):
+    def __init__(self, organisation, id, amount):
+        ...
+
+    # property organisation
+
+    # property points
+
+@@ check
+mem = MemberCashCard("NTUC", "M1", 50)
+assert isinstance(mem, CashCard), "❌ MemberCashCard must inherit from CashCard"
+assert hasattr(mem, "id") and mem.id == "M1", "❌ mem.id should be 'M1'. Did you call super().__init__(id, amount)?"
+assert mem.balance == 50, f"❌ mem.balance should be 50, but it is {mem.balance!r}"
+assert hasattr(mem, "organisation") and mem.organisation == "NTUC", "❌ mem.organisation should be 'NTUC'"
+assert hasattr(mem, "points") and mem.points == 0, "❌ mem.points should start at 0"
+@@ hint
+The first line inside `__init__` is `super().__init__(id, amount)`.
+Then `self.__organisation = organisation` and `self.__points = 0`.
+@@ solution
+class MemberCashCard(CashCard):
+    def __init__(self, organisation, id, amount):
+        super().__init__(id, amount)
+        self.__organisation = organisation
+        self.__points = 0
+
+    @property
+    def organisation(self):
+        return self.__organisation
+
+    @property
+    def points(self):
+        return self.__points
+
+@@ md
+**Step 2: `deduct` by refinement.**
+
+The parent's `deduct` already checks the balance and takes the money.
+We do not want to write that again.
+So the child **calls the parent's `deduct`**, and only if it worked, adds the points.
+
+```python
+def deduct(self, amount):
+    if super().deduct(amount):          # the parent does the money part
+        self.__points += int(amount)    # the child adds the points part
+        return True
+    return False
+```
+
+This is exactly the course example of **overriding by refinement**.
+
+@@ exercise MemberCashCard step 2: deduct and redeemPoints
+Your step 1 code is already in the cell.
+Add two methods:
+
+- `deduct(amount)`: override by refinement, as shown above. Return `True` or `False`.
+- `redeemPoints(pts)`: if the card has at least `pts` points, take them away and return `True`. Otherwise return `False`.
+@@ starter
+class MemberCashCard(CashCard):
+    def __init__(self, organisation, id, amount):
+        super().__init__(id, amount)
+        self.__organisation = organisation
+        self.__points = 0
+
+    @property
+    def organisation(self):
+        return self.__organisation
+
+    @property
+    def points(self):
+        return self.__points
+
+    def deduct(self, amount):
+        ...
+
+    def redeemPoints(self, pts):
+        ...
+
+@@ check
+mem = MemberCashCard("NTUC", "M1", 50)
+assert mem.deduct(20.5) is True, "❌ deduct(20.5) should return True when there is enough money"
+assert mem.balance == 29.5, f"❌ balance should be 29.5 after deducting 20.5, but it is {mem.balance}"
+assert mem.points == 20, f"❌ points should be 20 (int(20.5)), but they are {mem.points}"
+assert mem.deduct(100) is False, "❌ deduct(100) should return False when there is not enough money"
+assert mem.points == 20, "❌ points must not change when the deduct fails"
+assert mem.redeemPoints(5) is True and mem.points == 15, "❌ redeemPoints(5) should return True and leave 15 points"
+assert mem.redeemPoints(50) is False and mem.points == 15, "❌ redeemPoints(50) should return False and not change the points"
+@@ hint
+For `redeemPoints`:
+
+```python
+if self.__points >= pts:
+    self.__points -= pts
+    return True
+return False
+```
+@@ solution
+class MemberCashCard(CashCard):
+    def __init__(self, organisation, id, amount):
+        super().__init__(id, amount)
+        self.__organisation = organisation
+        self.__points = 0
+
+    @property
+    def organisation(self):
+        return self.__organisation
+
+    @property
+    def points(self):
+        return self.__points
+
+    def deduct(self, amount):
+        if super().deduct(amount):
+            self.__points += int(amount)
+            return True
+        return False
+
+    def redeemPoints(self, pts):
+        if self.__points >= pts:
+            self.__points -= pts
+            return True
+        return False
+
+@@ exercise MemberCashCard step 3: __str__ by refinement
+Add a `__str__` method that refines the parent's `__str__`.
+It must return the parent's text, then `" Organisation: "`, the organisation, `" Points: "` and the points.
+
+Example, after `MemberCashCard("NTUC", "M1", 50)` deducts `20`:
+
+`Id: M1 Balance: $30.00 Organisation: NTUC Points: 20`
+@@ starter
+class MemberCashCard(CashCard):
+    def __init__(self, organisation, id, amount):
+        super().__init__(id, amount)
+        self.__organisation = organisation
+        self.__points = 0
+
+    @property
+    def organisation(self):
+        return self.__organisation
+
+    @property
+    def points(self):
+        return self.__points
+
+    def deduct(self, amount):
+        if super().deduct(amount):
+            self.__points += int(amount)
+            return True
+        return False
+
+    def redeemPoints(self, pts):
+        if self.__points >= pts:
+            self.__points -= pts
+            return True
+        return False
+
+    # add __str__ here
+
+@@ check
+mem = MemberCashCard("NTUC", "M1", 50)
+mem.deduct(20)
+expected = "Id: M1 Balance: $30.00 Organisation: NTUC Points: 20"
+assert str(mem) == expected, f"❌ str(mem) should be {expected!r}, but it is {str(mem)!r}"
+@@ hint
+`return super().__str__() + f" Organisation: {self.__organisation} Points: {self.__points}"`
+@@ solution
+class MemberCashCard(CashCard):
+    def __init__(self, organisation, id, amount):
+        super().__init__(id, amount)
+        self.__organisation = organisation
+        self.__points = 0
+
+    @property
+    def organisation(self):
+        return self.__organisation
+
+    @property
+    def points(self):
+        return self.__points
+
+    def deduct(self, amount):
+        if super().deduct(amount):
+            self.__points += int(amount)
+            return True
+        return False
+
+    def redeemPoints(self, pts):
+        if self.__points >= pts:
+            self.__points -= pts
+            return True
+        return False
+
+    def __str__(self):
+        return super().__str__() + f" Organisation: {self.__organisation} Points: {self.__points}"
+
+@@ md
+## 5. The private trap
+
+In notebook 07 you learned that `self.__balance` is **private**.
+Python secretly renames it to `self._CashCard__balance`, using the name of the class where it was written.
+
+This has a surprising effect.
+A **child** class cannot use the parent's `self.__balance` either.
+
+@@ predict The child uses the parent's private attribute
+This uses the `CashCard` class from above.
+@@ run raises=AttributeError
+class GoldCard(CashCard):
+    def isRich(self):
+        return self.__balance > 1000
+
+
+gold = GoldCard("G1", 5000)
+print(gold.balance)
+print(gold.isRich())
+@@ output
+5000
+@@ explain
+`gold.balance` uses the parent's property, which is written inside `CashCard`, so it works.
+But inside `GoldCard`, `self.__balance` is renamed to `self._GoldCard__balance`.
+The parent stored the value as `self._CashCard__balance`.
+So Python cannot find it and raises an `AttributeError`.
+
+**Fix:** in a child, use the parent's **property** (`self.balance`), not `self.__balance`.
+
+@@ exercise Fix the GoldCard
+Fix `isRich()` so that it works.
+It should return `True` when the balance is more than `1000`.
+@@ starter
+class GoldCard(CashCard):
+    def isRich(self):
+        return self.__balance > 1000
+
+@@ check
+assert GoldCard("G1", 5000).isRich() is True, "❌ A card with 5000 should be rich"
+assert GoldCard("G2", 10).isRich() is False, "❌ A card with 10 should not be rich"
+assert GoldCard("G3", 1000).isRich() is False, "❌ 1000 is not MORE than 1000"
+@@ hint
+Change `self.__balance` to the property `self.balance`.
+@@ solution
+class GoldCard(CashCard):
+    def isRich(self):
+        return self.balance > 1000
+
+@@ md
+**The other way: protected attributes.**
+
+If the parent stores the attribute with **one** underscore, like `self._balance`, it is **protected**.
+Python does not rename it, so the child **can** use `self._balance`.
+
+@@ code
+class Account:
+    def __init__(self, amount):
+        self._balance = amount            # protected: children may use it
+
+    @property
+    def balance(self):
+        return self._balance
+
+
+class SavingsAccount(Account):
+    def addInterest(self):
+        self._balance += self._balance * 0.02    # allowed, because it is protected
+
+
+acc = SavingsAccount(100)
+acc.addInterest()
+print(acc.balance)
+
+@@ md
+🎯 **In the exam**, the class diagram tells you which one to use.
+If it shows `_balance`, use one underscore.
+If it shows `__balance`, use two, and in the child use the **property**.
+
+@@ predict Parents do not get the child's methods
+@@ run raises=AttributeError
+class Card:
+    def pay(self):
+        return "paid"
+
+
+class MemberCard(Card):
+    def redeem(self):
+        return "redeemed"
+
+
+m = MemberCard()
+c = Card()
+print(m.pay())
+print(m.redeem())
+print(c.redeem())
+@@ output
+paid
+redeemed
+@@ explain
+A child gets everything from its parent, so `m.pay()` works.
+`m.redeem()` works because `redeem` is in `MemberCard`.
+But inheritance only goes **downwards**.
+A plain `Card` does not have `redeem()`, so `c.redeem()` raises an `AttributeError`.
+
+@@ md
+## 6. Class variables in child classes
+
+A child can give a class variable **its own value**.
+This is common in the exam, for example different discounts or fees for each kind of customer.
+
+The trick is **how** you read it:
+
+- `type(self)._RATE` reads it from the object's **real** class. The child's value is used.
+- `Member._RATE` always reads it from `Member`. The child's value is ignored.
+
+@@ predict type(self) or the class name?
+@@ run
+class Member:
+    _RATE = 0.05
+
+    def rateA(self):
+        return type(self)._RATE
+
+    def rateB(self):
+        return Member._RATE
+
+
+class GoldMember(Member):
+    _RATE = 0.10
+
+
+g = GoldMember()
+print(g.rateA())
+print(g.rateB())
+print(Member().rateA())
+@@ output
+0.1
+0.05
+0.05
+@@ explain
+`g` is a `GoldMember`, so `type(self)` is `GoldMember`, and its `_RATE` is `0.10`.
+`rateB()` always says `Member._RATE`, so it gives `0.05` even for a gold member.
+For a plain `Member`, `type(self)` is `Member`, so `rateA()` gives `0.05`.
+
+💡 When a child changes a class variable, read it with `type(self)._NAME`.
+
+@@ md
+This example comes from the course lab.
+A training provider gives discounts to customers.
+
+@@ code
+class Customer:
+    _DISCOUNT = 0.0
+
+    def __init__(self, email, name):
+        self.__email = email
+        self.__name = name
+
+    @property
+    def email(self):
+        return self.__email
+
+    @property
+    def name(self):
+        return self.__name
+
+    def getDiscount(self):
+        return type(self)._DISCOUNT
+
+    def __str__(self):
+        return f"Email: {self.__email} Name: {self.__name}"
+
+
+print(Customer("joe@email.com", "Joe"))
+print(Customer("joe@email.com", "Joe").getDiscount())
+
+@@ exercise The Individual customer
+Write a class `Individual` that **is a** `Customer`.
+
+- A class variable `_DISCOUNT = 0.9`.
+- The constructor takes `email`, `name` and `skillUpgrade` (`True` or `False`).
+- `getDiscount()` returns the class discount if `skillUpgrade` is `True`, otherwise `0.0`.
+- `__str__` refines the parent's: it adds `" SkillUpgrade: Yes"` or `" SkillUpgrade: No"`.
+
+Example: `str(Individual("amy@email.com", "Amy", True))` is
+`Email: amy@email.com Name: Amy SkillUpgrade: Yes`
+@@ starter
+class Individual(Customer):
+    _DISCOUNT = 0.9
+
+    def __init__(self, email, name, skillUpgrade):
+        ...
+
+    def getDiscount(self):
+        ...
+
+    def __str__(self):
+        ...
+
+@@ check
+amy = Individual("amy@email.com", "Amy", True)
+ben = Individual("ben@email.com", "Ben", False)
+assert isinstance(amy, Customer), "❌ Individual must inherit from Customer"
+assert hasattr(amy, "name") and amy.name == "Amy", "❌ amy.name should be 'Amy'. Did you call super().__init__(email, name)?"
+assert amy.getDiscount() == 0.9, f"❌ Amy has skillUpgrade, so her discount should be 0.9, not {amy.getDiscount()!r}"
+assert ben.getDiscount() == 0.0, f"❌ Ben has no skillUpgrade, so his discount should be 0.0, not {ben.getDiscount()!r}"
+assert str(amy) == "Email: amy@email.com Name: Amy SkillUpgrade: Yes", f"❌ str(amy) is {str(amy)!r}"
+assert str(ben) == "Email: ben@email.com Name: Ben SkillUpgrade: No", f"❌ str(ben) is {str(ben)!r}"
+@@ hint
+In `getDiscount()`:
+
+```python
+if self.__skillUpgrade:
+    return type(self)._DISCOUNT
+return 0.0
+```
+
+In `__str__`, first make a variable `text` that is `"Yes"` or `"No"`.
+@@ solution
+class Individual(Customer):
+    _DISCOUNT = 0.9
+
+    def __init__(self, email, name, skillUpgrade):
+        super().__init__(email, name)
+        self.__skillUpgrade = skillUpgrade
+
+    def getDiscount(self):
+        if self.__skillUpgrade:
+            return type(self)._DISCOUNT
+        return 0.0
+
+    def __str__(self):
+        if self.__skillUpgrade:
+            text = "Yes"
+        else:
+            text = "No"
+        return super().__str__() + f" SkillUpgrade: {text}"
+
+@@ exercise The Corporate customer
+Write a class `Corporate` that **is a** `Customer`.
+
+- A class variable `_DISCOUNT = 0.5`.
+- The constructor takes `email`, `name`, `company` and `isSME` (`True` or `False`).
+- `getDiscount()` overrides by **refinement**: it starts from `super().getDiscount()`, and adds `0.1` more if the company is an SME.
+- `__str__` adds `" Company: "`, the company, `" SME: "` and `Yes` or `No`.
+
+Examples:
+
+- An SME gets `0.6`. Another company gets `0.5`.
+- `Email: joe@suss.edu.sg Name: Joe Company: SUSS SME: No`
+@@ starter
+class Corporate(Customer):
+    _DISCOUNT = 0.5
+
+    def __init__(self, email, name, company, isSME):
+        ...
+
+    def getDiscount(self):
+        ...
+
+    def __str__(self):
+        ...
+
+@@ check
+import inspect
+joe = Corporate("joe@suss.edu.sg", "Joe", "SUSS", False)
+sue = Corporate("sue@abc.com", "Sue", "ABC Pte Ltd", True)
+assert isinstance(joe, Customer), "❌ Corporate must inherit from Customer"
+assert joe.getDiscount() == 0.5, f"❌ A non-SME should get 0.5, not {joe.getDiscount()!r}"
+assert abs(sue.getDiscount() - 0.6) < 0.0001, f"❌ An SME should get 0.6, not {sue.getDiscount()!r}"
+assert "super()" in inspect.getsource(Corporate.getDiscount), "❌ getDiscount should refine: use super().getDiscount()"
+assert str(joe) == "Email: joe@suss.edu.sg Name: Joe Company: SUSS SME: No", f"❌ str(joe) is {str(joe)!r}"
+assert str(sue) == "Email: sue@abc.com Name: Sue Company: ABC Pte Ltd SME: Yes", f"❌ str(sue) is {str(sue)!r}"
+@@ hint
+`super().getDiscount()` runs the parent's code, `type(self)._DISCOUNT`.
+Because `self` is a `Corporate`, that already gives `0.5`.
+@@ solution
+class Corporate(Customer):
+    _DISCOUNT = 0.5
+
+    def __init__(self, email, name, company, isSME):
+        super().__init__(email, name)
+        self.__company = company
+        self.__isSME = isSME
+
+    def getDiscount(self):
+        discount = super().getDiscount()
+        if self.__isSME:
+            discount += 0.1
+        return discount
+
+    def __str__(self):
+        if self.__isSME:
+            text = "Yes"
+        else:
+            text = "No"
+        return super().__str__() + f" Company: {self.__company} SME: {text}"
+
+@@ md
+## 7. Parents and children in one list
+
+A list can hold parent objects and child objects together.
+When you call a method in a loop, each object runs **its own class's** version.
+
+This example uses your `MemberCashCard` from step 3.
+If it fails, run your step 3 cell first.
+
+@@ code
+cards = [CashCard("C1", 30), MemberCashCard("NTUC", "M1", 30), CashCard("C2", 5)]
+for c in cards:
+    if c.deduct(10):
+        print(c)
+    else:
+        print(c.id, "does not have enough money")
+
+@@ md
+`isinstance(obj, SomeClass)` asks: "Is this object a `SomeClass`?"
+A child object **is also** an object of its parent class.
+
+@@ predict isinstance
+@@ run
+mem = MemberCashCard("NTUC", "M5", 10)
+card = CashCard("C5", 10)
+print(isinstance(mem, MemberCashCard))
+print(isinstance(mem, CashCard))
+print(isinstance(card, MemberCashCard))
+@@ output
+True
+True
+False
+@@ explain
+`mem` is a member cash card, and every member cash card **is a** cash card, so the first two are `True`.
+`card` is a plain cash card. It is not a member cash card, so the last one is `False`.
+
+@@ exercise Count the member cards
+Write a function `countMembers(cards)` that **returns** how many cards in the list are `MemberCashCard` objects.
+@@ starter
+def countMembers(cards):
+    ...
+
+@@ check
+sample = [CashCard("C1", 10), MemberCashCard("NTUC", "M1", 10), MemberCashCard("SUSS", "M2", 5), CashCard("C2", 1)]
+assert countMembers(sample) == 2, f"❌ There are 2 member cards, but your function returned {countMembers(sample)!r}"
+assert countMembers([]) == 0, "❌ An empty list has 0 member cards"
+assert countMembers([CashCard("C3", 1)]) == 0, "❌ A list with only plain cards has 0 member cards"
+@@ hint
+Start with `count = 0`.
+Loop over the cards.
+`if isinstance(c, MemberCashCard):` add 1.
+Return `count` after the loop.
+@@ solution
+def countMembers(cards):
+    count = 0
+    for c in cards:
+        if isinstance(c, MemberCashCard):
+            count += 1
+    return count
+
+@@ exercise Total points
+Write a function `totalPoints(cards)` that **returns** the total points of all member cards in the list.
+Plain cash cards have no `points`, so skip them (otherwise you get an `AttributeError`).
+@@ starter
+def totalPoints(cards):
+    ...
+
+@@ check
+m1 = MemberCashCard("NTUC", "M1", 100)
+m1.deduct(30)
+m2 = MemberCashCard("SUSS", "M2", 100)
+m2.deduct(12)
+sample = [CashCard("C1", 50), m1, m2]
+assert totalPoints(sample) == 42, f"❌ The total should be 30 + 12 = 42, but your function returned {totalPoints(sample)!r}"
+assert totalPoints([]) == 0, "❌ An empty list has 0 points"
+@@ solution
+def totalPoints(cards):
+    total = 0
+    for c in cards:
+        if isinstance(c, MemberCashCard):
+            total += c.points
+    return total
+
+@@ write Why does the loop work?
+In the loop above, `c.deduct(10)` is called on plain cash cards **and** on member cash cards.
+For member cards, points are added.
+For plain cards, they are not.
+Explain why the same line of code behaves differently.
+@@ answer
+`MemberCashCard` inherits from `CashCard` and **overrides** `deduct()`.
+When `c.deduct(10)` runs, Python uses the `deduct()` of the class of the object that `c` refers to.
+For a `MemberCashCard` it runs the child's version, which also adds points.
+For a `CashCard` it runs the parent's version.
+This is called **polymorphism** (more in notebook 11).
+
+@@ md
+## 8. Exam practice: name the type of overriding
+
+🎯 These questions are worth 3 to 4 marks each.
+Always give the type **and** the reason, in one sentence.
+
+@@ write The ColdDeli price
+```python
+class Deli:
+    def __init__(self, name, price):
+        self._name = name
+        self._price = price
+
+    def getPrice(self):
+        return self._price
+
+
+class ColdDeli(Deli):
+    def getPrice(self):
+        return super().getPrice() * 1.1
+```
+
+What type of overriding is `ColdDeli.getPrice()`? Explain.
+@@ answer
+It is overriding by **refinement**, because `ColdDeli.getPrice()` calls the parent's method with `super().getPrice()` and then adds to it (it multiplies the parent's price by 1.1).
+
+@@ write The home service charge
+```python
+class ServiceJob:
+    def calcCharge(self):
+        return self._hours * 40
+
+
+class HomeServiceJob(ServiceJob):
+    def calcCharge(self):
+        return self._hours * 60 + 30
+```
+
+What type of overriding is `HomeServiceJob.calcCharge()`? Explain.
+@@ answer
+It is overriding by **replacement**, because `HomeServiceJob.calcCharge()` does not call `super().calcCharge()`.
+It works out the charge in a completely new way.
+
+@@ write The __str__ of CashCard
+The `CashCard` class above has a `__str__` method, but it has no parent class written in its brackets.
+Is its `__str__` an example of overriding? If yes, which type?
+@@ answer
+Yes.
+Every class inherits from Python's `object` class, which already has a `__str__` method.
+`CashCard.__str__` does not call `super().__str__()`, so it overrides `object.__str__` by **replacement**.
+
+@@ md
+## 9. Exam-style question: repair jobs
+
+A repair company does jobs at its workshop and at customers' homes.
+
+```text
++------------------------------------------+
+|                   Job                    |
++------------------------------------------+
+| _HOURLY_RATE = 40.0           (class)    |
+| __jobId, __customer, __hours             |
++------------------------------------------+
+| __init__(jobId, customer, hours)         |
+| jobId, customer, hours   (properties)    |
+| calcCharge()                             |
+| __str__()                                |
++------------------------------------------+
+                     ^
+                     | (inherits)
++------------------------------------------+
+|              HomeJob                     |
++------------------------------------------+
+| _TRAVEL_FEE = 25.0            (class)    |
+| __address                                |
++------------------------------------------+
+| __init__(jobId, customer, hours, address)|
+| address                  (property)      |
+| calcCharge()                             |
+| __str__()                                |
++------------------------------------------+
+```
+
+@@ exercise (a) The Job class
+Write the `Job` class.
+
+- `calcCharge()` returns the hours times the class variable `_HOURLY_RATE`. Use the class variable, do not type `40`.
+- `__str__()` returns, for `Job("J1", "Amy", 3)`:
+
+`Job J1 for Amy: 3 hours, Charge: $120.00`
+
+💡 In `__str__`, get the charge by calling `self.calcCharge()`.
+@@ starter
+class Job:
+    _HOURLY_RATE = 40.0
+
+    def __init__(self, jobId, customer, hours):
+        ...
+
+@@ check
+job = Job("J1", "Amy", 3)
+assert hasattr(job, "jobId") and job.jobId == "J1", "❌ job.jobId should be 'J1'"
+assert hasattr(job, "customer") and job.customer == "Amy", "❌ job.customer should be 'Amy'"
+assert hasattr(job, "hours") and job.hours == 3, "❌ job.hours should be 3"
+assert job.calcCharge() == 120.0, f"❌ calcCharge() should return 120.0, not {job.calcCharge()!r}"
+assert str(job) == "Job J1 for Amy: 3 hours, Charge: $120.00", f"❌ str(job) is {str(job)!r}"
+Job._HOURLY_RATE = 50.0
+try:
+    assert job.calcCharge() == 150.0, "❌ calcCharge() must use the class variable _HOURLY_RATE, not the number 40"
+finally:
+    Job._HOURLY_RATE = 40.0
+@@ hint
+`return self.__hours * type(self)._HOURLY_RATE`
+@@ solution
+class Job:
+    _HOURLY_RATE = 40.0
+
+    def __init__(self, jobId, customer, hours):
+        self.__jobId = jobId
+        self.__customer = customer
+        self.__hours = hours
+
+    @property
+    def jobId(self):
+        return self.__jobId
+
+    @property
+    def customer(self):
+        return self.__customer
+
+    @property
+    def hours(self):
+        return self.__hours
+
+    def calcCharge(self):
+        return self.__hours * type(self)._HOURLY_RATE
+
+    def __str__(self):
+        return f"Job {self.__jobId} for {self.__customer}: {self.__hours} hours, Charge: ${self.calcCharge():.2f}"
+
+@@ exercise (b) The HomeJob class
+Write the `HomeJob` class.
+
+- `calcCharge()` overrides by **refinement**: the normal charge plus the class variable `_TRAVEL_FEE`.
+- `__str__()` overrides by **refinement**: the parent's text, then `" Address: "` and the address.
+
+For `HomeJob("J2", "Ben", 2, "12 Clementi Rd")` the charge is `2 x 40 + 25 = 105`, and the text is:
+
+`Job J2 for Ben: 2 hours, Charge: $105.00 Address: 12 Clementi Rd`
+@@ starter
+class HomeJob(Job):
+    _TRAVEL_FEE = 25.0
+
+    def __init__(self, jobId, customer, hours, address):
+        ...
+
+@@ check
+home = HomeJob("J2", "Ben", 2, "12 Clementi Rd")
+assert isinstance(home, Job), "❌ HomeJob must inherit from Job"
+assert hasattr(home, "hours") and home.hours == 2, "❌ home.hours should be 2. Did you call super().__init__(jobId, customer, hours)?"
+assert hasattr(home, "address") and home.address == "12 Clementi Rd", "❌ home.address should be '12 Clementi Rd'"
+assert home.calcCharge() == 105.0, f"❌ calcCharge() should return 105.0, not {home.calcCharge()!r}"
+expected = "Job J2 for Ben: 2 hours, Charge: $105.00 Address: 12 Clementi Rd"
+assert str(home) == expected, f"❌ str(home) is {str(home)!r}"
+HomeJob._TRAVEL_FEE = 30.0
+try:
+    assert home.calcCharge() == 110.0, "❌ calcCharge() must use the class variable _TRAVEL_FEE, not the number 25"
+finally:
+    HomeJob._TRAVEL_FEE = 25.0
+@@ hint
+`calcCharge` is one line: `return super().calcCharge() + type(self)._TRAVEL_FEE`
+
+The parent's `__str__` already calls `self.calcCharge()`.
+Because `self` is a `HomeJob`, it gets the charge with the travel fee.
+@@ solution
+class HomeJob(Job):
+    _TRAVEL_FEE = 25.0
+
+    def __init__(self, jobId, customer, hours, address):
+        super().__init__(jobId, customer, hours)
+        self.__address = address
+
+    @property
+    def address(self):
+        return self.__address
+
+    def calcCharge(self):
+        return super().calcCharge() + type(self)._TRAVEL_FEE
+
+    def __str__(self):
+        return super().__str__() + f" Address: {self.__address}"
+
+@@ write (c) Name the overriding
+For the `HomeJob` class:
+
+1. What type of overriding is `calcCharge()`? Explain.
+2. What type of overriding is `__str__()`? Explain.
+@@ answer
+1. **Refinement**, because `HomeJob.calcCharge()` calls `super().calcCharge()` to get the normal charge and then adds the travel fee.
+2. **Refinement**, because `HomeJob.__str__()` calls `super().__str__()` and then adds the address.
+
+@@ exercise (d) Total of all jobs
+Write a function `totalCharges(jobs)` that **returns** the total charge of all the jobs in the list.
+The list can hold `Job` and `HomeJob` objects.
+@@ starter
+def totalCharges(jobs):
+    ...
+
+@@ check
+jobs = [Job("J1", "Amy", 3), HomeJob("J2", "Ben", 2, "12 Clementi Rd"), Job("J3", "Cai", 1)]
+assert totalCharges(jobs) == 265.0, f"❌ The total should be 120 + 105 + 40 = 265.0, not {totalCharges(jobs)!r}"
+assert totalCharges([]) == 0, "❌ An empty list should give 0"
+@@ hint
+Loop over the jobs and add up `j.calcCharge()`.
+You do not need `isinstance`, because each object already knows its own `calcCharge()`.
+@@ solution
+def totalCharges(jobs):
+    total = 0
+    for j in jobs:
+        total += j.calcCharge()
+    return total
+
+@@ predict (e) A night job
+This uses the `Job` class from part (a).
+@@ run
+class NightJob(Job):
+    _HOURLY_RATE = 60.0
+
+
+night = NightJob("J3", "Cai", 2)
+print(night.calcCharge())
+print(night)
+@@ output
+120.0
+Job J3 for Cai: 2 hours, Charge: $120.00
+@@ explain
+`NightJob` has no methods of its own.
+It only gives `_HOURLY_RATE` a new value.
+`Job.calcCharge()` reads `type(self)._HOURLY_RATE`, and `type(self)` is `NightJob`, so it uses `60.0`.
+2 hours times 60 is `120.0`.
+If `calcCharge()` had used `Job._HOURLY_RATE`, the answer would be `80.0`.
+
+@@ md
+## 📝 Key points
+
+- Inheritance is the **"is a"** relationship: `class Student(Person):`.
+- A child inherits **all** the attributes and methods of its parent.
+- In the child's `__init__`, call `super().__init__(...)` **first**, with only what the parent needs.
+- **Overriding**: the child writes a method with the same name and parameters.
+- **Replacement**: the child's method does not call `super()`. **Refinement**: it calls `super().method()` and adds more.
+- A child **cannot** use the parent's `self.__private` attribute. Use the parent's property, or a protected `_attribute`.
+- Read class variables with `type(self)._NAME` so a child can have its own value.
+- A child object **is also** a parent object: `isinstance(child, Parent)` is `True`.
+
+## ⚠️ Common mistakes
+
+| Mistake | What happens |
+| --- | --- |
+| Forgetting `super().__init__(...)` | `AttributeError` later, when the parent's data is used |
+| Passing the wrong arguments to `super().__init__` | `TypeError` |
+| Using `self.__balance` of the parent in the child | `AttributeError` (name mangling) |
+| Calling a child-only method on a parent object | `AttributeError` |
+| Writing `super.__init__()` without the brackets after `super` | `TypeError` |
+| Saying "refinement" without saying **why** | You lose the explanation mark |
+
+Next: **11_Abstract_Classes_and_Polymorphism**.

@@ -1,0 +1,1253 @@
+@@ md
+# 07 - Encapsulation and Properties
+
+**What you will learn**
+
+- Why we hide the data inside an object (**encapsulation**).
+- How to make an attribute **private** with two underscores: `self.__balance`.
+- How to let people **read** a private attribute with `@property`.
+- How to let people **change** it safely with a **setter**: `@balance.setter`.
+- How to write the full exam class "template" from a class diagram.
+
+**Why this matters for the exam**
+
+In the exam, almost every class diagram uses private attributes like `__name` and asks for "getter properties" and "setters".
+This notebook is the exact pattern you will write in every paper.
+It is worth many easy marks once you know it by heart.
+
+@@ md
+## 1. The problem: anyone can change anything
+
+In notebook 06, attributes were **public**.
+Any code outside the class could change them, even to silly values.
+
+@@ code
+class CashCard:
+    def __init__(self, id, amount):
+        self.id = id
+        self.balance = amount
+
+card = CashCard("123", 20.0)
+card.balance = 1000000      # free money!
+card.balance = "hello"      # not even a number any more
+print(card.balance)
+
+@@ md
+A real cash card would never allow this.
+The balance should only change through proper actions, like `topUp` and `deduct`.
+
+**Encapsulation** means: keep the data hidden inside the object, and only allow access through methods that you control.
+Think of an ATM.
+You cannot open the machine and take money out.
+You can only use the buttons on the front.
+The buttons are the methods.
+
+@@ md
+## 2. Private attributes: two underscores
+
+If an attribute name starts with **two underscores**, it becomes **private**.
+It can be used inside the class, but not from outside.
+
+@@ code
+class CashCard:
+    def __init__(self, id, amount):
+        self.__id = id
+        self.__balance = amount
+
+    def showBalance(self):
+        print("Balance:", self.__balance)    # inside the class: fine
+
+card = CashCard("123", 20.0)
+card.showBalance()
+
+@@ md
+Now try to read it from **outside** the class:
+
+@@ code raises=AttributeError
+print(card.__balance)
+
+@@ md
+`AttributeError: 'CashCard' object has no attribute '__balance'`.
+
+**Why?**
+When Python sees `self.__balance` inside the class `CashCard`, it secretly renames it to `_CashCard__balance`.
+This is called **name mangling**.
+So outside the class, there is no attribute called `__balance`.
+
+💡 You might see people use `card._CashCard__balance` to sneak in.
+Never do that. It breaks the whole idea of private data, and the exam does not want it.
+
+@@ predict Reading inside and outside
+@@ run raises=AttributeError
+class Student:
+    def __init__(self, name):
+        self.__name = name
+
+    def greet(self):
+        print("Hi", self.__name)
+
+s = Student("Amy")
+s.greet()
+print(s.__name)
+@@ output
+Hi Amy
+@@ explain
+`greet` is **inside** the class, so it can use `self.__name`. It prints `Hi Amy`.
+`s.__name` is **outside** the class, so Python raises an `AttributeError`.
+
+@@ md
+⚠️ **A sneaky trap (this is a favourite exam question).**
+If you **assign** to `obj.__balance` from outside, Python does **not** give an error.
+It quietly creates a brand new, separate attribute.
+The real private balance does not change.
+
+@@ predict Assigning a private attribute from outside
+@@ run
+class CashCard:
+    def __init__(self, id, amount):
+        self.__id = id
+        self.__balance = amount
+
+    def showBalance(self):
+        print(self.__balance)
+
+c = CashCard("1", 20)
+c.__balance = 999
+c.showBalance()
+print(c.__balance)
+@@ output
+20
+999
+@@ explain
+Inside the class, `self.__balance` really means `self._CashCard__balance`, which is still `20`.
+The line `c.__balance = 999` is outside the class, so there is no renaming.
+It makes a **new** attribute literally called `__balance`, with the value `999`.
+So the method shows `20`, and `print(c.__balance)` shows the new attribute, `999`.
+
+@@ exercise Make it private
+Change this class so that both attributes are **private** (two underscores).
+Remember to change `__str__` too.
+@@ starter
+class Student:
+    def __init__(self, name, studentId):
+        self.name = name
+        self.studentId = studentId
+
+    def __str__(self):
+        return f"Name: {self.name} ID: {self.studentId}"
+@@ check
+s = Student("Amy", "S001")
+assert "_Student__name" in vars(s), "❌ store the name in self.__name (two underscores)"
+assert "_Student__studentId" in vars(s), "❌ store the id in self.__studentId (two underscores)"
+assert "name" not in vars(s) and "studentId" not in vars(s), "❌ there should be no public attributes left"
+assert str(s) == "Name: Amy ID: S001", f"❌ __str__ should still return 'Name: Amy ID: S001', got {str(s)!r}"
+@@ hint
+Every `self.name` becomes `self.__name`, and every `self.studentId` becomes `self.__studentId`.
+@@ solution
+class Student:
+    def __init__(self, name, studentId):
+        self.__name = name
+        self.__studentId = studentId
+
+    def __str__(self):
+        return f"Name: {self.__name} ID: {self.__studentId}"
+
+@@ md
+## 3. Getters with `@property`
+
+Private data is safe, but now nobody outside can even **read** the balance.
+We fix that with a **property**.
+A property is a method that you use like an attribute.
+
+@@ code
+class CashCard:
+    def __init__(self, id, amount):
+        self.__id = id
+        self.__balance = amount
+
+    @property
+    def id(self):
+        return self.__id
+
+    @property
+    def balance(self):
+        return self.__balance
+
+card = CashCard("123", 20.0)
+print(card.id)
+print(card.balance)       # no brackets!
+
+@@ md
+How to write a getter property:
+
+1. Write `@property` on the line just above the method. (This is called a **decorator**.)
+2. Name the method after the attribute, **without** the underscores: `balance`.
+3. It takes only `self`, and **returns** the private attribute.
+
+How to use it: `card.balance`, **with no brackets**.
+It looks like an attribute, but Python runs the method for you.
+
+The course also calls these **accessor** or **getter** methods.
+
+⚠️ If you add brackets, Python first gets the value (a number), then tries to "call" the number:
+
+@@ code raises=TypeError
+print(card.balance())
+
+@@ md
+`TypeError: 'float' object is not callable`.
+"Callable" means "can be run with `()`".
+A number cannot be run, so remember: **properties have no brackets**.
+
+@@ predict Property with brackets
+@@ run raises=TypeError
+class Pet:
+    def __init__(self, name):
+        self.__name = name
+
+    @property
+    def name(self):
+        return self.__name
+
+p = Pet("Milo")
+print(p.name)
+print(p.name())
+@@ output
+Milo
+@@ explain
+`p.name` runs the property and gives `"Milo"`.
+`p.name()` first gets `"Milo"`, then tries to call it like a function.
+A string is not callable, so Python raises `TypeError: 'str' object is not callable`.
+
+@@ exercise Add getters
+Add two getter properties to `Student`: `name` and `studentId`.
+@@ starter
+class Student:
+    def __init__(self, name, studentId):
+        self.__name = name
+        self.__studentId = studentId
+
+    # add the two properties here
+
+@@ check
+s = Student("Amy", "S001")
+assert isinstance(Student.__dict__.get("name"), property), "❌ name should be a @property"
+assert isinstance(Student.__dict__.get("studentId"), property), "❌ studentId should be a @property"
+assert s.name == "Amy", f"❌ s.name should be 'Amy', got {s.name!r}"
+assert s.studentId == "S001", f"❌ s.studentId should be 'S001', got {s.studentId!r}"
+@@ hint
+```python
+@property
+def name(self):
+    return self.__name
+```
+Do the same for `studentId`.
+@@ solution
+class Student:
+    def __init__(self, name, studentId):
+        self.__name = name
+        self.__studentId = studentId
+
+    @property
+    def name(self):
+        return self.__name
+
+    @property
+    def studentId(self):
+        return self.__studentId
+
+@@ exercise Use the properties
+`Book` is written for you, with private attributes and properties.
+Without changing the class, set:
+
+- `bookTitle` to the title of `b`
+- `isLong` to `True` if the book has more than 300 pages, otherwise `False`
+@@ starter
+class Book:
+    def __init__(self, title, pages):
+        self.__title = title
+        self.__pages = pages
+
+    @property
+    def title(self):
+        return self.__title
+
+    @property
+    def pages(self):
+        return self.__pages
+
+b = Book("Dune", 412)
+bookTitle = ...
+isLong = ...
+@@ check
+assert bookTitle == "Dune", f"❌ bookTitle should be 'Dune', got {bookTitle!r}. Use b.title"
+assert isLong is True, "❌ isLong should be True, because 412 > 300. Use b.pages > 300"
+@@ hint
+`b.title` and `b.pages`, with no brackets.
+A comparison like `b.pages > 300` is already `True` or `False`.
+@@ solution
+class Book:
+    def __init__(self, title, pages):
+        self.__title = title
+        self.__pages = pages
+
+    @property
+    def title(self):
+        return self.__title
+
+    @property
+    def pages(self):
+        return self.__pages
+
+b = Book("Dune", 412)
+bookTitle = b.title
+isLong = b.pages > 300
+
+@@ md
+💡 A property does not have to return an attribute directly.
+It can also **work something out**.
+
+@@ code
+class Movie:
+    def __init__(self, title, minutes):
+        self.__title = title
+        self.__minutes = minutes
+
+    @property
+    def hours(self):
+        return self.__minutes / 60
+
+m = Movie("Up", 96)
+print(m.hours)
+
+@@ exercise A worked-out property
+Add a property `area` to `Square` that returns `side * side`.
+@@ starter
+class Square:
+    def __init__(self, side):
+        self.__side = side
+
+    # add the area property here
+
+@@ check
+assert isinstance(Square.__dict__.get("area"), property), "❌ area should be a @property (no brackets when used)"
+assert Square(3).area == 9, f"❌ Square(3).area should be 9, got {Square(3).area}"
+assert Square(10).area == 100, "❌ Square(10).area should be 100"
+@@ solution
+class Square:
+    def __init__(self, side):
+        self.__side = side
+
+    @property
+    def area(self):
+        return self.__side * self.__side
+
+@@ md
+## 4. Setters: changing a value safely
+
+A **setter** (or **mutator**) lets code outside the class change a private attribute.
+You write it **under** the property, with the same name:
+
+@@ code
+class Contact:
+    def __init__(self, name, phone):
+        self.__name = name
+        self.__phone = phone
+
+    @property
+    def phone(self):
+        return self.__phone
+
+    @phone.setter
+    def phone(self, newPhone):
+        self.__phone = newPhone
+
+c = Contact("Amy", "91234567")
+c.phone = "88887777"       # this calls the setter
+print(c.phone)             # this calls the getter
+
+@@ md
+How to write a setter:
+
+1. You must have the `@property` (getter) first.
+2. On the next method, write `@phone.setter`. The word before `.setter` is the property name.
+3. The method has the **same name** again, and two parameters: `self` and the new value.
+4. Inside, store the new value in the private attribute.
+
+How to use it: `c.phone = "88887777"`, a normal assignment.
+Python sees the `=` and calls the setter for you.
+
+**No setter means read only.**
+If a property has no setter, assigning to it is an error:
+
+@@ code raises=AttributeError
+class Contact:
+    def __init__(self, name, phone):
+        self.__name = name
+        self.__phone = phone
+
+    @property
+    def name(self):
+        return self.__name
+
+c = Contact("Amy", "91234567")
+c.name = "Ben"
+
+@@ md
+`AttributeError: property 'name' of 'Contact' object has no setter`.
+`name` is a property with only a getter, so it is **read only**.
+This is on purpose: once a contact is created, the name cannot change.
+
+🎯 **In the exam**, the class diagram tells you which attributes get a setter.
+If it says "getter for name" only, do **not** write a setter for name.
+And code-reading questions often ask: "what happens when we assign to a property with no setter?"
+The answer is an `AttributeError`.
+
+@@ predict Getter only
+@@ run raises=AttributeError
+class Room:
+    def __init__(self, number, rate):
+        self.__number = number
+        self.__rate = rate
+
+    @property
+    def number(self):
+        return self.__number
+
+    @property
+    def rate(self):
+        return self.__rate
+
+    @rate.setter
+    def rate(self, newRate):
+        self.__rate = newRate
+
+r = Room(101, 120)
+r.rate = 150
+print(r.number, r.rate)
+r.number = 102
+print(r.number)
+@@ output
+101 150
+@@ explain
+`rate` has a setter, so `r.rate = 150` works.
+`number` has only a getter, so `r.number = 102` raises an `AttributeError`.
+The last `print` never runs.
+
+@@ exercise Add a setter
+Add a setter for `phone` to this `Contact` class.
+`name` must stay **read only**.
+@@ starter
+class Contact:
+    def __init__(self, name, phone):
+        self.__name = name
+        self.__phone = phone
+
+    @property
+    def name(self):
+        return self.__name
+
+    @property
+    def phone(self):
+        return self.__phone
+
+    # add the phone setter here
+
+@@ check
+c = Contact("Amy", "91234567")
+c.phone = "88887777"
+assert c.phone == "88887777", "❌ after c.phone = '88887777', c.phone should be '88887777'"
+assert vars(c).get("_Contact__phone") == "88887777", "❌ the setter should store the value in self.__phone"
+try:
+    c.name = "Ben"
+    raise AssertionError("❌ name should stay read only: do not write a setter for name")
+except AttributeError:
+    pass
+@@ hint
+```python
+@phone.setter
+def phone(self, newPhone):
+    self.__phone = newPhone
+```
+@@ solution
+class Contact:
+    def __init__(self, name, phone):
+        self.__name = name
+        self.__phone = phone
+
+    @property
+    def name(self):
+        return self.__name
+
+    @property
+    def phone(self):
+        return self.__phone
+
+    @phone.setter
+    def phone(self, newPhone):
+        self.__phone = newPhone
+
+@@ md
+## 5. Setters that check the value
+
+The great thing about a setter is that it can **check** the new value first.
+Only valid values are allowed in.
+
+@@ code
+class Item:
+    def __init__(self, name, price):
+        self.__name = name
+        self.__price = price
+
+    @property
+    def price(self):
+        return self.__price
+
+    @price.setter
+    def price(self, newPrice):
+        if newPrice > 0:
+            self.__price = newPrice
+
+pen = Item("Pen", 1.50)
+pen.price = 2.00
+print(pen.price)
+pen.price = -5        # ignored: not a valid price
+print(pen.price)
+
+@@ md
+In notebook 12 you will learn a better way to reject bad values: raising an **exception**.
+For now, the setter just ignores bad values.
+
+@@ predict A checking setter
+@@ run
+class Student:
+    def __init__(self, name, mark):
+        self.__name = name
+        self.__mark = mark
+
+    @property
+    def mark(self):
+        return self.__mark
+
+    @mark.setter
+    def mark(self, newMark):
+        if 0 <= newMark <= 100:
+            self.__mark = newMark
+
+s = Student("Amy", 50)
+s.mark = 120
+s.mark = 75
+s.mark = -1
+print(s.mark)
+@@ output
+75
+@@ explain
+`120` and `-1` are outside 0 to 100, so the setter ignores them.
+Only `75` is stored.
+
+@@ exercise Age with a check
+Write a class `Person`:
+
+- The constructor takes `name` and `age`, stored privately.
+- A getter property `name` (read only).
+- A getter property `age`, and a setter for `age` that only accepts ages from `0` to `150` (both included).
+  Any other value is ignored.
+@@ starter
+class Person:
+    pass
+@@ check
+p = Person("Amy", 20)
+assert vars(p).get("_Person__name") == "Amy" and vars(p).get("_Person__age") == 20, "❌ store name and age in self.__name and self.__age"
+assert p.name == "Amy" and p.age == 20, "❌ check the name and age properties"
+p.age = 21
+assert p.age == 21, "❌ p.age = 21 should change the age"
+p.age = 200
+assert p.age == 21, "❌ 200 is not a valid age and should be ignored"
+p.age = -3
+assert p.age == 21, "❌ -3 is not a valid age and should be ignored"
+p.age = 0
+assert p.age == 0, "❌ 0 is a valid age"
+try:
+    p.name = "Ben"
+    raise AssertionError("❌ name should be read only")
+except AttributeError:
+    pass
+@@ hint
+In the setter: `if 0 <= newAge <= 150:` then store it.
+@@ solution
+class Person:
+    def __init__(self, name, age):
+        self.__name = name
+        self.__age = age
+
+    @property
+    def name(self):
+        return self.__name
+
+    @property
+    def age(self):
+        return self.__age
+
+    @age.setter
+    def age(self, newAge):
+        if 0 <= newAge <= 150:
+            self.__age = newAge
+
+@@ md
+## 6. Setter or behaviour method?
+
+The course gives a warning about setters.
+A `balance` setter would let anyone write `card.balance = 1000000`.
+That is not something a real cash card does.
+
+A real card has **behaviour**: you can top it up, and you can pay with it.
+So for a cash card, it is better to have:
+
+- a **read only** `balance` property, and
+- **methods** `topUp(amount)` and `deduct(amount)` that check the rules.
+
+@@ code
+class CashCard:
+    def __init__(self, id, amount):
+        self.__id = id
+        self.__balance = amount
+
+    @property
+    def id(self):
+        return self.__id
+
+    @property
+    def balance(self):
+        return self.__balance
+
+    def topUp(self, amount):
+        if amount > 0:
+            self.__balance += amount
+
+    def deduct(self, amount):
+        if self.__balance >= amount:
+            self.__balance -= amount
+            return True
+        return False
+
+    def __str__(self):
+        return f"Id: {self.__id} Balance: ${self.__balance:.2f}"
+
+card = CashCard("123", 20.0)
+card.topUp(10)
+card.deduct(5)
+print(card)
+
+@@ md
+💡 Inside the class, you can use either `self.__balance` (the private attribute) or `self.balance` (the property).
+Both work. Outside the class, only the property works.
+Writing to the attribute must use `self.__balance`, because `balance` has no setter.
+
+@@ write Which design is better?
+A student wrote a `CashCard` with a `balance` setter instead of `topUp` and `deduct` methods.
+Explain why `topUp` and `deduct` are a better design.
+@@ answer
+With a setter, any code could set the balance to any value, for example a huge or negative number.
+`topUp` and `deduct` are real behaviours of a cash card, and they can check the rules (a top up must be positive, you cannot pay more than the balance).
+This keeps the data safe, which is the point of encapsulation.
+
+@@ exercise A bank account
+Write a class `BankAccount`:
+
+| Part | What it does |
+| --- | --- |
+| `__init__(self, accountNo, owner, balance)` | Stores all three **privately**. |
+| `accountNo`, `owner`, `balance` | Getter properties. **No setters.** |
+| `deposit(self, amount)` | Adds `amount` only if it is more than 0. |
+| `withdraw(self, amount)` | If `amount` is not more than the balance, takes it away and returns `True`. Otherwise returns `False`. |
+| `__str__(self)` | Returns, for example, `Account: A1 Owner: Amy Balance: $100.00` |
+@@ starter
+class BankAccount:
+    pass
+@@ check
+a = BankAccount("A1", "Amy", 100)
+assert vars(a).get("_BankAccount__balance") == 100, "❌ store the balance in self.__balance"
+assert (a.accountNo, a.owner, a.balance) == ("A1", "Amy", 100), "❌ check the three properties"
+a.deposit(50)
+a.deposit(-20)
+assert a.balance == 150, f"❌ deposit(50) then deposit(-20) should give 150, got {a.balance}"
+assert a.withdraw(30) is True and a.balance == 120, "❌ withdraw(30) should work and return True"
+assert a.withdraw(500) is False and a.balance == 120, "❌ withdraw(500) should fail and return False"
+assert str(a) == "Account: A1 Owner: Amy Balance: $120.00", f"❌ str(a) is {str(a)!r}"
+try:
+    a.balance = 1000000
+    raise AssertionError("❌ balance must be read only (no setter)")
+except AttributeError:
+    pass
+@@ solution
+class BankAccount:
+    def __init__(self, accountNo, owner, balance):
+        self.__accountNo = accountNo
+        self.__owner = owner
+        self.__balance = balance
+
+    @property
+    def accountNo(self):
+        return self.__accountNo
+
+    @property
+    def owner(self):
+        return self.__owner
+
+    @property
+    def balance(self):
+        return self.__balance
+
+    def deposit(self, amount):
+        if amount > 0:
+            self.__balance += amount
+
+    def withdraw(self, amount):
+        if amount <= self.__balance:
+            self.__balance -= amount
+            return True
+        return False
+
+    def __str__(self):
+        return f"Account: {self.__accountNo} Owner: {self.__owner} Balance: ${self.__balance:.2f}"
+
+@@ md
+## 7. One underscore: "protected"
+
+Some exam diagrams use **one** underscore, like `_itemId` or `_title`.
+One underscore means **protected**.
+It is only a polite sign that says "please do not use this from outside".
+Python does **not** rename it and does **not** block it.
+
+@@ predict One underscore versus two
+@@ run raises=AttributeError
+class Item:
+    def __init__(self, code, price):
+        self._code = code
+        self.__price = price
+
+i = Item("X1", 9.90)
+print(i._code)
+print(i.__price)
+@@ output
+X1
+@@ explain
+`_code` has one underscore, so it is not renamed. Reading it from outside works.
+`__price` has two underscores, so it is renamed to `_Item__price`. Reading `i.__price` raises an `AttributeError`.
+
+@@ md
+💡 Protected attributes are useful for inheritance (notebook 10), because a child class can use them directly.
+
+🎯 **Always write the attributes exactly as the diagram shows.**
+If the diagram says `_title`, write `self._title`.
+If it says `__title`, write `self.__title`.
+Marks are given for following the diagram.
+
+@@ exercise Follow the diagram
+Write the class from this diagram.
+Notice that the attributes use **one** underscore.
+
+```text
++------------------------------------+
+|              Book                  |
++------------------------------------+
+| _itemId                            |
+| _title                             |
+| _author                            |
++------------------------------------+
+| __init__(itemId, title, author)    |
+| itemId  (property, read only)      |
+| title   (property, read only)      |
+| __str__()                          |
++------------------------------------+
+```
+
+`__str__` returns the id in square brackets, a space, then the title, for example `[B100] Dune`.
+@@ starter
+class Book:
+    pass
+@@ check
+b = Book("B100", "Dune", "Frank Herbert")
+assert vars(b) == {"_itemId": "B100", "_title": "Dune", "_author": "Frank Herbert"}, f"❌ the attributes should be _itemId, _title and _author, but they are {list(vars(b))}"
+assert b.itemId == "B100" and b.title == "Dune", "❌ check the itemId and title properties"
+assert str(b) == "[B100] Dune", f"❌ str(b) is {str(b)!r}"
+try:
+    b.title = "Emma"
+    raise AssertionError("❌ title should be read only")
+except AttributeError:
+    pass
+@@ solution
+class Book:
+    def __init__(self, itemId, title, author):
+        self._itemId = itemId
+        self._title = title
+        self._author = author
+
+    @property
+    def itemId(self):
+        return self._itemId
+
+    @property
+    def title(self):
+        return self._title
+
+    def __str__(self):
+        return f"[{self._itemId}] {self._title}"
+
+@@ md
+## 8. The older `.format()` style
+
+Exam code sometimes builds strings with `.format()` instead of f-strings.
+You saw this in notebook 01.
+The `{}` boxes are filled **in order** by the values in `.format(...)`.
+
+@@ code
+class CashCard:
+    def __init__(self, id, amount):
+        self.__id = id
+        self.__balance = amount
+
+    def __str__(self):
+        return "Id: {} Balance: ${:.2f}".format(self.__id, self.__balance)
+
+print(CashCard("123", 20))
+
+@@ md
+You can use either style in your answers.
+f-strings are usually easier to read, so this course uses them.
+But you must be able to **read** `.format()` in exam questions.
+
+@@ exercise Rewrite with .format()
+Rewrite the `__str__` of `Pet` so that it uses `.format()` instead of an f-string.
+The output must stay the same: `Milo is 3 years old`.
+@@ starter
+class Pet:
+    def __init__(self, name, age):
+        self.__name = name
+        self.__age = age
+
+    def __str__(self):
+        return f"{self.__name} is {self.__age} years old"
+@@ check
+import inspect
+assert str(Pet("Milo", 3)) == "Milo is 3 years old", f"❌ got {str(Pet('Milo', 3))!r}"
+source = inspect.getsource(Pet.__str__)
+assert ".format(" in source, "❌ use .format() in __str__"
+assert 'f"' not in source and "f'" not in source, "❌ do not use an f-string this time"
+@@ hint
+`return "{} is {} years old".format(self.__name, self.__age)`
+@@ solution
+class Pet:
+    def __init__(self, name, age):
+        self.__name = name
+        self.__age = age
+
+    def __str__(self):
+        return "{} is {} years old".format(self.__name, self.__age)
+
+@@ md
+## 9. The exam template: practise until it is automatic
+
+Here is the template you will write again and again in the exam:
+
+```python
+class Item:
+    def __init__(self, name, price):
+        self.__name = name                 # 1. private attributes
+        self.__price = price
+
+    @property                              # 2. getters
+    def name(self):
+        return self.__name
+
+    @property
+    def price(self):
+        return self.__price
+
+    @price.setter                          # 3. a setter, only if asked
+    def price(self, newPrice):
+        self.__price = newPrice
+
+    def __str__(self):                     # 4. __str__ in the exact format
+        return f"Name: {self.__name}  Price: ${self.__price:.2f}"
+```
+
+The next exercises give you a diagram or a description.
+Try to write each one **without looking** at the template above.
+Then compare.
+
+@@ exercise Item
+Write the `Item` class:
+
+- Private attributes `__name` and `__price`.
+- Getter properties `name` and `price`.
+- A setter for `price` (no check needed).
+- `__str__` returns `Name: Pen  Price: $1.50` (notice the **two** spaces before `Price`).
+@@ starter
+class Item:
+    pass
+@@ check
+i = Item("Pen", 1.5)
+assert vars(i) == {"_Item__name": "Pen", "_Item__price": 1.5}, f"❌ attributes should be __name and __price, but they are {list(vars(i))}"
+assert i.name == "Pen" and i.price == 1.5, "❌ check the name and price properties"
+assert str(i) == "Name: Pen  Price: $1.50", f"❌ str(i) is {str(i)!r}"
+i.price = 2
+assert i.price == 2 and str(i) == "Name: Pen  Price: $2.00", "❌ the price setter should change the price"
+try:
+    i.name = "Ink"
+    raise AssertionError("❌ name should be read only")
+except AttributeError:
+    pass
+@@ solution
+class Item:
+    def __init__(self, name, price):
+        self.__name = name
+        self.__price = price
+
+    @property
+    def name(self):
+        return self.__name
+
+    @property
+    def price(self):
+        return self.__price
+
+    @price.setter
+    def price(self, newPrice):
+        self.__price = newPrice
+
+    def __str__(self):
+        return f"Name: {self.__name}  Price: ${self.__price:.2f}"
+
+@@ exercise Contact
+Write the `Contact` class (it comes from the PhoneBook example in the course):
+
+```text
++-------------------------------+
+|          Contact              |
++-------------------------------+
+| __name                        |
+| __phone                       |
++-------------------------------+
+| __init__(name, phone)         |
+| name   (getter)               |
+| phone  (getter and setter)    |
+| __str__()                     |
++-------------------------------+
+```
+
+`__str__` returns, for example, `Name: Amy Phone: 91234567`.
+@@ starter
+class Contact:
+    pass
+@@ check
+c = Contact("Amy", "91234567")
+assert vars(c) == {"_Contact__name": "Amy", "_Contact__phone": "91234567"}, f"❌ attributes should be __name and __phone, but they are {list(vars(c))}"
+assert c.name == "Amy" and c.phone == "91234567", "❌ check the name and phone properties"
+c.phone = "81112222"
+assert c.phone == "81112222", "❌ the phone setter should change the phone"
+assert str(c) == "Name: Amy Phone: 81112222", f"❌ str(c) is {str(c)!r}"
+try:
+    c.name = "Ben"
+    raise AssertionError("❌ name should be read only")
+except AttributeError:
+    pass
+@@ solution
+class Contact:
+    def __init__(self, name, phone):
+        self.__name = name
+        self.__phone = phone
+
+    @property
+    def name(self):
+        return self.__name
+
+    @property
+    def phone(self):
+        return self.__phone
+
+    @phone.setter
+    def phone(self, newPhone):
+        self.__phone = newPhone
+
+    def __str__(self):
+        return f"Name: {self.__name} Phone: {self.__phone}"
+
+@@ exercise Instructor (from a lab question)
+Write the `Instructor` class.
+It models an instructor with an email, a name, and how much the instructor charges per day.
+
+- Three private attributes: `__email`, `__name`, `__ratePerDay`.
+- A constructor that takes the three values in that order.
+- A getter property for `email`.
+- A getter **and** setter for `ratePerDay`.
+- `__str__` returns, for example: `Instructor email: joe@abc.com  Name: Joe Wong` (two spaces before `Name`).
+@@ starter
+class Instructor:
+    pass
+@@ check
+t = Instructor("joe@abc.com", "Joe Wong", 200)
+assert vars(t) == {"_Instructor__email": "joe@abc.com", "_Instructor__name": "Joe Wong", "_Instructor__ratePerDay": 200}, f"❌ attributes are {list(vars(t))}"
+assert t.email == "joe@abc.com", "❌ check the email property"
+assert t.ratePerDay == 200, "❌ check the ratePerDay property"
+t.ratePerDay = 250
+assert t.ratePerDay == 250, "❌ the ratePerDay setter should change the rate"
+assert str(t) == "Instructor email: joe@abc.com  Name: Joe Wong", f"❌ str(t) is {str(t)!r}"
+try:
+    t.email = "x@y.com"
+    raise AssertionError("❌ email should be read only")
+except AttributeError:
+    pass
+@@ solution
+class Instructor:
+    def __init__(self, email, name, ratePerDay):
+        self.__email = email
+        self.__name = name
+        self.__ratePerDay = ratePerDay
+
+    @property
+    def email(self):
+        return self.__email
+
+    @property
+    def ratePerDay(self):
+        return self.__ratePerDay
+
+    @ratePerDay.setter
+    def ratePerDay(self, newRate):
+        self.__ratePerDay = newRate
+
+    def __str__(self):
+        return f"Instructor email: {self.__email}  Name: {self.__name}"
+
+@@ exercise Hotel room
+Write the `Room` class:
+
+- Private attributes `__roomNumber`, `__roomType` and `__rate` (price per night).
+- Getter properties for all three.
+- A setter for `rate` that only accepts a rate **greater than 0**.
+- A method `costFor(self, nights)` that returns `nights` times the rate.
+- `__str__` returns, for example: `Room 101 (Deluxe) $120.00 per night`
+@@ starter
+class Room:
+    pass
+@@ check
+r = Room(101, "Deluxe", 120)
+assert vars(r) == {"_Room__roomNumber": 101, "_Room__roomType": "Deluxe", "_Room__rate": 120}, f"❌ attributes are {list(vars(r))}"
+assert (r.roomNumber, r.roomType, r.rate) == (101, "Deluxe", 120), "❌ check the three properties"
+assert r.costFor(3) == 360, f"❌ 3 nights at 120 should cost 360, got {r.costFor(3)}"
+r.rate = 0
+assert r.rate == 120, "❌ a rate of 0 should be ignored"
+r.rate = 99.5
+assert r.rate == 99.5, "❌ a rate of 99.5 should be accepted"
+assert str(r) == "Room 101 (Deluxe) $99.50 per night", f"❌ str(r) is {str(r)!r}"
+@@ solution
+class Room:
+    def __init__(self, roomNumber, roomType, rate):
+        self.__roomNumber = roomNumber
+        self.__roomType = roomType
+        self.__rate = rate
+
+    @property
+    def roomNumber(self):
+        return self.__roomNumber
+
+    @property
+    def roomType(self):
+        return self.__roomType
+
+    @property
+    def rate(self):
+        return self.__rate
+
+    @rate.setter
+    def rate(self, newRate):
+        if newRate > 0:
+            self.__rate = newRate
+
+    def costFor(self, nights):
+        return nights * self.__rate
+
+    def __str__(self):
+        return f"Room {self.__roomNumber} ({self.__roomType}) ${self.__rate:.2f} per night"
+
+@@ exercise Use the classes together
+Use your `Item` class from the exercise above (run that cell first).
+
+1. Create a list `items` with three items: `"Pen"` at `1.50`, `"Book"` at `12.00`, `"Bag"` at `25.90`.
+2. The book goes on sale: use the setter to change its price to `9.00`.
+3. Use a loop and the `price` property to work out `total`, the sum of all prices.
+@@ starter
+items = ...
+
+total = 0
+
+print(total)
+@@ check
+assert len(items) == 3 and all(isinstance(x, Item) for x in items), "❌ items should be a list of 3 Item objects"
+assert [x.name for x in items] == ["Pen", "Book", "Bag"], "❌ the items should be Pen, Book and Bag, in that order"
+assert items[1].price == 9.0, "❌ the book's price should now be 9.00"
+assert abs(total - 36.4) < 0.0001, f"❌ total should be 36.40 but it is {total}"
+@@ hint
+The book is `items[1]`, so write `items[1].price = 9.00`.
+@@ solution
+items = [Item("Pen", 1.50), Item("Book", 12.00), Item("Bag", 25.90)]
+items[1].price = 9.00
+total = 0
+for x in items:
+    total += x.price
+print(total)
+
+@@ md
+## 10. Find the mistakes
+
+@@ predict Forgot the decorator
+@@ run
+class Pet:
+    def __init__(self, name):
+        self.__name = name
+
+    def name(self):
+        return self.__name
+
+p = Pet("Milo")
+print(p.name())
+print(p.name == "Milo")
+@@ output
+Milo
+False
+@@ explain
+There is no `@property`, so `name` is a normal method.
+`p.name()` runs it and gives `"Milo"`.
+`p.name` without brackets is the method itself, not the text, so comparing it with `"Milo"` is `False`.
+This is a quiet bug: no error, just the wrong answer.
+
+@@ predict Setter with the wrong name
+@@ run raises=AttributeError
+class Item:
+    def __init__(self, price):
+        self.__price = price
+
+    @property
+    def price(self):
+        return self.__price
+
+    @price.setter
+    def setPrice(self, newPrice):
+        self.__price = newPrice
+
+i = Item(5)
+i.setPrice = 8
+print(i.price)
+i.price = 10
+@@ output
+8
+@@ explain
+The setter method must have the **same name** as the property.
+Here it is called `setPrice`, so `@price.setter` made a **new** property called `setPrice`.
+That new property has the same getter and a setter, both using `self.__price`.
+So `i.setPrice = 8` really does store 8, and `i.price` shows `8`.
+But the property called `price` still has no setter.
+So `i.price = 10` fails with `AttributeError: property 'price' of 'Item' object has no setter`.
+The fix is to name the setter method `price`, like the getter.
+
+@@ exercise Fix the class
+This class has **four** mistakes.
+Fix them so that the check passes.
+@@ starter
+class Patient:
+    def __init__(self, name, weight):
+        self.__name = name
+        self.__weigth = weight
+
+    @property
+    def name(self):
+        return self.name
+
+    @property
+    def weight(self):
+        return self.__weight
+
+    @weight.setter
+    def weight(newWeight):
+        if newWeight > 0:
+            self.__weight = newWeight
+
+    def __str__(self):
+        print(f"{self.__name}: {self.__weight:.1f} kg")
+@@ check
+p = Patient("Amy", 55)
+assert vars(p) == {"_Patient__name": "Amy", "_Patient__weight": 55}, f"❌ attributes should be __name and __weight, but they are {list(vars(p))}"
+assert p.name == "Amy", "❌ the name property should return self.__name"
+p.weight = 56.5
+p.weight = -1
+assert p.weight == 56.5, "❌ the weight setter should accept 56.5 and ignore -1"
+assert str(p) == "Amy: 56.5 kg", f"❌ str(p) is {str(p)!r}"
+@@ hint
+1. Look very carefully at the spelling in `__init__`.
+2. Look at what the `name` property returns. (Returning `self.name` calls the property again, forever!)
+3. Look at the parameters of the setter.
+4. Look at `__str__`: should it print or return?
+@@ solution
+class Patient:
+    def __init__(self, name, weight):
+        self.__name = name
+        self.__weight = weight
+
+    @property
+    def name(self):
+        return self.__name
+
+    @property
+    def weight(self):
+        return self.__weight
+
+    @weight.setter
+    def weight(self, newWeight):
+        if newWeight > 0:
+            self.__weight = newWeight
+
+    def __str__(self):
+        return f"{self.__name}: {self.__weight:.1f} kg"
+
+@@ write What is encapsulation?
+Explain **encapsulation** in two or three sentences, using the `CashCard` class as your example.
+@@ answer
+Encapsulation means keeping an object's data hidden inside the object and only allowing access through its methods.
+In `CashCard`, the balance is stored in the private attribute `__balance`, so code outside the class cannot change it directly.
+Other code can only read it through the `balance` property and change it through `topUp` and `deduct`, which check the rules.
+
+@@ write Getter and setter
+What is the difference between a **getter property** and a **setter**?
+How do you use each one from outside the class?
+@@ answer
+A getter property (`@property`) returns the value of a private attribute, so other code can read it.
+A setter (`@name.setter`) receives a new value and stores it, often after checking that it is valid.
+From outside, you read with `obj.name` (no brackets), and you change with `obj.name = newValue`.
+
+@@ md
+## 📝 Key points
+
+- **Encapsulation**: hide the data, and only allow access through methods you control.
+- `self.__x` (two underscores) is **private**. Reading `obj.__x` from outside gives an `AttributeError` (name mangling).
+- Assigning `obj.__x = ...` from outside does **not** change the private attribute. It creates a new one.
+- `self._x` (one underscore) is **protected**: a polite "do not touch", but not blocked.
+- Getter: `@property`, then `def x(self): return self.__x`. Use it as `obj.x` with no brackets.
+- Setter: `@x.setter`, then `def x(self, newX): self.__x = newX`. Use it as `obj.x = value`.
+- A property with no setter is **read only**. Assigning to it gives an `AttributeError`.
+- Setters can check the value before storing it.
+- Prefer behaviour methods (`topUp`, `deduct`) over setters when the value should follow rules.
+
+## ⚠️ Common mistakes
+
+| Mistake | What happens |
+| --- | --- |
+| `print(obj.__balance)` from outside | `AttributeError: ... has no attribute '__balance'` |
+| `obj.balance()` (brackets on a property) | `TypeError: 'float' object is not callable` |
+| `obj.name = "x"` when there is no setter | `AttributeError: property 'name' of ... has no setter` |
+| Setter with a different name from the property | The property stays read only |
+| `return self.name` inside the `name` property | Calls itself forever (`RecursionError`) |
+| Forgetting `@property` | `obj.name` gives the method, not the value |
+| `self.weight = weight` in `__init__` when the diagram says `__weight` | Wrong attribute, lost marks |
+
+Next: **08_Class_Variables_and_Class_Methods**.

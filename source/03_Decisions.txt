@@ -1,0 +1,863 @@
+@@ md
+# 03 - Making Decisions
+
+**What you will learn**
+
+- How to compare values, and get `True` or `False`.
+- How to make your code choose what to do with `if`, `elif` and `else`.
+- How to combine conditions with `and`, `or` and `not`.
+- Useful tools for checking text: `.lower()`, `.strip()`, `len()`, `in`, `.startswith()`, `.isdigit()`.
+- Common checking patterns from the exam: empty text, positive numbers, phone numbers, "is the list full?".
+
+**Why this matters for the exam**
+
+Almost every exam method makes a decision.
+"If the balance is enough, deduct the amount."
+"If adding this item results in more than the maximum, raise an exception."
+"If the entry box is empty, show *Please enter a value*."
+All of these are `if` statements.
+
+We will practise by completing small functions.
+That way the check cell can test your code with many different values.
+
+@@ md
+## 1. Comparing values
+
+A **comparison** asks a yes or no question.
+The answer is always `True` or `False` (a `bool`).
+
+| Symbol | Question | Example | Result |
+| --- | --- | --- | --- |
+| `==` | is equal to? | `5 == 5` | `True` |
+| `!=` | is not equal to? | `5 != 5` | `False` |
+| `<` | is less than? | `3 < 5` | `True` |
+| `>` | is greater than? | `3 > 5` | `False` |
+| `<=` | is less than or equal to? | `5 <= 5` | `True` |
+| `>=` | is greater than or equal to? | `4 >= 5` | `False` |
+
+@@ code
+age = 19
+print(age >= 18)
+print(age == 21)
+print("Amy" == "Amy")
+
+@@ md
+⚠️ **`=` and `==` are different.**
+
+- `=` **puts** a value into a variable: `age = 19`.
+- `==` **asks** whether two values are equal: `age == 19`.
+
+@@ predict True or False?
+@@ run
+print(10 > 3)
+print(2 == 3)
+print(7 != 8)
+print("tea" == "Tea")
+@@ output
+True
+False
+True
+False
+@@ explain
+`10 > 3` and `7 != 8` are true.
+`2 == 3` is false.
+`"tea" == "Tea"` is **false**, because Python treats small `t` and capital `T` as different letters.
+Remember this one. It comes back later.
+
+@@ predict = versus ==
+@@ run
+x = 5
+print(x == 5)
+x == 7
+print(x)
+@@ output
+True
+5
+@@ explain
+`x == 7` only **asks** a question (is x equal to 7?).
+It does not change `x`.
+The answer `False` is thrown away, and `x` is still `5`.
+
+@@ exercise Store a comparison
+Complete `isPass(mark)` so that it **returns** `True` if the mark is 50 or more, and `False` otherwise.
+You do not need `if` for this one. A comparison already gives `True` or `False`.
+@@ starter
+def isPass(mark):
+    return ...
+
+print(isPass(70))
+print(isPass(30))
+@@ check
+assert isPass(70) is True, f"❌ isPass(70) should be True but it is {isPass(70)!r}"
+assert isPass(50) is True, f"❌ isPass(50) should be True (50 counts as a pass) but it is {isPass(50)!r}"
+assert isPass(49) is False, f"❌ isPass(49) should be False but it is {isPass(49)!r}"
+@@ hint
+`return mark >= 50`
+Use `>=`, not `>`, because 50 is a pass.
+@@ solution
+def isPass(mark):
+    return mark >= 50
+
+print(isPass(70))
+print(isPass(30))
+
+@@ md
+## 2. `if`: do something only when a condition is true
+
+```python
+if condition:
+    lines that run only when the condition is True
+```
+
+The rules are the same as for `def`:
+
+- A colon `:` at the end of the `if` line.
+- The lines that belong to the `if` are **indented** by 4 spaces.
+
+@@ code
+balance = 20
+price = 4.5
+
+if balance >= price:
+    print("Payment OK")
+    balance -= price
+
+print("Balance is now", balance)
+
+@@ md
+Try changing `balance` to `3` and run the cell again.
+The two indented lines are skipped, but the last line always runs, because it is not indented.
+
+@@ predict Indented or not?
+@@ run
+temperature = 25
+
+if temperature > 30:
+    print("It is hot")
+    print("Drink water")
+print("Have a nice day")
+@@ output
+Have a nice day
+@@ explain
+`25 > 30` is `False`, so both indented lines are skipped.
+The last line is not indented, so it is not part of the `if`. It always runs.
+
+@@ md
+## 3. `else`: do something different when it is false
+
+`else` gives a second path.
+Exactly **one** of the two blocks runs.
+
+@@ code
+def ticketType(age):
+    if age < 12:
+        return "Child"
+    else:
+        return "Adult"
+
+print(ticketType(8))
+print(ticketType(30))
+
+@@ md
+💡 Notice the indentation inside a function.
+The `if` is indented once (it is inside the function).
+The `return` lines are indented twice (they are inside the `if`).
+
+@@ exercise Ticket price
+Complete `ticketPrice(age)`.
+Children under 12 pay `5`.
+Everyone else pays `10`.
+@@ starter
+def ticketPrice(age):
+    if ...:
+        return ...
+    else:
+        return ...
+
+print(ticketPrice(8))
+print(ticketPrice(40))
+@@ check
+assert ticketPrice(8) == 5, f"❌ ticketPrice(8) should be 5 but it is {ticketPrice(8)!r}"
+assert ticketPrice(11) == 5, f"❌ ticketPrice(11) should be 5 but it is {ticketPrice(11)!r}"
+assert ticketPrice(12) == 10, f"❌ ticketPrice(12) should be 10 (12 is not under 12) but it is {ticketPrice(12)!r}"
+assert ticketPrice(40) == 10, f"❌ ticketPrice(40) should be 10 but it is {ticketPrice(40)!r}"
+@@ hint
+The condition is `age < 12`.
+@@ solution
+def ticketPrice(age):
+    if age < 12:
+        return 5
+    else:
+        return 10
+
+print(ticketPrice(8))
+print(ticketPrice(40))
+
+@@ exercise Enough money?
+Complete `checkPayment(balance, amount)`.
+If the balance is **enough** to pay the amount, return `"Payment OK"`.
+Otherwise return `"Not enough money"`.
+A balance exactly equal to the amount is enough.
+@@ starter
+def checkPayment(balance, amount):
+    ...
+
+print(checkPayment(20, 5))
+print(checkPayment(3, 5))
+@@ check
+assert checkPayment(20, 5) == "Payment OK", f"❌ checkPayment(20, 5) returned {checkPayment(20, 5)!r}"
+assert checkPayment(5, 5) == "Payment OK", f"❌ checkPayment(5, 5) returned {checkPayment(5, 5)!r}. Equal is enough."
+assert checkPayment(3, 5) == "Not enough money", f"❌ checkPayment(3, 5) returned {checkPayment(3, 5)!r}"
+@@ hint
+`if balance >= amount:`
+@@ solution
+def checkPayment(balance, amount):
+    if balance >= amount:
+        return "Payment OK"
+    else:
+        return "Not enough money"
+
+print(checkPayment(20, 5))
+print(checkPayment(3, 5))
+
+@@ exercise Deduct only if possible
+This is how the `deduct` method of a cash card works in the course slides.
+Complete `deduct(balance, amount)`.
+
+- If the balance is enough, return the **new** balance (balance minus amount).
+- Otherwise, return the balance **unchanged**.
+@@ starter
+def deduct(balance, amount):
+    ...
+
+print(deduct(20, 5))
+print(deduct(3, 5))
+@@ check
+assert deduct(20, 5) == 15, f"❌ deduct(20, 5) should return 15 but returned {deduct(20, 5)!r}"
+assert deduct(5, 5) == 0, f"❌ deduct(5, 5) should return 0 but returned {deduct(5, 5)!r}"
+assert deduct(3, 5) == 3, f"❌ deduct(3, 5) should return 3 (unchanged) but returned {deduct(3, 5)!r}"
+@@ solution
+def deduct(balance, amount):
+    if balance >= amount:
+        return balance - amount
+    else:
+        return balance
+
+print(deduct(20, 5))
+print(deduct(3, 5))
+
+@@ md
+## 4. `elif`: more than two choices
+
+`elif` means "else, if".
+Python checks the conditions **from top to bottom**.
+It runs the block of the **first** condition that is true, and skips all the rest.
+`else` at the end catches everything that did not match.
+
+@@ code
+def drinkSize(ml):
+    if ml >= 700:
+        return "Large"
+    elif ml >= 500:
+        return "Medium"
+    else:
+        return "Small"
+
+print(drinkSize(750))
+print(drinkSize(500))
+print(drinkSize(300))
+
+@@ predict First match wins
+@@ run
+mark = 85
+if mark >= 50:
+    print("Pass")
+elif mark >= 80:
+    print("Distinction")
+else:
+    print("Fail")
+@@ output
+Pass
+@@ explain
+`85 >= 50` is true, so Python prints `Pass` and skips the rest.
+It never even looks at `mark >= 80`.
+The order is wrong: the most demanding check (`>= 80`) should come first.
+
+@@ exercise Grade a mark
+Complete `grade(mark)`:
+
+| Mark | Grade |
+| --- | --- |
+| 80 or more | `"A"` |
+| 65 to 79 | `"B"` |
+| 50 to 64 | `"C"` |
+| below 50 | `"F"` |
+@@ starter
+def grade(mark):
+    if mark >= 80:
+        return "A"
+    # add the other cases here
+
+print(grade(90), grade(70), grade(55), grade(20))
+@@ check
+for _mark, _expected in [(90, "A"), (80, "A"), (79, "B"), (65, "B"), (64, "C"), (50, "C"), (49, "F"), (0, "F")]:
+    assert grade(_mark) == _expected, f"❌ grade({_mark}) should be {_expected!r} but it is {grade(_mark)!r}"
+@@ hint
+Add `elif mark >= 65:` and `elif mark >= 50:`, then `else:`.
+Because the first true condition wins, you do not need to write `mark < 80`.
+@@ solution
+def grade(mark):
+    if mark >= 80:
+        return "A"
+    elif mark >= 65:
+        return "B"
+    elif mark >= 50:
+        return "C"
+    else:
+        return "F"
+
+print(grade(90), grade(70), grade(55), grade(20))
+
+@@ exercise Fix the order
+`shippingFee(weight)` should charge:
+
+- `15` for parcels of 10 kg or more,
+- `8` for parcels of 2 kg or more (but less than 10),
+- `5` for anything lighter.
+
+It always gives the wrong fee for heavy parcels.
+Fix it by changing the **order** of the checks.
+@@ starter
+def shippingFee(weight):
+    if weight >= 2:
+        return 8
+    elif weight >= 10:
+        return 15
+    else:
+        return 5
+
+print(shippingFee(12))
+@@ check
+assert shippingFee(12) == 15, f"❌ shippingFee(12) should be 15 but it is {shippingFee(12)!r}"
+assert shippingFee(10) == 15, f"❌ shippingFee(10) should be 15 but it is {shippingFee(10)!r}"
+assert shippingFee(5) == 8, f"❌ shippingFee(5) should be 8 but it is {shippingFee(5)!r}"
+assert shippingFee(1) == 5, f"❌ shippingFee(1) should be 5 but it is {shippingFee(1)!r}"
+@@ hint
+A 12 kg parcel is also `>= 2`, so the first check catches it.
+Put the `>= 10` check first.
+@@ solution
+def shippingFee(weight):
+    if weight >= 10:
+        return 15
+    elif weight >= 2:
+        return 8
+    else:
+        return 5
+
+print(shippingFee(12))
+
+@@ predict Many ifs or one elif chain?
+@@ run
+points = 120
+if points > 50:
+    print("Silver")
+if points > 100:
+    print("Gold")
+
+if points > 100:
+    print("Gold member")
+elif points > 50:
+    print("Silver member")
+@@ output
+Silver
+Gold
+Gold member
+@@ explain
+Two separate `if` statements are **both** checked, so both can print.
+In an `if` / `elif` chain, only the **first** true branch runs.
+
+@@ md
+## 5. `and`, `or`, `not`
+
+You can join conditions:
+
+| Word | Meaning | Example |
+| --- | --- | --- |
+| `and` | both must be true | `age >= 18 and isMember` |
+| `or` | at least one must be true | `day == "Sat" or day == "Sun"` |
+| `not` | flips True and False | `not isFull` |
+
+You can also write a range check in one go: `0 <= mark <= 100`.
+
+@@ predict and / or / not
+@@ run
+age = 20
+isMember = False
+print(age >= 18 and isMember)
+print(age >= 18 or isMember)
+print(not isMember)
+print(0 <= age <= 100)
+@@ output
+False
+True
+True
+True
+@@ explain
+`and` needs **both** sides true, but `isMember` is `False`, so the result is `False`.
+`or` needs only **one** side true, and `age >= 18` is true.
+`not False` is `True`.
+`0 <= 20 <= 100` checks that 20 is between 0 and 100, which is true.
+
+@@ exercise Can borrow a book?
+Complete `canBorrow(isMember, booksBorrowed)`.
+A person can borrow a book only if they are a member **and** they have borrowed fewer than 3 books.
+Return `True` or `False`.
+@@ starter
+def canBorrow(isMember, booksBorrowed):
+    ...
+
+print(canBorrow(True, 1))
+@@ check
+assert canBorrow(True, 1) is True, f"❌ canBorrow(True, 1) should be True but it is {canBorrow(True, 1)!r}"
+assert canBorrow(True, 3) is False, f"❌ canBorrow(True, 3) should be False but it is {canBorrow(True, 3)!r}"
+assert canBorrow(False, 0) is False, f"❌ canBorrow(False, 0) should be False but it is {canBorrow(False, 0)!r}"
+@@ hint
+You can write `return isMember and booksBorrowed < 3`.
+Or use `if` / `else` with `return True` and `return False`.
+@@ solution
+def canBorrow(isMember, booksBorrowed):
+    return isMember and booksBorrowed < 3
+
+print(canBorrow(True, 1))
+
+@@ exercise Weekend?
+Complete `isWeekend(day)`.
+It returns `True` if `day` is `"Sat"` or `"Sun"`, and `False` for anything else.
+@@ starter
+def isWeekend(day):
+    ...
+
+print(isWeekend("Sat"), isWeekend("Mon"))
+@@ check
+assert isWeekend("Sat") is True, "❌ isWeekend(\"Sat\") should be True"
+assert isWeekend("Sun") is True, "❌ isWeekend(\"Sun\") should be True"
+assert isWeekend("Mon") is False, f"❌ isWeekend(\"Mon\") should be False but it is {isWeekend('Mon')!r}"
+@@ hint
+`return day == "Sat" or day == "Sun"`
+⚠️ `day == "Sat" or "Sun"` does **not** work. Each side of `or` needs its own full comparison.
+@@ solution
+def isWeekend(day):
+    return day == "Sat" or day == "Sun"
+
+print(isWeekend("Sat"), isWeekend("Mon"))
+
+@@ exercise Valid mark?
+Complete `isValidMark(mark)`.
+A mark is valid if it is from `0` to `100` (both included).
+@@ starter
+def isValidMark(mark):
+    ...
+
+print(isValidMark(50), isValidMark(120))
+@@ check
+for _mark, _expected in [(0, True), (50, True), (100, True), (-1, False), (101, False)]:
+    assert isValidMark(_mark) is _expected, f"❌ isValidMark({_mark}) should be {_expected} but it is {isValidMark(_mark)!r}"
+@@ hint
+`return 0 <= mark <= 100`
+@@ solution
+def isValidMark(mark):
+    return 0 <= mark <= 100
+
+print(isValidMark(50), isValidMark(120))
+
+@@ md
+## 6. Tools for checking text
+
+Strings have built-in **methods**.
+A method is a function that belongs to a value.
+You call it with a dot: `text.lower()`.
+
+| Tool | What it does | Example | Result |
+| --- | --- | --- | --- |
+| `text.lower()` | all small letters | `"Tea".lower()` | `"tea"` |
+| `text.upper()` | all capital letters | `"Tea".upper()` | `"TEA"` |
+| `text.strip()` | removes spaces at both ends | `"  hi  ".strip()` | `"hi"` |
+| `len(text)` | number of characters | `len("hello")` | `5` |
+| `part in text` | is `part` inside `text`? | `"ea" in "Tea"` | `True` |
+| `text.startswith(part)` | does `text` begin with `part`? | `"91234567".startswith("9")` | `True` |
+| `text.isdigit()` | is every character a digit 0 to 9? | `"123".isdigit()` | `True` |
+
+⚠️ These methods do **not** change the original text.
+They give back a new value, so you must use or store the result.
+
+@@ predict Text tools
+@@ run
+name = "  Amy Tan  "
+print(name.strip())
+print(name.strip().upper())
+print(len(name))
+print(len(name.strip()))
+@@ output
+Amy Tan
+AMY TAN
+11
+7
+@@ explain
+`strip()` removes the spaces at both ends, giving `Amy Tan`.
+Then `.upper()` makes it all capitals.
+The original has 2 spaces in front and 2 at the end, so its length is 11. After stripping it is 7.
+
+@@ predict in, startswith, isdigit
+@@ run
+phone = "91234567"
+print("123" in phone)
+print(phone.startswith("8"))
+print(phone.isdigit())
+print("12a4".isdigit())
+print("".isdigit())
+@@ output
+True
+False
+True
+False
+False
+@@ explain
+`"123"` appears inside `"91234567"`.
+The phone starts with `9`, not `8`.
+All characters of `"91234567"` are digits, so `isdigit()` is `True`.
+`"12a4"` has a letter, so it is `False`.
+An empty string has no digits at all, so `isdigit()` is also `False`.
+
+@@ md
+## 7. Comparing text without caring about capitals
+
+🎯 Exam questions often say "search by name, **case insensitive**".
+That means `"amy"`, `"Amy"` and `"AMY"` must all count as the same name.
+The trick: make **both** sides lowercase before you compare.
+
+@@ code
+storedName = "Amy"
+typedName = "AMY"
+print(storedName == typedName)                  # False
+print(storedName.lower() == typedName.lower())  # True
+
+@@ exercise Same name?
+Complete `sameName(name1, name2)`.
+Return `True` if the two names are the same, ignoring capital letters **and** any spaces at the ends.
+@@ starter
+def sameName(name1, name2):
+    ...
+
+print(sameName("Amy", "  amy "))
+@@ check
+assert sameName("Amy", "amy") is True, "❌ sameName(\"Amy\", \"amy\") should be True"
+assert sameName("Amy", "  AMY ") is True, "❌ sameName(\"Amy\", \"  AMY \") should be True. Did you strip?"
+assert sameName("Amy", "Ann") is False, "❌ sameName(\"Amy\", \"Ann\") should be False"
+@@ hint
+`name1.strip().lower() == name2.strip().lower()`
+@@ solution
+def sameName(name1, name2):
+    return name1.strip().lower() == name2.strip().lower()
+
+print(sameName("Amy", "  amy "))
+
+@@ exercise Yes or no answer
+Complete `saidYes(answer)`.
+It returns `True` if the user typed `"y"` or `"yes"`, in any mix of capitals, with or without spaces at the ends.
+Anything else returns `False`.
+@@ starter
+def saidYes(answer):
+    ...
+
+print(saidYes(" YES "), saidYes("no"))
+@@ check
+for _text, _expected in [("y", True), ("Y", True), ("yes", True), (" YES ", True), ("Yes", True), ("no", False), ("yeah", False), ("", False)]:
+    assert saidYes(_text) is _expected, f"❌ saidYes({_text!r}) should be {_expected} but it is {saidYes(_text)!r}"
+@@ hint
+First clean the text: `answer = answer.strip().lower()`.
+Then `return answer == "y" or answer == "yes"`.
+@@ solution
+def saidYes(answer):
+    answer = answer.strip().lower()
+    return answer == "y" or answer == "yes"
+
+print(saidYes(" YES "), saidYes("no"))
+
+@@ md
+## 8. Checking input (validation)
+
+Before a program uses a value, it often checks that the value makes sense.
+This is called **validation**.
+Exam methods and GUI buttons do this all the time.
+
+Common checks:
+
+| Check | Code |
+| --- | --- |
+| text is empty | `text.strip() == ""` |
+| number is positive | `amount > 0` |
+| number is in a range | `1 <= qty <= 10` |
+| text is all digits | `text.isdigit()` |
+| text has the right length | `len(text) == 8` |
+
+@@ exercise Empty text?
+Complete `isEmpty(text)`.
+It returns `True` if the text is empty or contains only spaces.
+@@ starter
+def isEmpty(text):
+    ...
+
+print(isEmpty("   "), isEmpty("Amy"))
+@@ check
+assert isEmpty("") is True, "❌ isEmpty(\"\") should be True"
+assert isEmpty("   ") is True, "❌ isEmpty(\"   \") should be True (only spaces counts as empty)"
+assert isEmpty("Amy") is False, "❌ isEmpty(\"Amy\") should be False"
+assert isEmpty(" a ") is False, "❌ isEmpty(\" a \") should be False"
+@@ hint
+`return text.strip() == ""`
+@@ solution
+def isEmpty(text):
+    return text.strip() == ""
+
+print(isEmpty("   "), isEmpty("Amy"))
+
+@@ predict Brackets with and / or
+Python does all the `and` parts before the `or` parts, like `*` before `+` in maths.
+@@ run
+phone = "1234567"
+print(len(phone) == 8 and phone.startswith("6") or phone.startswith("1"))
+print(len(phone) == 8 and (phone.startswith("6") or phone.startswith("1")))
+@@ output
+True
+False
+@@ explain
+The first line is read as `(len(phone) == 8 and phone.startswith("6")) or phone.startswith("1")`.
+The left part is `False`, but the right part is `True`, so the answer is `True`, even though the phone has only 7 digits.
+The second line uses brackets so that the length must be 8 **and** one of the starts must match. That gives `False`, which is what we want.
+💡 When you mix `and` and `or`, always use brackets.
+
+@@ exercise Valid Singapore phone number
+🎯 This check appeared in a past exam.
+Complete `isValidPhone(phone)`.
+A phone number is valid if **all** of these are true:
+
+- it has exactly 8 characters,
+- every character is a digit,
+- it starts with `6`, `8` or `9`.
+@@ starter
+def isValidPhone(phone):
+    ...
+
+print(isValidPhone("91234567"), isValidPhone("71234567"))
+@@ check
+for _phone, _expected in [("91234567", True), ("81234567", True), ("61234567", True), ("71234567", False),
+                          ("9123456", False), ("912345678", False), ("9123456a", False), ("", False)]:
+    assert isValidPhone(_phone) is _expected, f"❌ isValidPhone({_phone!r}) should be {_expected} but it is {isValidPhone(_phone)!r}"
+@@ hint
+Join three checks with `and`.
+Put the three `startswith` checks inside brackets, joined with `or`:
+`(phone.startswith("6") or phone.startswith("8") or phone.startswith("9"))`
+@@ solution
+def isValidPhone(phone):
+    return (len(phone) == 8 and phone.isdigit()
+            and (phone.startswith("6") or phone.startswith("8") or phone.startswith("9")))
+
+print(isValidPhone("91234567"), isValidPhone("71234567"))
+
+@@ exercise Valid quantity
+Complete `isValidQuantity(qty)`.
+A quantity is valid if it is more than 0 and at most `maxQty`.
+`maxQty` has a default value of `10`.
+@@ starter
+def isValidQuantity(qty, maxQty=10):
+    ...
+
+print(isValidQuantity(3), isValidQuantity(0), isValidQuantity(12, 20))
+@@ check
+assert isValidQuantity(3) is True, "❌ isValidQuantity(3) should be True"
+assert isValidQuantity(10) is True, "❌ isValidQuantity(10) should be True (at most 10 includes 10)"
+assert isValidQuantity(0) is False, "❌ isValidQuantity(0) should be False"
+assert isValidQuantity(11) is False, "❌ isValidQuantity(11) should be False"
+assert isValidQuantity(12, 20) is True, "❌ isValidQuantity(12, 20) should be True"
+@@ hint
+`return 0 < qty <= maxQty`
+@@ solution
+def isValidQuantity(qty, maxQty=10):
+    return 0 < qty <= maxQty
+
+print(isValidQuantity(3), isValidQuantity(0), isValidQuantity(12, 20))
+
+@@ md
+## 9. "Will this addition go over the maximum?"
+
+🎯 Exam questions often say:
+"Raise an exception if **this addition results in more than** the maximum number of items."
+
+Read it carefully.
+You have to imagine the list **after** adding one more.
+If you already have `currentCount` items, after adding there will be `currentCount + 1`.
+So the check is `currentCount + 1 > maxCount`.
+
+@@ predict Full or not?
+@@ run
+maxCount = 3
+currentCount = 2
+print(currentCount + 1 > maxCount)
+currentCount = 3
+print(currentCount + 1 > maxCount)
+@@ output
+False
+True
+@@ explain
+With 2 items, adding one more gives 3, which is not more than 3. So it is allowed (`False` means "not too many").
+With 3 items, adding one more gives 4, which is more than 3. So it is too many (`True`).
+
+@@ exercise Can we add one more?
+Complete `canAdd(currentCount, maxCount)`.
+It returns `False` if adding one more item results in more than `maxCount` items.
+Otherwise it returns `True`.
+@@ starter
+def canAdd(currentCount, maxCount):
+    ...
+
+print(canAdd(2, 3), canAdd(3, 3))
+@@ check
+assert canAdd(0, 3) is True, "❌ canAdd(0, 3) should be True"
+assert canAdd(2, 3) is True, "❌ canAdd(2, 3) should be True (the 3rd item is allowed)"
+assert canAdd(3, 3) is False, "❌ canAdd(3, 3) should be False (a 4th item is too many)"
+assert canAdd(5, 3) is False, "❌ canAdd(5, 3) should be False"
+@@ hint
+```python
+if currentCount + 1 > maxCount:
+    return False
+else:
+    return True
+```
+@@ solution
+def canAdd(currentCount, maxCount):
+    if currentCount + 1 > maxCount:
+        return False
+    else:
+        return True
+
+print(canAdd(2, 3), canAdd(3, 3))
+
+@@ md
+## 10. Putting it together
+
+@@ exercise Member price
+Complete `memberPrice(price, tier)`.
+It returns the price after the member discount:
+
+| tier | discount |
+| --- | --- |
+| `"gold"` | 20% |
+| `"silver"` | 10% |
+| anything else | no discount |
+
+The tier may be typed with any capital letters, for example `"Gold"` or `"SILVER"`.
+@@ starter
+def memberPrice(price, tier):
+    ...
+
+print(memberPrice(100, "Gold"))
+@@ check
+assert abs(memberPrice(100, "gold") - 80) < 0.0001, f"❌ memberPrice(100, \"gold\") should be 80 but it is {memberPrice(100, 'gold')!r}"
+assert abs(memberPrice(100, "Gold") - 80) < 0.0001, "❌ memberPrice(100, \"Gold\") should be 80. Did you use .lower()?"
+assert abs(memberPrice(50, "SILVER") - 45) < 0.0001, "❌ memberPrice(50, \"SILVER\") should be 45"
+assert memberPrice(30, "bronze") == 30, "❌ memberPrice(30, \"bronze\") should be 30 (no discount)"
+@@ hint
+Start with `tier = tier.lower()`.
+Then use `if` / `elif` / `else`. 20% off means `price * 0.8`.
+@@ solution
+def memberPrice(price, tier):
+    tier = tier.lower()
+    if tier == "gold":
+        return price * 0.8
+    elif tier == "silver":
+        return price * 0.9
+    else:
+        return price
+
+print(memberPrice(100, "Gold"))
+
+@@ exercise Check the entry box (exam style)
+🎯 In the GUI question of the exam, you read text from an entry box and check it before using it.
+Complete `checkAmountText(text)`.
+Follow the checks **in this order**, and return the first message that applies:
+
+1. If the text is empty (or only spaces), return `"Please enter a value"`.
+2. If the text (without the spaces at the ends) is not all digits, return `"Value must be numeric"`.
+3. If the number is 0, return `"Value must be positive"`.
+4. Otherwise return the amount as money, for example `"Amount: $25.00"`.
+
+(In notebook 12 you will learn a better way to check for numbers, which also allows decimals.)
+@@ starter
+def checkAmountText(text):
+    text = text.strip()
+    ...
+
+print(checkAmountText(" 25 "))
+@@ check
+for _text, _expected in [("", "Please enter a value"), ("   ", "Please enter a value"),
+                         ("abc", "Value must be numeric"), ("12x", "Value must be numeric"),
+                         ("0", "Value must be positive"), ("25", "Amount: $25.00"), (" 7 ", "Amount: $7.00")]:
+    assert checkAmountText(_text) == _expected, f"❌ checkAmountText({_text!r}) should return {_expected!r} but returned {checkAmountText(_text)!r}"
+@@ hint
+```python
+if text == "":
+    return "Please enter a value"
+elif not text.isdigit():
+    return "Value must be numeric"
+elif int(text) <= 0:
+    ...
+```
+Remember to convert with `int(text)` before comparing with 0.
+@@ solution
+def checkAmountText(text):
+    text = text.strip()
+    if text == "":
+        return "Please enter a value"
+    elif not text.isdigit():
+        return "Value must be numeric"
+    elif int(text) <= 0:
+        return "Value must be positive"
+    else:
+        return f"Amount: ${int(text):.2f}"
+
+print(checkAmountText(" 25 "))
+
+@@ write Why does the order of checks matter?
+In `checkAmountText`, why must the "empty" check come **before** the "positive" check?
+What would go wrong if you did `int(text) <= 0` first?
+@@ answer
+Python runs the checks from top to bottom and stops at the first one that is true.
+If `int(text)` ran first on empty text (or on text like `"abc"`), it would crash with a `ValueError`, because that text is not a number.
+So the safe checks (empty, then digits) must come first, and the number check comes last.
+In the exam, the question tells you the order of the checks, and the sample output depends on it, so follow it exactly.
+
+@@ md
+## 📝 Key points
+
+- Comparisons (`==`, `!=`, `<`, `>`, `<=`, `>=`) give `True` or `False`.
+- `=` stores a value. `==` asks a question.
+- `if condition:` then an indented block. Use `elif` and `else` for other cases.
+- In an `if` / `elif` chain, only the **first** true branch runs, so order matters.
+- `and` needs both, `or` needs one, `not` flips. Use brackets when mixing `and` and `or`.
+- For case insensitive checks, compare `a.lower() == b.lower()`.
+- Clean typed text with `.strip()` before checking it.
+- "Results in more than the maximum" means `count + 1 > MAX`.
+
+## ⚠️ Common mistakes
+
+| Mistake | What happens |
+| --- | --- |
+| `if x = 5:` | `SyntaxError` (use `==`) |
+| Missing `:` after `if`, `elif` or `else` | `SyntaxError` |
+| Wrong indentation under `if` | `IndentationError`, or a line runs when it should not |
+| `day == "Sat" or "Sun"` | Always counts as true. Write `day == "Sat" or day == "Sun"` |
+| `"Amy" == "amy"` | `False`. Use `.lower()` on both sides |
+| `if count > MAX:` when the rule is about adding one more | Allows one item too many. Use `count + 1 > MAX` |
+| Most general check first in an `elif` chain | The specific case is never reached |
+
+Next: **04_Lists_and_Loops**.

@@ -1,0 +1,229 @@
+@@ md
+# 00 - Start Here
+
+Welcome! 👋
+This course prepares you for the **ICT162 Object Oriented Programming** exam.
+It starts from the very beginning, so you do not need to remember anything from before.
+
+**What you will learn in this notebook**
+
+- How a Jupyter notebook works.
+- How the exercises in this course work.
+- How to read an error message without panicking.
+
+@@ md
+## The course map
+
+Do the notebooks in order.
+Each one builds on the one before.
+
+| Notebook | Topic | Exam link |
+| --- | --- | --- |
+| 01 | Variables and printing | Used in every answer |
+| 02 | Functions | Methods are just functions inside a class |
+| 03 | Making decisions with `if` | Checks inside methods ("if the list is full...") |
+| 04 | Lists and loops | Searching, adding and removing objects |
+| 05 | Dictionaries | Class dictionaries such as fees by type |
+| 06 | Classes and objects | Every paper: "write the class" |
+| 07 | Encapsulation and properties | `__private` attributes, `@property`, setters |
+| 08 | Class variables and class methods | `_MAX_ITEMS`, running IDs, `@classmethod` |
+| 09 | Composition and collections | "has a", PhoneBook style classes |
+| 10 | Inheritance | `super()`, overriding by replacement or refinement |
+| 11 | Abstract classes and polymorphism | `ABC`, `@abstractmethod`, theory answers |
+| 12 | Exceptions | Custom exceptions, `raise`, `try` / `except` |
+| 13 | GUI with tkinter | About 20 marks in every paper |
+| 14 | Exam drills | "Error or output?" questions and theory |
+| 15 | Mock exam | A full 2 hour practice paper |
+
+💡 Notebooks 01 to 05 are the foundations.
+Do not skip them, even if they feel slow.
+Every exam answer is built from these small pieces.
+
+@@ md
+## How a notebook works
+
+A notebook is made of **cells**.
+There are two kinds:
+
+- **Text cells** (like this one) explain things.
+- **Code cells** (with `[ ]:` on the left) hold Python code that you can run.
+
+To run a cell, click on it and press **Shift + Enter**.
+The result appears under the cell.
+Try it now on the cell below.
+
+@@ code
+print("Hello! I am ready to learn Python.")
+
+@@ md
+After a cell runs, a number appears on its left, like `[1]:`.
+The number shows the order in which you ran the cells.
+
+⚠️ **Order matters.**
+Python remembers what you ran before, not what is above on the page.
+If a cell uses something from an earlier cell, run the earlier cell first.
+
+💡 If things get confusing, use the menu **Kernel → Restart Kernel and Run All Cells** (or **Run → Run All Cells**).
+This makes Python forget everything and run the notebook again from the top.
+
+Run the two cells below in order.
+
+@@ code
+favouriteDrink = "bubble tea"
+
+@@ code
+print("My favourite drink is", favouriteDrink)
+
+@@ md
+## How the exercises work
+
+There are three kinds of exercise in this course.
+
+**🏋️ Coding exercises.**
+You get a code cell with some starting code.
+Replace the `...` with your answer and run the cell.
+Then run the **✅ CHECK** cell under it.
+If your answer is right, it prints `✅ Correct! Well done.`
+If not, it shows a message starting with `❌` that tells you what to fix.
+
+**🔮 Predict the output.**
+You read some code and decide what it prints **before** you run it.
+Write your guess in the box, then run the cell and compare.
+The exam has many questions like this, so do not skip them.
+
+**✍️ Written answers.**
+Some exam questions want a sentence, not code.
+Type your answer, then open the model answer to compare.
+
+Under most exercises there is a **💡 Hint** and a **👀 Solution**.
+Click on them to open them.
+Always try for a few minutes before you open the solution.
+Struggling a little is how your brain learns.
+
+Let us try one of each.
+
+@@ exercise Your first line of code
+Change the code so that `myName` holds your name in quotes, for example `"Mei Ling"`.
+Then run the cell, and then run the check cell under it.
+@@ starter
+myName = ...   # replace ... with your name in quotes
+print("My name is", myName)
+@@ check
+assert isinstance(myName, str), "❌ myName should be text inside quotes, like \"Mei Ling\""
+assert myName.strip() != "", "❌ myName should not be empty"
+@@ hint
+Text in Python goes inside quotes.
+For example: `myName = "Mei Ling"`
+@@ solution
+myName = "Mei Ling"
+print("My name is", myName)
+
+@@ predict Two print lines
+@@ run
+print("Good")
+print("morning")
+@@ output
+Good
+morning
+@@ explain
+Each `print()` starts on a new line.
+Python runs the lines from top to bottom, one at a time.
+
+@@ write Why run cells in order?
+In your own words, why does the order in which you run cells matter?
+@@ answer
+Python remembers what has already been run.
+If a cell uses a variable that is created in another cell, that other cell must run first.
+Otherwise Python does not know the variable yet and shows a `NameError`.
+
+@@ md
+## Reading an error message
+
+Errors are normal.
+Every programmer sees them all day.
+An error message is Python **telling you what is wrong**, so learn to read it.
+
+Run the cell below.
+It is meant to fail.
+
+@@ code raises=NameError
+price = 3.50
+print(prise)
+
+@@ md
+How to read the red box:
+
+1. **Look at the last line first.**
+   It says `NameError: name 'prise' is not defined`.
+   The first word is the **type** of error, and the rest explains it.
+2. **Look at the arrow** `---->` or the line number.
+   It points to the line that failed.
+3. **Ask: what did I mean?**
+   Here we typed `prise` instead of `price`.
+
+The most common errors you will meet:
+
+| Error | Usual meaning |
+| --- | --- |
+| `NameError` | You used a name that does not exist (often a typo, or a cell you forgot to run). |
+| `SyntaxError` | Python cannot understand the line (missing `:` or bracket or quote). |
+| `IndentationError` | The spaces at the start of a line are wrong. |
+| `TypeError` | You used the wrong kind of value, for example adding text to a number. |
+| `ValueError` | The kind is right but the value is wrong, for example `int("abc")`. |
+| `AttributeError` | The object does not have that attribute or method. |
+
+You will meet all of these again, and the exam asks about them.
+
+@@ exercise Fix the error
+The code below has a typo, so it fails with a `NameError`.
+Read the error message, find the typo, and fix it.
+@@ starter
+total = 10
+answer = totl + 5
+print(answer)
+@@ check
+assert answer == 15, "❌ answer should be 15. Did you fix the name of the variable?"
+@@ hint
+The variable is called `total`, but the second line spells it differently.
+@@ solution
+total = 10
+answer = total + 5
+print(answer)
+
+@@ predict Which line fails?
+Python runs from the top.
+When it reaches an error, it stops.
+Lines after the error never run.
+@@ run raises=NameError
+print("one")
+print("two")
+print(three)
+print("four")
+@@ output
+one
+two
+@@ explain
+The first two lines print normally.
+The third line uses `three` without quotes, so Python looks for a variable called `three`.
+There is no such variable, so Python stops with a `NameError`.
+The last line never runs, so `four` is never printed.
+
+@@ md
+## How to study with this course
+
+- **Type the code yourself.** Do not copy and paste. Your fingers learn too.
+- **Say the code out loud.** For example, "`total` becomes `total` plus `5`".
+- **Predict before you run.** Guess what will happen, then check. This is exactly what the exam asks.
+- **When stuck for 5 minutes**, open the hint. After 5 more minutes, open the solution, close it, and write it again yourself.
+- **Redo the exercises you got wrong** the next day.
+
+🎯 In the exam you write code **without running it**.
+So sometimes, write your answer first, read it carefully, and only then run it.
+
+📝 **Key points**
+
+- Run a cell with **Shift + Enter**.
+- Run cells in order. Use **Restart and Run All** when things get strange.
+- Read the **last line** of an error message first.
+
+When you are ready, open **01_Variables_and_Printing**.

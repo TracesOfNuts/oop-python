@@ -1,0 +1,1302 @@
+@@ md
+# 04 - Lists and Loops
+
+**What you will learn**
+
+- How to keep many values together in a **list**.
+- How to add, read and remove items.
+- How to go through every item with a `for` loop.
+- Seven small "recipes" that the exam uses again and again:
+  total, count, largest, search, remove, check for duplicates, and filter.
+- How to build a long text from a list (for `__str__`).
+- Pairs like `[item, qty]` inside a list.
+- A short look at `while` loops for menus.
+
+**Why this matters for the exam**
+
+Every exam paper has a class that keeps a **collection of objects**, like a phone book with contacts.
+You will be asked to add to it, search it, remove from it and add up a total.
+All of these are lists and loops.
+Learn the recipes in this notebook well, and those questions become easy marks.
+
+@@ md
+## 1. What is a list?
+
+A **list** holds many values in one variable, in order.
+Think of a shopping list: one piece of paper, many lines.
+
+You write a list with square brackets `[ ]`, and commas between the items.
+
+@@ code
+drinks = ["Milk Tea", "Green Tea", "Coffee"]
+prices = [4.80, 3.50, 2.20]
+emptyList = []
+print(drinks)
+print(prices)
+print(emptyList)
+
+@@ md
+`len()` tells you how many items are in a list.
+
+@@ code
+drinks = ["Milk Tea", "Green Tea", "Coffee"]
+print(len(drinks))
+
+@@ md
+## 2. Reading one item: the index
+
+Each item has a position number called an **index**.
+⚠️ The index **starts at 0**, not 1.
+
+| Index | 0 | 1 | 2 |
+| --- | --- | --- | --- |
+| Item | `"Milk Tea"` | `"Green Tea"` | `"Coffee"` |
+
+You read an item with `listName[index]`.
+A negative index counts from the end: `-1` is the last item.
+
+@@ code
+drinks = ["Milk Tea", "Green Tea", "Coffee"]
+print(drinks[0])     # first item
+print(drinks[2])     # third item
+print(drinks[-1])    # last item
+
+@@ md
+If you use an index that does not exist, Python stops with an **IndexError**.
+
+@@ code raises=IndexError
+drinks = ["Milk Tea", "Green Tea", "Coffee"]
+print(drinks[3])
+
+@@ md
+Read the last line: `IndexError: list index out of range`.
+The list has 3 items, so the indexes are 0, 1 and 2. There is no index 3.
+
+You can also **change** an item by giving its index a new value.
+
+@@ code
+drinks = ["Milk Tea", "Green Tea", "Coffee"]
+drinks[1] = "Lemon Tea"
+print(drinks)
+
+@@ predict Indexes
+@@ run
+names = ["Amy", "Ben", "Cara", "Dev"]
+print(names[1])
+print(names[-1])
+print(len(names))
+@@ output
+Ben
+Dev
+4
+@@ explain
+Index 1 is the **second** item, because counting starts at 0. So it is `Ben`.
+Index -1 is the last item, `Dev`.
+There are 4 items in the list.
+
+@@ predict Off by one
+@@ run raises=IndexError
+scores = [70, 80, 90]
+print(scores[0] + scores[2])
+print(scores[len(scores)])
+@@ output
+160
+@@ explain
+`scores[0] + scores[2]` is `70 + 90 = 160`.
+`len(scores)` is 3, but the last index is 2.
+So `scores[3]` does not exist and Python raises an `IndexError`.
+💡 The last index is always `len(list) - 1`.
+
+@@ exercise Read from a list
+Use indexes to fill in the three variables.
+Do not type the values yourself.
+@@ starter
+cities = ["Singapore", "Tokyo", "Seoul", "Paris"]
+firstCity = ...    # the first item
+thirdCity = ...    # the third item
+lastCity = ...     # the last item (use a negative index)
+@@ check
+assert firstCity == "Singapore", f"❌ firstCity should be 'Singapore' but it is {firstCity!r}"
+assert thirdCity == "Seoul", f"❌ thirdCity should be 'Seoul' but it is {thirdCity!r}. Remember the index starts at 0."
+assert lastCity == "Paris", f"❌ lastCity should be 'Paris' but it is {lastCity!r}"
+@@ hint
+The third item has index 2.
+The last item has index -1.
+@@ solution
+cities = ["Singapore", "Tokyo", "Seoul", "Paris"]
+firstCity = cities[0]
+thirdCity = cities[2]
+lastCity = cities[-1]
+
+@@ md
+## 3. Adding and removing items
+
+| What you want | Code | Notes |
+| --- | --- | --- |
+| Add to the end | `names.append("Eve")` | The most common one |
+| Add at a position | `names.insert(0, "Eve")` | Other items move right |
+| Remove by value | `names.remove("Ben")` | Removes the first match. `ValueError` if not found |
+| Remove by index and get it back | `item = names.pop(1)` | `pop()` with no index removes the last item |
+| Remove by index | `del names[1]` | Gives nothing back |
+| Is it in the list? | `"Ben" in names` | Gives `True` or `False` |
+
+@@ code
+names = ["Amy", "Ben"]
+names.append("Cara")
+print(names)
+names.insert(0, "Zoe")
+print(names)
+names.remove("Ben")
+print(names)
+taken = names.pop(0)
+print(taken, names)
+print("Amy" in names)
+print("Ben" in names)
+
+@@ md
+⚠️ `remove()` fails if the value is not in the list.
+That is why we usually check with `in` first.
+
+@@ code raises=ValueError
+names = ["Amy", "Ben"]
+names.remove("Cara")
+
+@@ md
+💡 The safe way:
+
+```python
+if "Cara" in names:
+    names.remove("Cara")
+```
+
+🎯 This "check first, then remove" idea is in many exam questions.
+
+@@ predict Append and pop
+@@ run
+cart = ["pen"]
+cart.append("book")
+cart.append("bag")
+item = cart.pop()
+print(item)
+print(cart)
+@@ output
+bag
+['pen', 'book']
+@@ explain
+After the two `append` calls the list is `['pen', 'book', 'bag']`.
+`pop()` with no index removes the **last** item and gives it back, so `item` is `'bag'`.
+The list keeps the other two items.
+
+@@ predict Insert and remove
+@@ run
+queue = ["Amy", "Ben", "Cara"]
+queue.insert(1, "Dev")
+queue.remove("Amy")
+print(queue)
+print(len(queue))
+@@ output
+['Dev', 'Ben', 'Cara']
+3
+@@ explain
+`insert(1, "Dev")` puts Dev at index 1: `['Amy', 'Dev', 'Ben', 'Cara']`.
+`remove("Amy")` takes Amy away: `['Dev', 'Ben', 'Cara']`.
+Now there are 3 items.
+
+@@ exercise Change a shopping list
+Start with `basket = ["apple", "bread"]`.
+
+1. Add `"milk"` to the end.
+2. Add `"eggs"` to the end.
+3. Remove `"bread"`.
+
+At the end, `basket` should be `["apple", "milk", "eggs"]`.
+@@ starter
+basket = ["apple", "bread"]
+# 1.
+
+# 2.
+
+# 3.
+
+print(basket)
+@@ check
+assert basket == ["apple", "milk", "eggs"], f"❌ basket should be ['apple', 'milk', 'eggs'] but it is {basket}"
+@@ hint
+Use `basket.append(...)` twice and `basket.remove(...)` once.
+@@ solution
+basket = ["apple", "bread"]
+basket.append("milk")
+basket.append("eggs")
+basket.remove("bread")
+print(basket)
+
+@@ exercise Safe remove
+Complete the function `safeRemove(names, name)`.
+
+- If `name` is in the list, remove it and **return** `True`.
+- If it is not in the list, do not change anything and **return** `False`.
+@@ starter
+def safeRemove(names, name):
+    ...
+
+friends = ["Amy", "Ben"]
+print(safeRemove(friends, "Ben"), friends)
+print(safeRemove(friends, "Zoe"), friends)
+@@ check
+_names = ["Amy", "Ben", "Cara"]
+assert safeRemove(_names, "Ben") is True, "❌ safeRemove should return True when the name is in the list"
+assert _names == ["Amy", "Cara"], f"❌ Ben should be removed, but the list is {_names}"
+assert safeRemove(_names, "Zoe") is False, "❌ safeRemove should return False when the name is not in the list"
+assert _names == ["Amy", "Cara"], "❌ The list should not change when the name is not found"
+@@ hint
+```python
+if name in names:
+    names.remove(name)
+    return True
+return False
+```
+@@ solution
+def safeRemove(names, name):
+    if name in names:
+        names.remove(name)
+        return True
+    return False
+
+friends = ["Amy", "Ben"]
+print(safeRemove(friends, "Ben"), friends)
+print(safeRemove(friends, "Zoe"), friends)
+
+@@ md
+## 4. The `for` loop: do something for every item
+
+A `for` loop takes the items of a list **one at a time**.
+
+```python
+for drink in drinks:
+    print(drink)
+```
+
+Read it as: "**for each** `drink` **in** the list `drinks`, do the indented lines".
+
+- `drink` is a new variable. Each time round the loop it holds the next item.
+- You choose its name. Pick a name that describes **one** item.
+- The line ends with a colon `:`.
+- The lines that repeat are **indented** (4 spaces), just like inside a function or an `if`.
+
+@@ code
+drinks = ["Milk Tea", "Green Tea", "Coffee"]
+for drink in drinks:
+    print("I like", drink)
+print("Done")
+
+@@ md
+`Done` is printed only once, because that line is **not** indented.
+It runs after the loop has finished.
+
+@@ predict Inside or outside the loop?
+@@ run
+for n in [1, 2, 3]:
+    print("Hi", n)
+print("Bye")
+@@ output
+Hi 1
+Hi 2
+Hi 3
+Bye
+@@ explain
+The indented line runs once for each item, so three times.
+`print("Bye")` is not indented, so it runs once, after the loop.
+
+@@ predict Indented by mistake
+@@ run
+for n in [1, 2, 3]:
+    print("Hi", n)
+    print("Bye")
+@@ output
+Hi 1
+Bye
+Hi 2
+Bye
+Hi 3
+Bye
+@@ explain
+Now `print("Bye")` is indented, so it is **inside** the loop.
+It runs every time round the loop.
+⚠️ Indentation changes what your program does. Look at it carefully in exam questions.
+
+@@ exercise Print every price
+Write a `for` loop that prints every price in the list with 2 decimal places, like `$4.80`.
+
+There is no check cell. Your output should be:
+
+```text
+$4.80
+$3.50
+$2.20
+```
+@@ starter
+prices = [4.8, 3.5, 2.2]
+# write your for loop below
+
+@@ hint
+```python
+for price in prices:
+    print(f"${price:.2f}")
+```
+@@ solution
+prices = [4.8, 3.5, 2.2]
+for price in prices:
+    print(f"${price:.2f}")
+
+@@ md
+## 5. Recipe 1: the total
+
+To add up all the items, start with a total of `0`, then add each item to it inside the loop.
+
+```python
+total = 0
+for price in prices:
+    total += price
+```
+
+@@ code
+prices = [4.8, 3.5, 2.2]
+total = 0
+for price in prices:
+    total += price
+    print("added", price, "total is now", total)
+print(f"Total: ${total:.2f}")
+
+@@ md
+⚠️ `total = 0` must be **before** the loop.
+If you put it inside, it goes back to 0 every time.
+
+💡 Python also has `sum(prices)`, but in the exam you usually add up one **field** of each object (like `c.balance`), so you need the loop.
+Learn the loop.
+
+@@ exercise Total of a list
+Complete `getTotal(amounts)` so that it **returns** the sum of all the numbers in the list.
+Use a loop, not `sum()`.
+An empty list should give `0`.
+@@ starter
+def getTotal(amounts):
+    total = 0
+    # loop here
+    return total
+
+print(getTotal([10, 20, 5]))
+@@ check
+assert getTotal([10, 20, 5]) == 35, f"❌ getTotal([10, 20, 5]) should be 35 but got {getTotal([10, 20, 5])}"
+assert getTotal([]) == 0, "❌ getTotal([]) should be 0"
+assert abs(getTotal([1.5, 2.25]) - 3.75) < 0.0001, "❌ getTotal([1.5, 2.25]) should be 3.75"
+@@ hint
+Inside the loop, write `total += amount`.
+Make sure `return total` is **after** the loop, not inside it.
+@@ solution
+def getTotal(amounts):
+    total = 0
+    for amount in amounts:
+        total += amount
+    return total
+
+print(getTotal([10, 20, 5]))
+
+@@ predict Return inside the loop
+This is a very common mistake.
+@@ run
+def getTotal(amounts):
+    total = 0
+    for amount in amounts:
+        total += amount
+        return total
+
+print(getTotal([10, 20, 5]))
+@@ output
+10
+@@ explain
+`return` is indented **inside** the loop.
+So the function returns during the first time round, when `total` is only `10`.
+`return` always ends the function straight away.
+Put `return total` after the loop (less indented).
+
+@@ md
+## 6. Recipe 2: counting
+
+Counting is like the total, but you add `1` only when an item matches a condition.
+
+@@ code
+marks = [45, 80, 62, 30, 90]
+passCount = 0
+for mark in marks:
+    if mark >= 50:
+        passCount += 1
+print("Passed:", passCount)
+
+@@ exercise Count the expensive items
+Complete `countAbove(prices, limit)` so that it returns how many prices are **greater than** `limit`.
+@@ starter
+def countAbove(prices, limit):
+    ...
+
+print(countAbove([4.8, 12.0, 3.5, 20.0], 10))
+@@ check
+assert countAbove([4.8, 12.0, 3.5, 20.0], 10) == 2, "❌ countAbove([4.8, 12.0, 3.5, 20.0], 10) should be 2"
+assert countAbove([1, 2, 3], 10) == 0, "❌ countAbove([1, 2, 3], 10) should be 0"
+assert countAbove([10, 11], 10) == 1, "❌ 10 is not greater than 10, so countAbove([10, 11], 10) should be 1"
+assert countAbove([], 5) == 0, "❌ countAbove([], 5) should be 0"
+@@ hint
+Start with `count = 0`.
+Inside the loop: `if price > limit:` then `count += 1`.
+Return `count` after the loop.
+@@ solution
+def countAbove(prices, limit):
+    count = 0
+    for price in prices:
+        if price > limit:
+            count += 1
+    return count
+
+print(countAbove([4.8, 12.0, 3.5, 20.0], 10))
+
+@@ exercise Count names starting with a letter
+Complete `countStartingWith(names, letter)`.
+It returns how many names start with `letter`.
+It should **not** care about upper or lower case, so `"amy"` and `"Amy"` both start with `"a"` and with `"A"`.
+@@ starter
+def countStartingWith(names, letter):
+    ...
+
+print(countStartingWith(["Amy", "ben", "alan", "Cara"], "a"))
+@@ check
+assert countStartingWith(["Amy", "ben", "alan", "Cara"], "a") == 2, "❌ 'Amy' and 'alan' both start with 'a', so the answer is 2"
+assert countStartingWith(["Amy", "ben", "alan", "Cara"], "B") == 1, "❌ 'ben' starts with 'B' if we ignore case, so the answer is 1"
+assert countStartingWith([], "a") == 0, "❌ An empty list should give 0"
+@@ hint
+Change both to lower case before comparing:
+`if name.lower().startswith(letter.lower()):`
+@@ solution
+def countStartingWith(names, letter):
+    count = 0
+    for name in names:
+        if name.lower().startswith(letter.lower()):
+            count += 1
+    return count
+
+print(countStartingWith(["Amy", "ben", "alan", "Cara"], "a"))
+
+@@ md
+## 7. Recipe 3: the largest
+
+To find the largest, remember "the best so far".
+Start with the **first** item, then compare each item with the best so far.
+
+@@ code
+marks = [62, 80, 45, 90, 71]
+highest = marks[0]
+for mark in marks:
+    if mark > highest:
+        highest = mark
+print("Highest:", highest)
+
+@@ md
+💡 Why start with `marks[0]` and not `0`?
+If all the numbers were negative, starting at `0` would give the wrong answer.
+
+Python also has `max(marks)`.
+But in the exam you often need the **item** with the largest value (for example the most expensive product), so learn the loop.
+
+@@ exercise Find the smallest
+Complete `findSmallest(numbers)` so that it returns the smallest number.
+Assume the list is never empty.
+Use a loop, not `min()`.
+@@ starter
+def findSmallest(numbers):
+    ...
+
+print(findSmallest([8, 3, 11, 5]))
+@@ check
+assert findSmallest([8, 3, 11, 5]) == 3, "❌ findSmallest([8, 3, 11, 5]) should be 3"
+assert findSmallest([-2, -9, -1]) == -9, "❌ findSmallest([-2, -9, -1]) should be -9"
+assert findSmallest([7]) == 7, "❌ findSmallest([7]) should be 7"
+@@ hint
+Start with `smallest = numbers[0]`.
+Inside the loop, if a number is **smaller** (`<`) than `smallest`, replace it.
+@@ solution
+def findSmallest(numbers):
+    smallest = numbers[0]
+    for number in numbers:
+        if number < smallest:
+            smallest = number
+    return smallest
+
+print(findSmallest([8, 3, 11, 5]))
+
+@@ md
+## 8. Recipe 4: search and return the item (or `None`)
+
+This is the most important recipe for the exam.
+It is exactly the `searchContact` method from the course:
+
+```python
+def searchContact(self, name):
+    for c in self.__contacts:
+        if c.name == name:
+            return c
+    return None
+```
+
+The idea:
+
+- Look at each item.
+- As soon as you find a match, **return it**. The function stops there.
+- If the loop finishes without finding anything, return `None` (meaning "not found").
+
+We have not learned classes yet, so here we search a list of strings.
+
+@@ code
+def findName(names, target):
+    for name in names:
+        if name == target:
+            return name
+    return None
+
+people = ["Amy", "Ben", "Cara"]
+print(findName(people, "Ben"))
+print(findName(people, "Zoe"))
+
+@@ md
+⚠️ The `return None` must be **after** the loop.
+A common mistake is to put an `else: return None` inside the loop.
+Then the function gives up after looking at only the first item.
+
+@@ predict The else trap
+@@ run
+def findName(names, target):
+    for name in names:
+        if name == target:
+            return name
+        else:
+            return None
+
+print(findName(["Amy", "Ben", "Cara"], "Cara"))
+@@ output
+None
+@@ explain
+The first item is `"Amy"`, which is not `"Cara"`.
+So the `else` runs and the function returns `None` straight away.
+It never looks at `"Ben"` or `"Cara"`.
+Fix: remove the `else`, and put `return None` after the loop.
+
+@@ exercise Find a product code
+Product codes are stored in a list.
+Complete `findCode(codes, target)`.
+
+- Return the matching code if it is in the list.
+- Return `None` if it is not.
+
+Use the search recipe with a loop (do not use `in`).
+@@ starter
+def findCode(codes, target):
+    ...
+
+print(findCode(["P100", "P200", "P300"], "P200"))
+print(findCode(["P100", "P200", "P300"], "P999"))
+@@ check
+assert findCode(["P100", "P200", "P300"], "P200") == "P200", "❌ findCode should return 'P200' when it is in the list"
+assert findCode(["P100", "P200", "P300"], "P300") == "P300", "❌ findCode should also find the last item. Is your return None after the loop?"
+assert findCode(["P100", "P200", "P300"], "P999") is None, "❌ findCode should return None when the code is not found"
+assert findCode([], "P1") is None, "❌ findCode([], 'P1') should return None"
+@@ solution
+def findCode(codes, target):
+    for code in codes:
+        if code == target:
+            return code
+    return None
+
+print(findCode(["P100", "P200", "P300"], "P200"))
+print(findCode(["P100", "P200", "P300"], "P999"))
+
+@@ exercise Case-insensitive search
+The exam sometimes says "the search is **not case sensitive**".
+That means `"amy"`, `"AMY"` and `"Amy"` should all match.
+
+Complete `findNameIgnoreCase(names, target)`.
+It returns the name **as it is stored in the list**, or `None`.
+@@ starter
+def findNameIgnoreCase(names, target):
+    ...
+
+print(findNameIgnoreCase(["Amy Tan", "Ben Lim"], "ben lim"))
+@@ check
+assert findNameIgnoreCase(["Amy Tan", "Ben Lim"], "ben lim") == "Ben Lim", "❌ 'ben lim' should find 'Ben Lim' (return the stored name)"
+assert findNameIgnoreCase(["Amy Tan", "Ben Lim"], "AMY TAN") == "Amy Tan", "❌ 'AMY TAN' should find 'Amy Tan'"
+assert findNameIgnoreCase(["Amy Tan", "Ben Lim"], "Cara") is None, "❌ A missing name should give None"
+@@ hint
+Compare `name.lower() == target.lower()`, but `return name` (not the lower case version).
+@@ solution
+def findNameIgnoreCase(names, target):
+    for name in names:
+        if name.lower() == target.lower():
+            return name
+    return None
+
+print(findNameIgnoreCase(["Amy Tan", "Ben Lim"], "ben lim"))
+
+@@ md
+## 9. Recipe 5: the found flag and `break`
+
+Sometimes you do not want to return straight away.
+You just want to know **whether** something was found.
+Use a variable called a **flag** that starts as `False`.
+When you find a match, set it to `True`.
+
+`break` stops the loop immediately.
+There is no need to keep looking once you have found it.
+
+@@ code
+names = ["Amy", "Ben", "Cara", "Dev"]
+found = False
+for name in names:
+    print("checking", name)
+    if name == "Ben":
+        found = True
+        break
+if found:
+    print("Ben is here")
+else:
+    print("Not found!")
+
+@@ predict break stops the loop
+@@ run
+for n in [4, 7, 9, 2]:
+    if n > 5:
+        print("big", n)
+        break
+    print("small", n)
+print("end")
+@@ output
+small 4
+big 7
+end
+@@ explain
+`4` is not bigger than 5, so `small 4` is printed.
+`7` is bigger than 5, so `big 7` is printed and then `break` stops the loop.
+`9` and `2` are never looked at.
+The program continues after the loop and prints `end`.
+
+@@ exercise Has a failing mark?
+Complete `hasFail(marks)`.
+It returns `True` if **any** mark is below 50, otherwise `False`.
+Use a flag variable and `break`.
+@@ starter
+def hasFail(marks):
+    found = False
+    # loop here
+    return found
+
+print(hasFail([70, 45, 90]))
+print(hasFail([70, 85]))
+@@ check
+assert hasFail([70, 45, 90]) is True, "❌ hasFail([70, 45, 90]) should be True"
+assert hasFail([70, 85]) is False, "❌ hasFail([70, 85]) should be False"
+assert hasFail([]) is False, "❌ hasFail([]) should be False"
+assert hasFail([49]) is True, "❌ 49 is below 50, so hasFail([49]) should be True"
+@@ solution
+def hasFail(marks):
+    found = False
+    for mark in marks:
+        if mark < 50:
+            found = True
+            break
+    return found
+
+print(hasFail([70, 45, 90]))
+print(hasFail([70, 85]))
+
+@@ md
+## 10. Recipe 6: check before adding
+
+The exam often says things like:
+
+- "Do not add a contact if the name is **already** in the phone book."
+- "Do not add if the box will have **more than** the maximum."
+
+So you check first, and only then `append`.
+The function returns `True` if it added the item, or `False` if it did not.
+
+@@ code
+MAX_SIZE = 3
+
+def addName(names, name):
+    if name in names:
+        return False          # duplicate
+    if len(names) + 1 > MAX_SIZE:
+        return False          # adding one more would be too many
+    names.append(name)
+    return True
+
+group = ["Amy", "Ben"]
+print(addName(group, "Amy"), group)
+print(addName(group, "Cara"), group)
+print(addName(group, "Dev"), group)
+
+@@ md
+🎯 Notice `len(names) + 1 > MAX_SIZE`.
+The exam says "if **this addition** results in more than the maximum".
+So you test the size **after** adding one, which is `len(names) + 1`.
+Read the question carefully. It is an easy place to lose marks.
+
+Later, in notebook 12, you will **raise an exception** instead of returning `False`.
+The checks stay exactly the same.
+
+@@ exercise Add a member with checks
+Complete `addMember(members, name, maxMembers)`.
+
+1. If `name` is already in `members`, return `False`.
+2. If adding one more would make the list **longer than** `maxMembers`, return `False`.
+3. Otherwise append `name` and return `True`.
+@@ starter
+def addMember(members, name, maxMembers):
+    ...
+
+club = ["Amy"]
+print(addMember(club, "Ben", 2), club)
+print(addMember(club, "Cara", 2), club)
+@@ check
+_club = ["Amy"]
+assert addMember(_club, "Amy", 5) is False, "❌ Adding a name that is already there should return False"
+assert _club == ["Amy"], "❌ The list should not change when the name is a duplicate"
+assert addMember(_club, "Ben", 2) is True, "❌ Adding Ben (2 members, max 2) should work and return True"
+assert _club == ["Amy", "Ben"], f"❌ Ben should be added, but the list is {_club}"
+assert addMember(_club, "Cara", 2) is False, "❌ A third member when the max is 2 should return False"
+assert _club == ["Amy", "Ben"], "❌ The list should not change when it is full"
+@@ hint
+```python
+if name in members:
+    return False
+if len(members) + 1 > maxMembers:
+    return False
+members.append(name)
+return True
+```
+@@ solution
+def addMember(members, name, maxMembers):
+    if name in members:
+        return False
+    if len(members) + 1 > maxMembers:
+        return False
+    members.append(name)
+    return True
+
+club = ["Amy"]
+print(addMember(club, "Ben", 2), club)
+print(addMember(club, "Cara", 2), club)
+
+@@ md
+## 11. Recipe 7: build a new list (filter)
+
+To keep only some items, make a new empty list and `append` the items you want.
+
+@@ code
+prices = [4.8, 12.0, 3.5, 20.0]
+cheap = []
+for price in prices:
+    if price < 10:
+        cheap.append(price)
+print(cheap)
+
+@@ exercise Keep the passing marks
+Complete `passingMarks(marks)`.
+It returns a **new** list with only the marks that are 50 or more, in the same order.
+@@ starter
+def passingMarks(marks):
+    ...
+
+print(passingMarks([45, 80, 50, 30, 90]))
+@@ check
+assert passingMarks([45, 80, 50, 30, 90]) == [80, 50, 90], f"❌ Expected [80, 50, 90] but got {passingMarks([45, 80, 50, 30, 90])}"
+assert passingMarks([10, 20]) == [], "❌ passingMarks([10, 20]) should be an empty list []"
+_original = [60, 40]
+passingMarks(_original)
+assert _original == [60, 40], "❌ Do not change the original list. Build a new one."
+@@ hint
+Start with `result = []`.
+Append each mark that is `>= 50`.
+Return `result` after the loop.
+@@ solution
+def passingMarks(marks):
+    result = []
+    for mark in marks:
+        if mark >= 50:
+            result.append(mark)
+    return result
+
+print(passingMarks([45, 80, 50, 30, 90]))
+
+@@ md
+## 12. Looping with the index: `range(len(...))`
+
+Sometimes you need the **position** as well as the item, for example to number a list.
+`range(n)` gives the numbers `0, 1, 2, ... n-1`.
+So `range(len(names))` gives every index of the list.
+
+@@ code
+names = ["Amy", "Ben", "Cara"]
+for i in range(len(names)):
+    print(i + 1, names[i])
+
+@@ md
+The course slides show both ways of looping.
+They do the same job:
+
+```python
+for i in range(len(cards)):     # with the index
+    print(cards[i])
+
+for c in cards:                 # simpler, use this when you do not need the index
+    print(c)
+```
+
+@@ predict range
+@@ run
+for i in range(3):
+    print(i)
+print(len(range(5)))
+@@ output
+0
+1
+2
+5
+@@ explain
+`range(3)` gives `0`, `1` and `2`. It stops **before** 3.
+`range(5)` has 5 numbers (0 to 4).
+
+@@ md
+## 13. Building one long text from a list
+
+In the exam, the `__str__` of a collection class must return **one string** with one line per item.
+There are two ways to do it.
+
+**Way 1: add to a string in a loop.**
+`"\n"` means "new line".
+
+@@ code
+names = ["Amy", "Ben", "Cara"]
+result = "Members:"
+for name in names:
+    result += "\n" + name
+print(result)
+
+@@ md
+**Way 2: `"\n".join(list)`.**
+`join` glues all the strings in a list together, with `"\n"` between them.
+⚠️ It only works if every item is a **string**.
+
+@@ code
+names = ["Amy", "Ben", "Cara"]
+print("\n".join(names))
+print(", ".join(names))
+
+@@ predict join
+@@ run
+parts = ["a", "b", "c"]
+print("-".join(parts))
+print(len("-".join(parts)))
+@@ output
+a-b-c
+5
+@@ explain
+`join` puts `"-"` **between** the items, not after the last one.
+So the result is `"a-b-c"`, which has 5 characters.
+
+@@ exercise Numbered list
+Complete `numberedList(items)`.
+It returns one string with one line per item, numbered from 1, like this:
+
+```text
+1. Tea
+2. Coffee
+3. Juice
+```
+
+There must be **no** new line at the very end.
+@@ starter
+def numberedList(items):
+    ...
+
+print(numberedList(["Tea", "Coffee", "Juice"]))
+@@ check
+assert numberedList(["Tea", "Coffee", "Juice"]) == "1. Tea\n2. Coffee\n3. Juice", f"❌ Got {numberedList(['Tea', 'Coffee', 'Juice'])!r}"
+assert numberedList(["X"]) == "1. X", f"❌ numberedList(['X']) should be '1. X' but got {numberedList(['X'])!r}"
+@@ hint
+One way: build a list of lines like `f"{i + 1}. {items[i]}"` using `range(len(items))`, then return `"\n".join(lines)`.
+@@ solution
+def numberedList(items):
+    lines = []
+    for i in range(len(items)):
+        lines.append(f"{i + 1}. {items[i]}")
+    return "\n".join(lines)
+
+print(numberedList(["Tea", "Coffee", "Juice"]))
+
+@@ md
+## 14. Pairs inside a list: `[item, qty]`
+
+A list can hold other lists.
+The exam used this for an order: each line of the order is a pair `[pizza, qty]`.
+
+@@ code
+order = [["Pepperoni", 2], ["Hawaiian", 1]]
+print(order[0])        # the first pair
+print(order[0][0])     # the name in the first pair
+print(order[0][1])     # the quantity in the first pair
+
+@@ md
+When you loop, each item is a pair.
+Use `[0]` for the first part and `[1]` for the second part.
+
+@@ code
+order = [["Pepperoni", 2], ["Hawaiian", 1]]
+for line in order:
+    print(line[0], "x", line[1])
+
+@@ md
+💡 You can also give both parts names in the `for` line.
+This is called **unpacking**:
+
+```python
+for name, qty in order:
+    print(name, "x", qty)
+```
+
+@@ predict Nested list
+@@ run
+order = [["Tea", 2], ["Cake", 3]]
+order[1][1] += 1
+order.append(["Bun", 1])
+print(order[1])
+print(len(order))
+@@ output
+['Cake', 4]
+3
+@@ explain
+`order[1]` is `["Cake", 3]`, and `order[1][1]` is the `3`, which becomes `4`.
+`append` adds a whole new pair, so the order now has 3 pairs.
+
+@@ exercise Total quantity in an order
+Complete `totalQty(order)`.
+Each item of `order` is a pair `[name, qty]`.
+Return the sum of all the quantities.
+@@ starter
+def totalQty(order):
+    ...
+
+print(totalQty([["Pepperoni", 2], ["Hawaiian", 1], ["Veggie", 4]]))
+@@ check
+assert totalQty([["Pepperoni", 2], ["Hawaiian", 1], ["Veggie", 4]]) == 7, "❌ The total quantity should be 7"
+assert totalQty([]) == 0, "❌ An empty order should give 0"
+@@ hint
+Use the total recipe, and add `line[1]` each time.
+@@ solution
+def totalQty(order):
+    total = 0
+    for line in order:
+        total += line[1]
+    return total
+
+print(totalQty([["Pepperoni", 2], ["Hawaiian", 1], ["Veggie", 4]]))
+
+@@ exercise Add to an order
+Complete `addToOrder(order, name, qty)`.
+
+- If `name` is already in the order, **add** `qty` to its quantity.
+- If not, append a new pair `[name, qty]`.
+
+The function does not need to return anything.
+@@ starter
+def addToOrder(order, name, qty):
+    ...
+
+myOrder = [["Pepperoni", 2]]
+addToOrder(myOrder, "Pepperoni", 1)
+addToOrder(myOrder, "Hawaiian", 2)
+print(myOrder)
+@@ check
+_order = [["Pepperoni", 2]]
+addToOrder(_order, "Pepperoni", 1)
+assert _order == [["Pepperoni", 3]], f"❌ Adding 1 more Pepperoni should give [['Pepperoni', 3]] but got {_order}"
+addToOrder(_order, "Hawaiian", 2)
+assert _order == [["Pepperoni", 3], ["Hawaiian", 2]], f"❌ A new pizza should be appended. Got {_order}"
+@@ hint
+Loop over the pairs.
+If `line[0] == name`, do `line[1] += qty` and then `return` (you are finished).
+After the loop (nothing was found), append `[name, qty]`.
+@@ solution
+def addToOrder(order, name, qty):
+    for line in order:
+        if line[0] == name:
+            line[1] += qty
+            return
+    order.append([name, qty])
+
+myOrder = [["Pepperoni", 2]]
+addToOrder(myOrder, "Pepperoni", 1)
+addToOrder(myOrder, "Hawaiian", 2)
+print(myOrder)
+
+@@ md
+## 15. `while` loops (for menus)
+
+A `for` loop goes through a list.
+A `while` loop repeats **as long as a condition is True**.
+You only need it for one thing in this course: asking the user again and again.
+
+**Pattern A: keep asking until the user presses Enter.**
+When the user just presses Enter, `input()` gives an empty string `""`.
+
+@@ code inputs=Amy|Ben|
+names = []
+name = input("Enter a name (press Enter to stop): ")
+while name != "":
+    names.append(name)
+    name = input("Enter a name (press Enter to stop): ")
+print(names)
+
+@@ md
+⚠️ Do not forget the last line inside the loop, which asks again.
+Without it, `name` never changes and the loop runs forever.
+(If that happens, press the ■ stop button in the toolbar.)
+
+**Pattern B: a menu with `while True` and `break`.**
+`while True` repeats forever, until a `break` stops it.
+
+@@ code inputs=1|2|3
+while True:
+    print("1. Say hello")
+    print("2. Say bye")
+    print("3. Quit")
+    option = input("Enter option: ")
+    if option == "1":
+        print("Hello!")
+    elif option == "2":
+        print("Bye!")
+    elif option == "3":
+        break
+    else:
+        print("Invalid option")
+print("Program ended")
+
+@@ md
+🎯 One past paper (and Lab 4) asks for a menu like this.
+Notice `option == "1"` with quotes, because `input()` gives text.
+
+@@ predict while loop
+@@ run
+count = 3
+while count > 0:
+    print(count)
+    count -= 1
+print("Go!")
+@@ output
+3
+2
+1
+Go!
+@@ explain
+The loop runs while `count > 0`.
+Each time, it prints `count` and then makes it 1 smaller.
+When `count` becomes `0`, the condition is False and the loop stops.
+
+@@ exercise Collect prices until Enter
+Complete `collectPrices()`.
+It keeps asking `"Price: "` with `input()` until the user presses Enter (empty text).
+Each price is converted with `float()` and appended to a list.
+At the end it **returns** the list.
+
+When you run the cell, type a few prices and then press Enter on an empty box.
+@@ starter
+def collectPrices():
+    prices = []
+    ...
+    return prices
+
+print(collectPrices())
+@@ check
+_answers = ["4.5", "10", ""]
+_oldInput = globals().get("input")
+def input(prompt=""):
+    return _answers.pop(0)
+try:
+    _result = collectPrices()
+finally:
+    if _oldInput is None:
+        del input
+    else:
+        input = _oldInput
+assert _result == [4.5, 10.0], f"❌ After typing 4.5, 10 and then Enter, the result should be [4.5, 10.0] but got {_result}"
+@@ hint
+```python
+text = input("Price: ")
+while text != "":
+    prices.append(float(text))
+    text = input("Price: ")
+```
+@@ solution inputs=4.5|10|
+def collectPrices():
+    prices = []
+    text = input("Price: ")
+    while text != "":
+        prices.append(float(text))
+        text = input("Price: ")
+    return prices
+
+print(collectPrices())
+
+@@ md
+## 16. Exam-style practice
+
+@@ exercise Class list report (exam style)
+A tutor keeps two lists that line up: `names[i]` scored `marks[i]`.
+
+Complete `classReport(names, marks)` so that it **returns** this string (for the example data):
+
+```text
+Amy: 72
+Ben: 45
+Cara: 90
+Average: 69.00
+Top: Cara
+```
+
+- One line per student, in the same order.
+- Then the average with 2 decimal places.
+- Then the name of the student with the highest mark.
+- No new line at the very end.
+
+Assume the lists are not empty.
+@@ starter
+def classReport(names, marks):
+    ...
+
+print(classReport(["Amy", "Ben", "Cara"], [72, 45, 90]))
+@@ check
+_expected = "Amy: 72\nBen: 45\nCara: 90\nAverage: 69.00\nTop: Cara"
+_got = classReport(["Amy", "Ben", "Cara"], [72, 45, 90])
+assert _got == _expected, f"❌ Expected:\n{_expected}\n\nbut got:\n{_got}"
+_got = classReport(["Zed", "Yan"], [80, 60])
+assert _got == "Zed: 80\nYan: 60\nAverage: 70.00\nTop: Zed", f"❌ For Zed 80 and Yan 60 the report is wrong:\n{_got}"
+@@ hint
+Use `range(len(names))` so you have the index `i`.
+In the loop: build each line, add `marks[i]` to a total, and remember the index of the highest mark.
+After the loop, add the average and the top name.
+@@ solution
+def classReport(names, marks):
+    lines = []
+    total = 0
+    topIndex = 0
+    for i in range(len(names)):
+        lines.append(f"{names[i]}: {marks[i]}")
+        total += marks[i]
+        if marks[i] > marks[topIndex]:
+            topIndex = i
+    lines.append(f"Average: {total / len(marks):.2f}")
+    lines.append(f"Top: {names[topIndex]}")
+    return "\n".join(lines)
+
+print(classReport(["Amy", "Ben", "Cara"], [72, 45, 90]))
+
+@@ exercise Phone book with lists (exam style)
+A phone book keeps names in `names` and their numbers in `phones`, in the same order.
+Write these three functions.
+
+1. `searchPhone(names, phones, name)` returns the phone number for `name`, or `None` if the name is not there.
+2. `addContact(names, phones, name, phone)` adds the name and phone to the end of both lists and returns `True`.
+   If the name is already there, it changes nothing and returns `False`.
+3. `removeContact(names, phones, name)` removes the name **and** its phone number and returns `True`.
+   If the name is not there, it returns `False`.
+
+💡 For removing, find the index first, then use `pop(index)` on **both** lists.
+@@ starter
+def searchPhone(names, phones, name):
+    ...
+
+def addContact(names, phones, name, phone):
+    ...
+
+def removeContact(names, phones, name):
+    ...
+@@ check
+_n, _p = ["Peter", "Joe"], ["91231234", "81231234"]
+assert searchPhone(_n, _p, "Joe") == "81231234", "❌ searchPhone should find Joe's number"
+assert searchPhone(_n, _p, "Amy") is None, "❌ searchPhone should return None for a missing name"
+assert addContact(_n, _p, "Amy", "61232310") is True, "❌ addContact should return True for a new name"
+assert _n == ["Peter", "Joe", "Amy"] and _p == ["91231234", "81231234", "61232310"], f"❌ After adding Amy the lists are {_n} {_p}"
+assert addContact(_n, _p, "Joe", "99999999") is False, "❌ addContact should return False for a name that is already there"
+assert _p[1] == "81231234", "❌ A duplicate should not change Joe's number"
+assert removeContact(_n, _p, "Joe") is True, "❌ removeContact should return True when it removes Joe"
+assert _n == ["Peter", "Amy"] and _p == ["91231234", "61232310"], f"❌ After removing Joe the lists are {_n} {_p}"
+assert removeContact(_n, _p, "Zoe") is False, "❌ removeContact should return False for a missing name"
+@@ hint
+For `searchPhone` and `removeContact`, loop with `for i in range(len(names)):` and compare `names[i] == name`.
+When you find it, you know the index `i`, so you can use `phones[i]`, or `names.pop(i)` and `phones.pop(i)`.
+@@ solution
+def searchPhone(names, phones, name):
+    for i in range(len(names)):
+        if names[i] == name:
+            return phones[i]
+    return None
+
+def addContact(names, phones, name, phone):
+    if name in names:
+        return False
+    names.append(name)
+    phones.append(phone)
+    return True
+
+def removeContact(names, phones, name):
+    for i in range(len(names)):
+        if names[i] == name:
+            names.pop(i)
+            phones.pop(i)
+            return True
+    return False
+
+@@ md
+💡 Keeping two lists that must "line up" is awkward and easy to get wrong.
+In notebook 05 a **dictionary** makes this much simpler.
+In notebook 09 you will keep a list of **Contact objects** instead, which is what the exam does.
+
+## 📝 Key points
+
+- A list keeps items in order: `names = ["Amy", "Ben"]`. The first index is `0`, the last is `-1`.
+- `append` adds to the end. `remove(value)` removes by value. `pop(index)` removes by index and gives the item back.
+- Check with `in` before `remove`, or you get a `ValueError`.
+- `for item in items:` runs the indented lines once per item.
+- The seven recipes:
+
+| Recipe | The key lines |
+| --- | --- |
+| Total | `total = 0` before the loop, `total += x` inside |
+| Count | `count = 0` before, `if ...: count += 1` inside |
+| Largest | `best = items[0]`, then `if x > best: best = x` |
+| Search | `if match: return item` inside, `return None` **after** the loop |
+| Found flag | `found = False`, set `True` and `break` when found |
+| Check before adding | `if name in items` and `if len(items) + 1 > MAX` before `append` |
+| Filter | `result = []`, `result.append(x)` for the ones you keep |
+
+- `"\n".join(listOfStrings)` makes one string with one item per line.
+- `while` repeats while a condition is True. Use it for "until Enter" and menus.
+
+## ⚠️ Common mistakes
+
+| Mistake | What happens |
+| --- | --- |
+| `names[len(names)]` | `IndexError` (the last index is `len - 1`) |
+| `names.remove("Zoe")` when Zoe is not there | `ValueError` |
+| `return` inside the loop by accident | The function stops after the first item |
+| `else: return None` inside a search loop | Only the first item is checked |
+| `total = 0` inside the loop | The total starts again every time |
+| Forgetting to ask again inside a `while` loop | The loop never ends |
+| `"\n".join([1, 2])` | `TypeError` (join needs strings) |
+
+Next: **05_Dictionaries**.

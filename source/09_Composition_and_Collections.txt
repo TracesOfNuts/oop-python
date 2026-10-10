@@ -1,0 +1,1655 @@
+@@ md
+# 09 - Composition and Collections
+
+**What you will learn**
+
+- The difference between "**has a**" (composition) and "**is a**" (inheritance).
+- How to put one object inside another object.
+- How a method can pass the work on to the object inside it (delegation).
+- How to build a class that keeps a **list of objects**, like a phone book.
+- The standard methods: add, search, remove, update, count and total.
+- How to keep objects in a **dictionary**, and in a nested list like `[pizza, qty]`.
+
+**Why this matters for the exam**
+
+Every past paper has a "collection" class: `PhoneBook`, `DeliSet`, `BudgetPlan`, `DeliveryRound`.
+You add objects with checks, search by name, remove, and add up a field such as the price.
+Composition questions are also common, for example "is this composition or inheritance? Give a reason".
+
+@@ md
+## 1. "Has a" or "is a"?
+
+There are two ways to reuse a class.
+
+**Composition** means "**has a**".
+One object keeps another object inside it.
+
+- A laptop **has a** hard disk.
+- A customer **has a** cash card.
+- A phone book **has** contacts.
+
+**Inheritance** means "**is a**".
+One class is a more specific kind of another class.
+You will learn it in the next notebook.
+
+- A manager **is an** employee.
+- A member cash card **is a** cash card.
+
+💡 Say the sentence out loud.
+If "A ___ has a ___" sounds right, it is composition.
+If "A ___ is a ___" sounds right, it is inheritance.
+
+@@ write Has a or is a?
+For each pair, write **has a** (composition) or **is a** (inheritance).
+
+1. Car and Engine
+2. Dog and Animal
+3. Library and Book
+4. Student and Person
+5. Order and Pizza
+@@ answer
+1. A car **has an** engine: composition.
+2. A dog **is an** animal: inheritance.
+3. A library **has** books: composition.
+4. A student **is a** person: inheritance.
+5. An order **has** pizzas: composition.
+
+@@ md
+## 2. An object inside an object
+
+Here is a `CashCard` class like the one from the course.
+Run it, because the next examples use it.
+
+@@ code
+class CashCard:
+    def __init__(self, id, amount):
+        self.__id = id
+        self.__balance = amount
+
+    @property
+    def id(self):
+        return self.__id
+
+    @property
+    def balance(self):
+        return self.__balance
+
+    def topUp(self, amount):
+        if amount > 0:
+            self.__balance += amount
+
+    def deduct(self, amount):
+        if self.__balance >= amount:
+            self.__balance -= amount
+            return True
+        return False
+
+    def __str__(self):
+        return f"Id: {self.__id} Balance: ${self.__balance:.2f}"
+
+@@ md
+A customer **has a** cash card.
+The simplest way: create the card first, then pass it in to the customer.
+The customer stores the **card object** in an attribute.
+
+@@ code
+class Customer:
+    def __init__(self, name, card):
+        self.__name = name
+        self.__card = card          # the Customer HAS A CashCard
+
+    @property
+    def name(self):
+        return self.__name
+
+    @property
+    def card(self):
+        return self.__card
+
+c = CashCard("1", 10.0)        # 1. create the card first
+cust = Customer("James", c)    # 2. give it to the customer
+print(cust.name)
+print(cust.card)               # prints the card, using CashCard's __str__
+print(cust.card.balance)       # two levels: customer -> card -> balance
+
+@@ md
+Read `cust.card.balance` from left to right:
+
+1. `cust.card` gives the `CashCard` object inside the customer.
+2. `.balance` gives that card's balance.
+
+```text
+   cust (Customer)                    c (CashCard)
+   __name = "James"                   __id      = "1"
+   __card = ----------------------->  __balance = 10.0
+```
+
+The customer does not hold a copy of the card.
+It holds a **link** to the same card object.
+
+@@ predict Two levels
+@@ run
+c = CashCard("7", 30.0)
+cust = Customer("Mei", c)
+c.topUp(5)
+print(cust.card.balance)
+print(cust.card.id)
+@@ output
+35.0
+7
+@@ explain
+`cust.card` is the very same object as `c`.
+So after `c.topUp(5)`, the customer's card also shows `35.0`.
+
+@@ predict One card, two customers
+@@ run
+shared = CashCard("9", 20.0)
+mum = Customer("Mum", shared)
+son = Customer("Son", shared)
+son.card.deduct(15)
+print(mum.card.balance)
+@@ output
+5.0
+@@ explain
+Both customers link to the **same** card object.
+When the son spends 15 through his link, the one card goes from 20 to 5.
+Mum looks at the same card, so she also sees `5.0`.
+
+@@ md
+## 3. Delegation: passing the work on
+
+Usually the outside world talks to the customer, not to the card.
+So the customer gets its own methods that **pass the work on** to the card.
+This is called **delegation**.
+
+```python
+def topUp(self, amount):
+    self.__card.topUp(amount)      # ask the card to do it
+
+def cardBalance(self):
+    return self.__card.balance     # ask the card for its balance
+```
+
+There is also a second way to build the customer: create the card **inside** `__init__`.
+Then the code outside never has to make a `CashCard` itself.
+
+```python
+class Customer:
+    def __init__(self, name, cardId, amount):
+        self.__name = name
+        self.__card = CashCard(cardId, amount)   # created inside
+
+cust = Customer("Jack", "2", 50)
+```
+
+Which way to use depends on the question.
+Read the class diagram or the sample code to see what the constructor takes.
+
+@@ exercise Create the card inside
+Write a new `Customer` class whose constructor is `Customer(name, cardId, amount)`.
+
+- Store the name in `__name`.
+- Create a `CashCard` inside `__init__` and store it in `__card`.
+- Write read only properties `name` and `card`.
+@@ starter
+class Customer:
+    def __init__(self, name, cardId, amount):
+        ...
+@@ check
+_cust = Customer("Jack", "2", 50.0)
+assert _cust.name == "Jack", "❌ the name property should return 'Jack'"
+assert isinstance(_cust.card, CashCard), "❌ the card property should return a CashCard object created inside __init__"
+assert _cust.card.id == "2" and _cust.card.balance == 50.0, "❌ the card should have id '2' and balance 50.0"
+@@ hint
+`self.__card = CashCard(cardId, amount)`
+Then the two properties return `self.__name` and `self.__card`.
+@@ solution
+class Customer:
+    def __init__(self, name, cardId, amount):
+        self.__name = name
+        self.__card = CashCard(cardId, amount)
+
+    @property
+    def name(self):
+        return self.__name
+
+    @property
+    def card(self):
+        return self.__card
+
+@@ exercise Delegation methods
+Add three methods to `Customer`.
+Each one passes the work on to the card.
+
+- `topUp(amount)` tops up the card.
+- `pay(amount)` deducts from the card and **returns** what the card's `deduct` returns (`True` or `False`).
+- `cardBalance()` returns the card's balance.
+@@ starter
+class Customer:
+    def __init__(self, name, cardId, amount):
+        self.__name = name
+        self.__card = CashCard(cardId, amount)
+
+    @property
+    def name(self):
+        return self.__name
+
+    @property
+    def card(self):
+        return self.__card
+
+    def topUp(self, amount):
+        ...
+
+    def pay(self, amount):
+        ...
+
+    def cardBalance(self):
+        ...
+@@ check
+_cust = Customer("Jack", "2", 50.0)
+_cust.topUp(20)
+assert _cust.cardBalance() == 70.0, f"❌ after topUp(20), cardBalance() should be 70.0 but it is {_cust.cardBalance()}"
+assert _cust.pay(30) is True, "❌ pay(30) should return True when there is enough money"
+assert _cust.cardBalance() == 40.0, "❌ after paying 30, the balance should be 40.0"
+assert _cust.pay(100) is False, "❌ pay(100) should return False when there is not enough money"
+assert _cust.card.balance == 40.0, "❌ the card's balance should still be 40.0"
+@@ hint
+`pay` must `return self.__card.deduct(amount)`.
+If you forget `return`, the caller gets `None`.
+@@ solution
+class Customer:
+    def __init__(self, name, cardId, amount):
+        self.__name = name
+        self.__card = CashCard(cardId, amount)
+
+    @property
+    def name(self):
+        return self.__name
+
+    @property
+    def card(self):
+        return self.__card
+
+    def topUp(self, amount):
+        self.__card.topUp(amount)
+
+    def pay(self, amount):
+        return self.__card.deduct(amount)
+
+    def cardBalance(self):
+        return self.__card.balance
+
+@@ md
+Here is a `Harddisk` class.
+Run it for the next exercise.
+
+@@ code
+class Harddisk:
+    def __init__(self, capacity):
+        self.__capacity = capacity
+        self.__used = 0
+
+    @property
+    def free(self):
+        return self.__capacity - self.__used
+
+    def save(self, size):
+        if size <= self.free:
+            self.__used += size
+            return True
+        return False
+
+@@ exercise A laptop has a hard disk
+Write the class `Laptop`.
+
+- The constructor is `Laptop(brand, disk)`. The `disk` is a `Harddisk` object that is passed in.
+- `saveFile(size)` saves on the disk and returns what the disk's `save` returns.
+- `freeSpace()` returns the free space on the disk.
+@@ starter
+class Laptop:
+    ...
+@@ check
+_disk = Harddisk(100)
+_lap = Laptop("Acer", _disk)
+assert _lap.saveFile(30) is True, "❌ saveFile(30) should return True on an empty 100 GB disk"
+assert _lap.freeSpace() == 70, f"❌ freeSpace() should be 70 but it is {_lap.freeSpace()}"
+assert _lap.saveFile(80) is False, "❌ saveFile(80) should return False when only 70 is free"
+assert _disk.free == 70, "❌ the laptop should use the SAME disk object that was passed in"
+@@ solution
+class Laptop:
+    def __init__(self, brand, disk):
+        self.__brand = brand
+        self.__disk = disk
+
+    def saveFile(self, size):
+        return self.__disk.save(size)
+
+    def freeSpace(self):
+        return self.__disk.free
+
+@@ exercise A car has an engine
+`Engine` is given.
+Write the class `Car`.
+
+- The constructor is `Car(model, horsepower)`. It **creates** an `Engine` inside.
+- `power` is a read only property that returns the engine's horsepower.
+- `start()` returns the model, a colon and a space, then what the engine's `start()` returns.
+  For example `"Civic: Engine started"`.
+@@ starter
+class Engine:
+    def __init__(self, horsepower):
+        self.__horsepower = horsepower
+
+    @property
+    def horsepower(self):
+        return self.__horsepower
+
+    def start(self):
+        return "Engine started"
+
+
+class Car:
+    ...
+@@ check
+_car = Car("Civic", 150)
+assert _car.power == 150, "❌ power should return the engine's horsepower, 150"
+assert _car.start() == "Civic: Engine started", f"❌ start() returned {_car.start()!r}"
+@@ hint
+`self.__engine = Engine(horsepower)`
+`return f"{self.__model}: {self.__engine.start()}"`
+@@ solution
+class Engine:
+    def __init__(self, horsepower):
+        self.__horsepower = horsepower
+
+    @property
+    def horsepower(self):
+        return self.__horsepower
+
+    def start(self):
+        return "Engine started"
+
+
+class Car:
+    def __init__(self, model, horsepower):
+        self.__model = model
+        self.__engine = Engine(horsepower)
+
+    @property
+    def power(self):
+        return self.__engine.horsepower
+
+    def start(self):
+        return f"{self.__model}: {self.__engine.start()}"
+
+@@ write Which line is composition? (JUL 2025 style)
+```python
+class Engine:
+    def start(self):
+        return "Engine started"
+
+class Car:
+    def __init__(self, model, engine):
+        self.__model = model
+        self.__engine = engine
+
+    def start(self):
+        return self.__engine.start()
+```
+
+Which line demonstrates composition?
+
+- A. `self.__model = model`
+- B. `self.__engine = engine`
+- C. `def start(self):`
+- D. `class Car:`
+@@ answer
+**B.** `self.__engine = engine` stores an `Engine` object inside the `Car` object.
+So a car **has an** engine.
+Line A only stores a piece of text, which is a normal attribute.
+
+@@ md
+## 4. A class that holds a list of objects
+
+This is the most important pattern in this notebook.
+A `PhoneBook` keeps many `Contact` objects in a list.
+
+Run the `Contact` class first.
+
+@@ code
+class Contact:
+    def __init__(self, name, phone):
+        self.__name = name
+        self.__phone = phone
+
+    @property
+    def name(self):
+        return self.__name
+
+    @property
+    def phone(self):
+        return self.__phone
+
+    @phone.setter
+    def phone(self, phone):
+        self.__phone = phone
+
+    def __str__(self):
+        return f"Name: {self.__name} Phone: {self.__phone}"
+
+@@ md
+The phone book creates an **empty list** in `__init__`.
+Every new phone book gets its own new list.
+
+@@ code
+class PhoneBook:
+    def __init__(self, owner):
+        self.__owner = owner
+        self.__contacts = []          # a NEW empty list for every phone book
+
+    def addContact(self, contact):
+        self.__contacts.append(contact)
+
+    def count(self):
+        return len(self.__contacts)
+
+book = PhoneBook("Jim")
+book.addContact(Contact("Peter", "91231234"))
+book.addContact(Contact("Amy", "61232310"))
+print(book.count())
+
+@@ md
+⚠️ **Always create the list inside `__init__`.**
+If you put the list somewhere else, all the objects can end up **sharing one list**.
+These two predictions show how.
+
+@@ predict A list as a class variable
+@@ run
+class Basket:
+    _items = []
+
+    def add(self, item):
+        self._items.append(item)
+
+b1 = Basket()
+b2 = Basket()
+b1.add("apple")
+b2.add("pear")
+print(b1._items)
+print(b2._items)
+@@ output
+['apple', 'pear']
+['apple', 'pear']
+@@ explain
+`_items` is a class variable, so there is only **one** list.
+`self._items.append(...)` does not create a new variable, it changes that one shared list.
+So both baskets show both fruits.
+Fix: write `self._items = []` inside `__init__`.
+
+@@ predict A list as a default parameter
+@@ run
+class Basket:
+    def __init__(self, owner, items=[]):
+        self.owner = owner
+        self.items = items
+
+    def add(self, item):
+        self.items.append(item)
+
+b1 = Basket("Amy")
+b2 = Basket("Ben")
+b1.add("apple")
+print(b2.items)
+@@ output
+['apple']
+@@ explain
+The default list `[]` is made **once**, when Python reads the `def` line.
+Every basket created without a list gets that same list.
+So Ben's basket shows Amy's apple.
+Fix: use `items=None`, and inside `__init__` write `if items is None: items = []`.
+Or simply create `self.items = []` and do not take a list at all.
+
+@@ exercise A playlist from scratch
+Write a class `Playlist`.
+
+- The constructor is `Playlist(name)`. It stores the name and creates an empty list of songs.
+- `addSong(title)` adds a song title (a string) to the list.
+- `count()` returns how many songs there are.
+@@ starter
+class Playlist:
+    ...
+@@ check
+_p1 = Playlist("Chill")
+_p2 = Playlist("Gym")
+_p1.addSong("Yellow")
+_p1.addSong("Clocks")
+_p2.addSong("Stronger")
+assert _p1.count() == 2, f"❌ the Chill playlist should have 2 songs, but count() gave {_p1.count()}"
+assert _p2.count() == 1, "❌ the Gym playlist should have 1 song. Did you create the list inside __init__?"
+@@ solution
+class Playlist:
+    def __init__(self, name):
+        self.__name = name
+        self.__songs = []
+
+    def addSong(self, title):
+        self.__songs.append(title)
+
+    def count(self):
+        return len(self.__songs)
+
+@@ md
+## 5. Search, remove and update
+
+These three methods appear again and again in the exam.
+Learn them as patterns.
+
+**Search** returns the object, or `None` if it is not there:
+
+```python
+def searchContact(self, name):
+    for c in self.__contacts:
+        if c.name == name:
+            return c        # found it: stop and give it back
+    return None             # AFTER the loop: we checked everyone
+```
+
+⚠️ The `return None` must be **after** the loop, not in an `else` inside the loop.
+Otherwise the method gives up after looking at the first contact only.
+
+**Remove** and **update** first search, then act, and return `True` or `False`.
+
+@@ exercise Search a contact
+Complete `searchContact(name)`.
+It returns the `Contact` whose name is `name`, or `None` if there is none.
+@@ starter
+class PhoneBook:
+    def __init__(self, owner):
+        self.__owner = owner
+        self.__contacts = []
+
+    def addContact(self, contact):
+        self.__contacts.append(contact)
+
+    def searchContact(self, name):
+        ...
+@@ check
+_book = PhoneBook("Jim")
+_book.addContact(Contact("Peter", "91231234"))
+_book.addContact(Contact("Amy", "61232310"))
+_found = _book.searchContact("Amy")
+assert _found is not None, "❌ searchContact('Amy') should find Amy. Is your 'return None' after the loop?"
+assert _found.phone == "61232310", "❌ searchContact('Amy') should return Amy's Contact object"
+assert _book.searchContact("Peter").name == "Peter", "❌ searchContact('Peter') should return Peter"
+assert _book.searchContact("Zed") is None, "❌ searchContact('Zed') should return None"
+@@ solution
+class PhoneBook:
+    def __init__(self, owner):
+        self.__owner = owner
+        self.__contacts = []
+
+    def addContact(self, contact):
+        self.__contacts.append(contact)
+
+    def searchContact(self, name):
+        for c in self.__contacts:
+            if c.name == name:
+                return c
+        return None
+
+@@ exercise Remove a contact
+Add `removeContact(name)`.
+
+- If there is no contact with that name, return `False`.
+- Otherwise remove that contact from the list and return `True`.
+
+Reuse `searchContact`, so you do not have to write the loop again.
+@@ starter
+class PhoneBook:
+    def __init__(self, owner):
+        self.__owner = owner
+        self.__contacts = []
+
+    def addContact(self, contact):
+        self.__contacts.append(contact)
+
+    def searchContact(self, name):
+        for c in self.__contacts:
+            if c.name == name:
+                return c
+        return None
+
+    def removeContact(self, name):
+        ...
+@@ check
+_book = PhoneBook("Jim")
+_book.addContact(Contact("Peter", "91231234"))
+_book.addContact(Contact("Amy", "61232310"))
+assert _book.removeContact("Zed") is False, "❌ removing a name that is not there should return False"
+assert _book.removeContact("Amy") is True, "❌ removing Amy should return True"
+assert _book.searchContact("Amy") is None, "❌ Amy should be gone after removeContact('Amy')"
+assert _book.searchContact("Peter") is not None, "❌ Peter should still be in the phone book"
+@@ hint
+```python
+c = self.searchContact(name)
+if c is None:
+    return False
+self.__contacts.remove(c)
+return True
+```
+@@ solution
+class PhoneBook:
+    def __init__(self, owner):
+        self.__owner = owner
+        self.__contacts = []
+
+    def addContact(self, contact):
+        self.__contacts.append(contact)
+
+    def searchContact(self, name):
+        for c in self.__contacts:
+            if c.name == name:
+                return c
+        return None
+
+    def removeContact(self, name):
+        c = self.searchContact(name)
+        if c is None:
+            return False
+        self.__contacts.remove(c)
+        return True
+
+@@ exercise Update a phone number
+Add `updateContact(name, phone)`.
+
+- If there is no contact with that name, return `False`.
+- Otherwise change that contact's phone (use the `phone` setter) and return `True`.
+@@ starter
+class PhoneBook:
+    def __init__(self, owner):
+        self.__owner = owner
+        self.__contacts = []
+
+    def addContact(self, contact):
+        self.__contacts.append(contact)
+
+    def searchContact(self, name):
+        for c in self.__contacts:
+            if c.name == name:
+                return c
+        return None
+
+    def updateContact(self, name, phone):
+        ...
+@@ check
+_book = PhoneBook("Jim")
+_book.addContact(Contact("Amy", "61232310"))
+assert _book.updateContact("Zed", "123") is False, "❌ updating a name that is not there should return False"
+assert _book.updateContact("Amy", "61234567") is True, "❌ updating Amy should return True"
+assert _book.searchContact("Amy").phone == "61234567", "❌ Amy's phone should now be 61234567"
+@@ solution
+class PhoneBook:
+    def __init__(self, owner):
+        self.__owner = owner
+        self.__contacts = []
+
+    def addContact(self, contact):
+        self.__contacts.append(contact)
+
+    def searchContact(self, name):
+        for c in self.__contacts:
+            if c.name == name:
+                return c
+        return None
+
+    def updateContact(self, name, phone):
+        c = self.searchContact(name)
+        if c is None:
+            return False
+        c.phone = phone
+        return True
+
+@@ md
+## 6. Checks before adding
+
+In the exam, adding is rarely just `append`.
+You usually check something first, in the order the question gives.
+
+**No duplicates:** search first, and refuse if the name is already there.
+
+**A maximum size:** read the rule carefully.
+"The addition must not result in more than `_MAX_CONTACTS` contacts" means:
+the count **after** adding is `len(self.__contacts) + 1`, and that must not be more than the maximum.
+
+```python
+if len(self.__contacts) + 1 > PhoneBook._MAX_CONTACTS:
+    return False
+```
+
+**Case insensitive:** "Amy", "amy" and "AMY" should count as the same name.
+Compare `c.name.lower() == name.lower()`.
+
+@@ exercise No duplicate names
+Change `addContact(contact)`:
+
+- If a contact with the same name is already in the phone book, do not add it and return `False`.
+- Otherwise add it and return `True`.
+@@ starter
+class PhoneBook:
+    def __init__(self, owner):
+        self.__owner = owner
+        self.__contacts = []
+
+    def searchContact(self, name):
+        for c in self.__contacts:
+            if c.name == name:
+                return c
+        return None
+
+    def addContact(self, contact):
+        self.__contacts.append(contact)
+@@ check
+_book = PhoneBook("Jim")
+assert _book.addContact(Contact("Amy", "61232310")) is True, "❌ adding a new contact should return True"
+assert _book.addContact(Contact("Amy", "99999999")) is False, "❌ adding a second Amy should return False"
+assert _book.searchContact("Amy").phone == "61232310", "❌ the first Amy should be kept, and the second not added"
+assert _book.addContact(Contact("Ben", "81112222")) is True, "❌ adding Ben should return True"
+@@ hint
+`if self.searchContact(contact.name) is not None: return False`
+@@ solution
+class PhoneBook:
+    def __init__(self, owner):
+        self.__owner = owner
+        self.__contacts = []
+
+    def searchContact(self, name):
+        for c in self.__contacts:
+            if c.name == name:
+                return c
+        return None
+
+    def addContact(self, contact):
+        if self.searchContact(contact.name) is not None:
+            return False
+        self.__contacts.append(contact)
+        return True
+
+@@ exercise A full phone book
+A phone book may hold at most `_MAX_CONTACTS` contacts.
+Change `addContact(contact)`:
+
+- If adding this contact would result in **more than** `_MAX_CONTACTS` contacts, return `False`.
+- Otherwise add it and return `True`.
+
+Use the class variable, not the number `3`.
+@@ starter
+class PhoneBook:
+    _MAX_CONTACTS = 3
+
+    def __init__(self, owner):
+        self.__owner = owner
+        self.__contacts = []
+
+    def addContact(self, contact):
+        self.__contacts.append(contact)
+@@ check
+_book = PhoneBook("Jim")
+for _name in ["A", "B", "C"]:
+    assert _book.addContact(Contact(_name, "6000000")) is True, f"❌ adding contact {_name} should return True (it fits)"
+assert _book.addContact(Contact("D", "6000000")) is False, "❌ a 4th contact should return False"
+try:
+    PhoneBook._MAX_CONTACTS = 1
+    _small = PhoneBook("Kim")
+    _small.addContact(Contact("A", "6"))
+    assert _small.addContact(Contact("B", "6")) is False, "❌ use PhoneBook._MAX_CONTACTS, not the number 3"
+finally:
+    PhoneBook._MAX_CONTACTS = 3
+@@ solution
+class PhoneBook:
+    _MAX_CONTACTS = 3
+
+    def __init__(self, owner):
+        self.__owner = owner
+        self.__contacts = []
+
+    def addContact(self, contact):
+        if len(self.__contacts) + 1 > PhoneBook._MAX_CONTACTS:
+            return False
+        self.__contacts.append(contact)
+        return True
+
+@@ exercise Case insensitive search
+Change `searchContact(name)` so that the case of the letters does not matter.
+`searchContact("amy")` and `searchContact("AMY")` should both find `"Amy"`.
+@@ starter
+class PhoneBook:
+    def __init__(self, owner):
+        self.__owner = owner
+        self.__contacts = []
+
+    def addContact(self, contact):
+        self.__contacts.append(contact)
+
+    def searchContact(self, name):
+        for c in self.__contacts:
+            if c.name == name:
+                return c
+        return None
+@@ check
+_book = PhoneBook("Jim")
+_book.addContact(Contact("Amy", "61232310"))
+assert _book.searchContact("Amy") is not None, "❌ searchContact('Amy') should still work"
+assert _book.searchContact("amy") is not None, "❌ searchContact('amy') should find Amy"
+assert _book.searchContact("AMY") is not None, "❌ searchContact('AMY') should find Amy"
+assert _book.searchContact("Amos") is None, "❌ searchContact('Amos') should return None"
+@@ solution
+class PhoneBook:
+    def __init__(self, owner):
+        self.__owner = owner
+        self.__contacts = []
+
+    def addContact(self, contact):
+        self.__contacts.append(contact)
+
+    def searchContact(self, name):
+        for c in self.__contacts:
+            if c.name.lower() == name.lower():
+                return c
+        return None
+
+@@ md
+## 7. Printing the whole collection
+
+`__str__` for a collection usually shows a heading, then one line for each object.
+Inside the loop, `str(c)` uses the `__str__` of each `Contact`.
+
+A tidy way that avoids an extra empty line at the end:
+start with the heading, and **before** each item add `"\n"`.
+
+```python
+def __str__(self):
+    result = f"Phone Book of {self.__owner}"
+    for c in self.__contacts:
+        result += "\n" + str(c)
+    return result
+```
+
+💡 The course notes use `"\n".join(...)`, which glues a list of strings together with a new line between them.
+Both ways are fine.
+
+@@ exercise Phone book __str__
+Write `__str__` so that `print(book)` shows exactly:
+
+```text
+Phone Book of Jim
+Name: Peter Phone: 91231234
+Name: Amy Phone: 61232310
+```
+
+With no contacts, it shows only the first line.
+@@ starter
+class PhoneBook:
+    def __init__(self, owner):
+        self.__owner = owner
+        self.__contacts = []
+
+    def addContact(self, contact):
+        self.__contacts.append(contact)
+
+    def __str__(self):
+        ...
+@@ check
+_book = PhoneBook("Jim")
+assert str(_book) == "Phone Book of Jim", f"❌ an empty phone book should give 'Phone Book of Jim', but gave {str(_book)!r}"
+_book.addContact(Contact("Peter", "91231234"))
+_book.addContact(Contact("Amy", "61232310"))
+_expected = "Phone Book of Jim\nName: Peter Phone: 91231234\nName: Amy Phone: 61232310"
+assert str(_book) == _expected, f"❌ str(book) is {str(_book)!r}"
+@@ solution
+class PhoneBook:
+    def __init__(self, owner):
+        self.__owner = owner
+        self.__contacts = []
+
+    def addContact(self, contact):
+        self.__contacts.append(contact)
+
+    def __str__(self):
+        result = f"Phone Book of {self.__owner}"
+        for c in self.__contacts:
+            result += "\n" + str(c)
+        return result
+
+@@ md
+## 8. Totals and counts
+
+Many exam questions ask you to add up a field, for example "the total price of all items".
+It is the same loop pattern as in notebook 04, but now each item is an object.
+
+Run the `Item` class.
+
+@@ code
+class Item:
+    def __init__(self, name, price):
+        self.__name = name
+        self.__price = price
+
+    @property
+    def name(self):
+        return self.__name
+
+    @property
+    def price(self):
+        return self.__price
+
+    def __str__(self):
+        return f"{self.__name} ${self.__price:.2f}"
+
+@@ exercise Shopping cart totals
+Write the class `ShoppingCart`.
+
+- The constructor takes no arguments (only `self`) and creates an empty list of items.
+- `addItem(item)` adds an `Item` object.
+- `totalPrice()` returns the sum of the prices of all the items.
+- `countAbove(limit)` returns how many items have a price **more than** `limit`.
+@@ starter
+class ShoppingCart:
+    ...
+@@ check
+_cart = ShoppingCart()
+assert _cart.totalPrice() == 0, "❌ an empty cart should have a total of 0"
+_cart.addItem(Item("Pen", 1.50))
+_cart.addItem(Item("Book", 12.00))
+_cart.addItem(Item("Bag", 25.50))
+assert abs(_cart.totalPrice() - 39.0) < 0.0001, f"❌ totalPrice() should be 39.0 but it is {_cart.totalPrice()}"
+assert _cart.countAbove(10) == 2, f"❌ countAbove(10) should be 2 but it is {_cart.countAbove(10)}"
+assert _cart.countAbove(12) == 1, "❌ countAbove(12) should be 1 (12.00 is not MORE than 12)"
+@@ hint
+```python
+def totalPrice(self):
+    total = 0
+    for item in self.__items:
+        total += item.price
+    return total
+```
+`countAbove` is the same idea, but adds 1 only when `item.price > limit`.
+@@ solution
+class ShoppingCart:
+    def __init__(self):
+        self.__items = []
+
+    def addItem(self, item):
+        self.__items.append(item)
+
+    def totalPrice(self):
+        total = 0
+        for item in self.__items:
+            total += item.price
+        return total
+
+    def countAbove(self, limit):
+        count = 0
+        for item in self.__items:
+            if item.price > limit:
+                count += 1
+        return count
+
+@@ md
+## 9. A dictionary of objects
+
+A list is good when you search by looping.
+A **dictionary** is good when each object has a unique key, such as an email or an id.
+Then you can find it directly with the key, without a loop.
+
+```python
+self.__instructors = {}                       # key: email, value: Instructor object
+self.__instructors[inst.email] = inst         # add
+inst = self.__instructors.get(email)          # find (None if missing)
+if email in self.__instructors:               # check
+    del self.__instructors[email]             # remove
+for inst in self.__instructors.values():      # loop over the objects
+    print(inst)
+```
+
+@@ predict Objects in a dictionary
+@@ run
+class Pet:
+    def __init__(self, name):
+        self.name = name
+
+pets = {}
+pets["P1"] = Pet("Milo")
+pets["P2"] = Pet("Luna")
+print(pets["P1"].name)
+print(pets.get("P3"))
+print(len(pets))
+@@ output
+Milo
+None
+2
+@@ explain
+`pets["P1"]` gives the `Pet` object, and `.name` gives its name.
+`"P3"` is not a key, so `.get()` returns `None`.
+There are two keys, so `len(pets)` is `2`.
+
+@@ md
+Run the `Instructor` class.
+
+@@ code
+class Instructor:
+    def __init__(self, email, name, ratePerDay):
+        self.__email = email
+        self.__name = name
+        self.__ratePerDay = ratePerDay
+
+    @property
+    def email(self):
+        return self.__email
+
+    @property
+    def name(self):
+        return self.__name
+
+    def __str__(self):
+        return f"Instructor email: {self.__email} Name: {self.__name}"
+
+@@ exercise Add and find instructors (Lab 6 style)
+Write the class `InstructorDirectory`.
+
+- The constructor takes no arguments and creates an empty dictionary.
+- `addInstructor(instructor)`: if the email is already a key, return `False`.
+  Otherwise store the instructor with its email as the key and return `True`.
+- `findInstructor(email)` returns the instructor with that email, or `None`.
+@@ starter
+class InstructorDirectory:
+    ...
+@@ check
+_d = InstructorDirectory()
+_joe = Instructor("joe@x.com", "Joe", 200)
+assert _d.addInstructor(_joe) is True, "❌ adding a new instructor should return True"
+assert _d.addInstructor(Instructor("joe@x.com", "Joseph", 250)) is False, "❌ adding the same email again should return False"
+assert _d.findInstructor("joe@x.com") is _joe, "❌ findInstructor('joe@x.com') should return Joe's object"
+assert _d.findInstructor("amy@x.com") is None, "❌ findInstructor for an unknown email should return None"
+@@ solution
+class InstructorDirectory:
+    def __init__(self):
+        self.__instructors = {}
+
+    def addInstructor(self, instructor):
+        if instructor.email in self.__instructors:
+            return False
+        self.__instructors[instructor.email] = instructor
+        return True
+
+    def findInstructor(self, email):
+        return self.__instructors.get(email)
+
+@@ exercise Remove and list instructors
+Add two more methods to `InstructorDirectory`.
+
+- `removeInstructor(email)`: if the email is not a key, return `False`. Otherwise remove it and return `True`.
+- `listAll()` **returns** a string with one instructor per line (using each instructor's `__str__`).
+  If there are no instructors, it returns `"No instructors"`.
+@@ starter
+class InstructorDirectory:
+    def __init__(self):
+        self.__instructors = {}
+
+    def addInstructor(self, instructor):
+        if instructor.email in self.__instructors:
+            return False
+        self.__instructors[instructor.email] = instructor
+        return True
+
+    def findInstructor(self, email):
+        return self.__instructors.get(email)
+
+    def removeInstructor(self, email):
+        ...
+
+    def listAll(self):
+        ...
+@@ check
+_d = InstructorDirectory()
+assert _d.listAll() == "No instructors", f"❌ an empty directory should give 'No instructors', but gave {_d.listAll()!r}"
+_d.addInstructor(Instructor("joe@x.com", "Joe", 200))
+_d.addInstructor(Instructor("amy@x.com", "Amy", 300))
+_expected = "Instructor email: joe@x.com Name: Joe\nInstructor email: amy@x.com Name: Amy"
+assert _d.listAll().strip("\n") == _expected, f"❌ listAll() returned {_d.listAll()!r}"
+assert _d.removeInstructor("zed@x.com") is False, "❌ removing an unknown email should return False"
+assert _d.removeInstructor("joe@x.com") is True, "❌ removing Joe should return True"
+assert _d.findInstructor("joe@x.com") is None, "❌ Joe should be gone"
+@@ hint
+For `listAll`, check `if len(self.__instructors) == 0:` first.
+Then build a string with a loop over `self.__instructors.values()`.
+@@ solution
+class InstructorDirectory:
+    def __init__(self):
+        self.__instructors = {}
+
+    def addInstructor(self, instructor):
+        if instructor.email in self.__instructors:
+            return False
+        self.__instructors[instructor.email] = instructor
+        return True
+
+    def findInstructor(self, email):
+        return self.__instructors.get(email)
+
+    def removeInstructor(self, email):
+        if email not in self.__instructors:
+            return False
+        del self.__instructors[email]
+        return True
+
+    def listAll(self):
+        if len(self.__instructors) == 0:
+            return "No instructors"
+        result = ""
+        for instructor in self.__instructors.values():
+            result += str(instructor) + "\n"
+        return result
+
+@@ md
+## 10. A nested list: `[item, qty]`
+
+Sometimes we need to remember **how many** of each item.
+A past paper stores each line of a pizza order as a small list `[pizza, qty]`, inside a bigger list.
+
+```python
+self.__lines = [[hawaiian, 2], [pepperoni, 1]]
+```
+
+- `line[0]` is the pizza object.
+- `line[1]` is the quantity.
+
+@@ predict Reading a nested list
+@@ run
+lines = [["Hawaiian", 2], ["Pepperoni", 1]]
+print(lines[0])
+print(lines[1][0])
+total = 0
+for line in lines:
+    total += line[1]
+print(total)
+@@ output
+['Hawaiian', 2]
+Pepperoni
+3
+@@ explain
+`lines[0]` is the first small list.
+`lines[1][0]` means "the second small list, then its first item", which is `"Pepperoni"`.
+The loop adds up `line[1]` of each small list: `2 + 1 = 3`.
+
+@@ md
+Run the `Pizza` class.
+
+@@ code
+class Pizza:
+    def __init__(self, name, price):
+        self.__name = name
+        self.__price = price
+
+    @property
+    def name(self):
+        return self.__name
+
+    @property
+    def price(self):
+        return self.__price
+
+@@ exercise A pizza order
+Write the class `PizzaOrder`.
+
+- The constructor is `PizzaOrder(customer)`. It stores the customer and creates an empty list `__lines`.
+- `addPizza(pizza, qty)` adds the pair `[pizza, qty]` to the list.
+- `totalQty()` returns the total number of pizzas in the order.
+@@ starter
+class PizzaOrder:
+    ...
+@@ check
+_order = PizzaOrder("Amy")
+_order.addPizza(Pizza("Hawaiian", 15.0), 2)
+_order.addPizza(Pizza("Pepperoni", 18.0), 3)
+assert _order.totalQty() == 5, f"❌ totalQty() should be 5 but it is {_order.totalQty()}"
+assert PizzaOrder("Ben").totalQty() == 0, "❌ a new order should have 0 pizzas"
+@@ solution
+class PizzaOrder:
+    def __init__(self, customer):
+        self.__customer = customer
+        self.__lines = []
+
+    def addPizza(self, pizza, qty):
+        self.__lines.append([pizza, qty])
+
+    def totalQty(self):
+        total = 0
+        for line in self.__lines:
+            total += line[1]
+        return total
+
+@@ exercise Total price, and no repeated pizzas
+Improve `PizzaOrder`:
+
+- `addPizza(pizza, qty)`: if a pizza with the **same name** is already in the order, add `qty` to that line instead of adding a new line.
+- `totalPrice()` returns the sum of `price * qty` for every line.
+- `lineCount()` returns how many lines (different pizzas) there are.
+@@ starter
+class PizzaOrder:
+    def __init__(self, customer):
+        self.__customer = customer
+        self.__lines = []
+
+    def addPizza(self, pizza, qty):
+        self.__lines.append([pizza, qty])
+
+    def totalQty(self):
+        total = 0
+        for line in self.__lines:
+            total += line[1]
+        return total
+
+    def totalPrice(self):
+        ...
+
+    def lineCount(self):
+        ...
+@@ check
+_order = PizzaOrder("Amy")
+_order.addPizza(Pizza("Hawaiian", 15.0), 2)
+_order.addPizza(Pizza("Pepperoni", 18.0), 1)
+_order.addPizza(Pizza("Hawaiian", 15.0), 1)
+assert _order.lineCount() == 2, f"❌ there should be 2 lines (Hawaiian and Pepperoni) but lineCount() gave {_order.lineCount()}"
+assert _order.totalQty() == 4, f"❌ totalQty() should be 4 but it is {_order.totalQty()}"
+assert abs(_order.totalPrice() - 63.0) < 0.0001, f"❌ totalPrice() should be 3 x 15 + 1 x 18 = 63.0, but it is {_order.totalPrice()}"
+@@ hint
+In `addPizza`, loop over the lines first:
+```python
+for line in self.__lines:
+    if line[0].name == pizza.name:
+        line[1] += qty
+        return
+self.__lines.append([pizza, qty])
+```
+The bare `return` stops the method, so the `append` does not run.
+@@ solution
+class PizzaOrder:
+    def __init__(self, customer):
+        self.__customer = customer
+        self.__lines = []
+
+    def addPizza(self, pizza, qty):
+        for line in self.__lines:
+            if line[0].name == pizza.name:
+                line[1] += qty
+                return
+        self.__lines.append([pizza, qty])
+
+    def totalQty(self):
+        total = 0
+        for line in self.__lines:
+            total += line[1]
+        return total
+
+    def totalPrice(self):
+        total = 0
+        for line in self.__lines:
+            total += line[0].price * line[1]
+        return total
+
+    def lineCount(self):
+        return len(self.__lines)
+
+@@ md
+## 11. Exam style question: a trip plan
+
+This question is written like a real exam question.
+Do the parts in order.
+Each part builds on the one before, so run each finished cell before you start the next part.
+
+A travel app helps people plan activities for a trip.
+
+```text
++------------------------------+           +----------------------------------+
+| Activity                     |           | TripPlan                         |
++------------------------------+  0..*     +----------------------------------+
+| __name                       | <-------- | _MAX_ACTIVITIES = 4   (class)    |
+| __cost                       |           | __owner                          |
++------------------------------+           | __budget                         |
+| __init__(name, cost)         |           | __activities  (list of Activity) |
+| name  (property, read only)  |           +----------------------------------+
+| cost  (property and setter)  |           | __init__(owner, budget)          |
+| __str__()                    |           | totalCost()                      |
++------------------------------+           | addActivity(activity)            |
+                                           | removeActivity(name)             |
+                                           | __str__()                        |
+                                           +----------------------------------+
+```
+
+@@ exercise (a) The Activity class
+Write the class `Activity` from the diagram.
+`__str__()` returns the name, a colon, a space and the cost with 2 decimals, for example `Snorkelling: $45.00`.
+@@ starter
+class Activity:
+    ...
+@@ check
+_a = Activity("Snorkelling", 45)
+assert _a.name == "Snorkelling", "❌ the name property should return 'Snorkelling'"
+assert _a.cost == 45, "❌ the cost property should return 45"
+assert str(_a) == "Snorkelling: $45.00", f"❌ str(activity) is {str(_a)!r}"
+_a.cost = 50
+assert _a.cost == 50, "❌ the cost setter should change the cost"
+try:
+    _a.name = "Diving"
+    _readOnly = False
+except AttributeError:
+    _readOnly = True
+assert _readOnly, "❌ name should be read only (no setter)"
+@@ solution
+class Activity:
+    def __init__(self, name, cost):
+        self.__name = name
+        self.__cost = cost
+
+    @property
+    def name(self):
+        return self.__name
+
+    @property
+    def cost(self):
+        return self.__cost
+
+    @cost.setter
+    def cost(self, newCost):
+        self.__cost = newCost
+
+    def __str__(self):
+        return f"{self.__name}: ${self.__cost:.2f}"
+
+@@ exercise (b) TripPlan: constructor, totalCost and addActivity
+Write the class `TripPlan` with `__init__`, `totalCost()` and `addActivity(activity)`.
+
+- `totalCost()` returns the sum of the costs of all the activities.
+- `addActivity(activity)` does these checks **in this order**, and returns `False` at the first one that fails:
+  1. An activity with the same name is already in the plan. Ignore upper and lower case.
+  2. Adding it would result in more than `_MAX_ACTIVITIES` activities.
+  3. Adding it would make the total cost more than the budget.
+
+  If all checks pass, it adds the activity and returns `True`.
+@@ starter
+class TripPlan:
+    _MAX_ACTIVITIES = 4
+
+    def __init__(self, owner, budget):
+        ...
+
+    def totalCost(self):
+        ...
+
+    def addActivity(self, activity):
+        ...
+@@ check
+_plan = TripPlan("Amy", 200)
+assert _plan.totalCost() == 0, "❌ a new plan should have a total cost of 0"
+assert _plan.addActivity(Activity("Snorkelling", 45)) is True, "❌ adding Snorkelling should return True"
+assert _plan.addActivity(Activity("SNORKELLING", 10)) is False, "❌ the same name in capitals is a duplicate, so it should return False"
+assert _plan.addActivity(Activity("Night Safari", 55)) is True, "❌ adding Night Safari should return True"
+assert _plan.totalCost() == 100, f"❌ totalCost() should be 100 but it is {_plan.totalCost()}"
+assert _plan.addActivity(Activity("Cable Car", 120)) is False, "❌ 100 + 120 is more than the budget of 200, so it should return False"
+assert _plan.addActivity(Activity("Cable Car", 100)) is True, "❌ 100 + 100 = 200 is not MORE than the budget, so it should be added"
+_big = TripPlan("Ben", 1000)
+for _n in ["A", "B", "C", "D"]:
+    assert _big.addActivity(Activity(_n, 1)) is True, "❌ the first 4 activities should fit"
+assert _big.addActivity(Activity("E", 1)) is False, "❌ a 5th activity should return False"
+try:
+    TripPlan._MAX_ACTIVITIES = 1
+    _tiny = TripPlan("Cy", 1000)
+    _tiny.addActivity(Activity("A", 1))
+    assert _tiny.addActivity(Activity("B", 1)) is False, "❌ use TripPlan._MAX_ACTIVITIES, not the number 4"
+finally:
+    TripPlan._MAX_ACTIVITIES = 4
+@@ hint
+Write a small loop for the duplicate check:
+```python
+for a in self.__activities:
+    if a.name.lower() == activity.name.lower():
+        return False
+```
+Then `if len(self.__activities) + 1 > TripPlan._MAX_ACTIVITIES:`
+Then `if self.totalCost() + activity.cost > self.__budget:`
+@@ solution
+class TripPlan:
+    _MAX_ACTIVITIES = 4
+
+    def __init__(self, owner, budget):
+        self.__owner = owner
+        self.__budget = budget
+        self.__activities = []
+
+    def totalCost(self):
+        total = 0
+        for a in self.__activities:
+            total += a.cost
+        return total
+
+    def addActivity(self, activity):
+        for a in self.__activities:
+            if a.name.lower() == activity.name.lower():
+                return False
+        if len(self.__activities) + 1 > TripPlan._MAX_ACTIVITIES:
+            return False
+        if self.totalCost() + activity.cost > self.__budget:
+            return False
+        self.__activities.append(activity)
+        return True
+
+@@ exercise (c) removeActivity
+Add `removeActivity(name)` to `TripPlan`.
+The other methods are already filled in for you.
+
+- Find the activity with that name (ignore upper and lower case).
+- If it is found, remove it from the list and **return the Activity object** that was removed.
+- If it is not found, return `None`.
+
+🎯 Exam papers often say "returns the removed object".
+Forgetting to return it loses marks.
+@@ starter
+class TripPlan:
+    _MAX_ACTIVITIES = 4
+
+    def __init__(self, owner, budget):
+        self.__owner = owner
+        self.__budget = budget
+        self.__activities = []
+
+    def totalCost(self):
+        total = 0
+        for a in self.__activities:
+            total += a.cost
+        return total
+
+    def addActivity(self, activity):
+        for a in self.__activities:
+            if a.name.lower() == activity.name.lower():
+                return False
+        if len(self.__activities) + 1 > TripPlan._MAX_ACTIVITIES:
+            return False
+        if self.totalCost() + activity.cost > self.__budget:
+            return False
+        self.__activities.append(activity)
+        return True
+
+    def removeActivity(self, name):
+        ...
+@@ check
+_plan = TripPlan("Amy", 200)
+_snorkel = Activity("Snorkelling", 45)
+_plan.addActivity(_snorkel)
+_plan.addActivity(Activity("Night Safari", 55))
+assert _plan.removeActivity("Zoo") is None, "❌ removing an activity that is not there should return None"
+assert _plan.removeActivity("snorkelling") is _snorkel, "❌ removeActivity('snorkelling') should return the removed Activity object"
+assert _plan.totalCost() == 55, "❌ after removing Snorkelling, the total cost should be 55"
+@@ solution
+class TripPlan:
+    _MAX_ACTIVITIES = 4
+
+    def __init__(self, owner, budget):
+        self.__owner = owner
+        self.__budget = budget
+        self.__activities = []
+
+    def totalCost(self):
+        total = 0
+        for a in self.__activities:
+            total += a.cost
+        return total
+
+    def addActivity(self, activity):
+        for a in self.__activities:
+            if a.name.lower() == activity.name.lower():
+                return False
+        if len(self.__activities) + 1 > TripPlan._MAX_ACTIVITIES:
+            return False
+        if self.totalCost() + activity.cost > self.__budget:
+            return False
+        self.__activities.append(activity)
+        return True
+
+    def removeActivity(self, name):
+        for a in self.__activities:
+            if a.name.lower() == name.lower():
+                self.__activities.remove(a)
+                return a
+        return None
+
+@@ exercise (d) TripPlan __str__
+Add `__str__` to `TripPlan`.
+For a plan of Amy with a budget of 200 and two activities, it returns exactly:
+
+```text
+Trip of Amy (budget $200.00)
+Snorkelling: $45.00
+Night Safari: $55.00
+Total: $100.00
+```
+
+Paste your `removeActivity` from part (c) into the class too, so the class is complete.
+@@ starter
+class TripPlan:
+    _MAX_ACTIVITIES = 4
+
+    def __init__(self, owner, budget):
+        self.__owner = owner
+        self.__budget = budget
+        self.__activities = []
+
+    def totalCost(self):
+        total = 0
+        for a in self.__activities:
+            total += a.cost
+        return total
+
+    def addActivity(self, activity):
+        for a in self.__activities:
+            if a.name.lower() == activity.name.lower():
+                return False
+        if len(self.__activities) + 1 > TripPlan._MAX_ACTIVITIES:
+            return False
+        if self.totalCost() + activity.cost > self.__budget:
+            return False
+        self.__activities.append(activity)
+        return True
+
+    # paste removeActivity here
+
+    def __str__(self):
+        ...
+@@ check
+_plan = TripPlan("Amy", 200)
+_plan.addActivity(Activity("Snorkelling", 45))
+_plan.addActivity(Activity("Night Safari", 55))
+_expected = "Trip of Amy (budget $200.00)\nSnorkelling: $45.00\nNight Safari: $55.00\nTotal: $100.00"
+assert str(_plan) == _expected, f"❌ str(plan) is {str(_plan)!r}"
+assert str(TripPlan("Ben", 50)) == "Trip of Ben (budget $50.00)\nTotal: $0.00", "❌ a plan with no activities should show only the first and last lines"
+@@ hint
+Start with the first line, add `"\n" + str(a)` for each activity, then add `"\n"` and the total line.
+Use `self.totalCost()` for the total.
+@@ solution
+class TripPlan:
+    _MAX_ACTIVITIES = 4
+
+    def __init__(self, owner, budget):
+        self.__owner = owner
+        self.__budget = budget
+        self.__activities = []
+
+    def totalCost(self):
+        total = 0
+        for a in self.__activities:
+            total += a.cost
+        return total
+
+    def addActivity(self, activity):
+        for a in self.__activities:
+            if a.name.lower() == activity.name.lower():
+                return False
+        if len(self.__activities) + 1 > TripPlan._MAX_ACTIVITIES:
+            return False
+        if self.totalCost() + activity.cost > self.__budget:
+            return False
+        self.__activities.append(activity)
+        return True
+
+    def removeActivity(self, name):
+        for a in self.__activities:
+            if a.name.lower() == name.lower():
+                self.__activities.remove(a)
+                return a
+        return None
+
+    def __str__(self):
+        result = f"Trip of {self.__owner} (budget ${self.__budget:.2f})"
+        for a in self.__activities:
+            result += "\n" + str(a)
+        result += f"\nTotal: ${self.totalCost():.2f}"
+        return result
+
+@@ write Composition or inheritance? (exam style, 6 marks)
+For each pair of classes, say whether it should be modelled with **composition** or **inheritance**, and give a one line reason.
+
+1. `DeliveryRound` and `Order`
+2. `PriorityShipment` and `Shipment`
+3. `Customer` and `CashCard`
+@@ hint
+Make the sentence "A ___ has a ___" or "A ___ is a ___" and see which one is true.
+@@ answer
+1. **Composition.** A delivery round **has** orders. An order is not a kind of delivery round.
+2. **Inheritance.** A priority shipment **is a** shipment, with extra behaviour such as a priority fee.
+3. **Composition.** A customer **has a** cash card. A customer is not a kind of cash card.
+
+@@ md
+## 📝 Key points
+
+- **Composition** is "has a": one object stores another object in an attribute.
+- **Inheritance** is "is a": one class is a special kind of another class.
+- Delegation: the outer object's method calls the inner object's method, for example `self.__card.topUp(amount)`.
+- Create the list (or dictionary) inside `__init__`, so every object gets its own.
+- Search: loop, `return` the object when found, and `return None` **after** the loop.
+- Remove and update: search first, then return `True` or `False`.
+- Maximum size: `if len(self.__items) + 1 > ClassName._MAX: ...`
+- Case insensitive: compare `a.lower() == b.lower()`.
+- Totals: start at 0, loop, add the field of each object.
+- A dictionary of objects uses a unique key, such as an email, and `.get(key)` to find.
+
+## ⚠️ Common mistakes
+
+| Mistake | What happens |
+| --- | --- |
+| `return None` inside the loop, in an `else` | Only the first item is ever checked |
+| A list as a class variable or a default parameter | All objects share one list |
+| `len(self.__items) > _MAX` before adding | Lets one extra item in |
+| Forgetting `return` in `pay` or `removeActivity` | The caller gets `None` |
+| `self.__card.balance()` with brackets | `TypeError`, because `balance` is a property |
+
+Next: **10_Inheritance**.

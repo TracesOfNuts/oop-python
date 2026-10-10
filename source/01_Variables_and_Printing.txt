@@ -1,0 +1,698 @@
+@@ md
+# 01 - Variables and Printing
+
+**What you will learn**
+
+- How to show things on the screen with `print()`.
+- How to store values in **variables**.
+- The basic kinds of values: whole numbers, decimal numbers, text and True/False.
+- How to do maths in Python.
+- How to build neat messages with **f-strings**, like `Balance: $12.50`.
+- How to change text into numbers and back.
+
+**Why this matters for the exam**
+
+Every class you write in the exam stores values in variables and builds messages for `__str__`.
+For example, the exam often asks for output like `Price: $3.50`.
+After this notebook you will be able to produce that exactly.
+
+@@ md
+## 1. Printing
+
+`print()` shows a value on the screen.
+Text must be inside quotes.
+You can use double quotes `"..."` or single quotes `'...'`.
+
+@@ code
+print("Hello")
+print('Hello again')
+print(42)
+
+@@ md
+You can print several things at once by separating them with commas.
+Python puts **one space** between them.
+
+@@ code
+print("I have", 3, "cats")
+
+@@ predict Commas in print
+@@ run
+print("Total:", 10, "dollars")
+@@ output
+Total: 10 dollars
+@@ explain
+Each comma becomes one space in the output.
+So the three pieces are joined as `Total:` + space + `10` + space + `dollars`.
+
+@@ exercise Print a greeting
+Write **one** `print()` line that shows exactly:
+
+`Welcome to ICT162`
+
+There is no check cell for this one.
+Compare your output with the line above, letter by letter.
+@@ starter
+# write your print line below
+
+@@ hint
+Put the text inside quotes, inside the brackets of `print`.
+@@ solution
+print("Welcome to ICT162")
+
+@@ md
+## 2. Variables
+
+A **variable** is a name that holds a value.
+Think of it as a labelled box.
+You put a value in the box with `=`.
+
+```python
+price = 4.50
+```
+
+Read this as "**price becomes 4.50**", not "price equals 4.50".
+The `=` sign means "put the value on the right into the name on the left".
+
+@@ code
+drink = "Milk Tea"
+price = 4.50
+print(drink)
+print(price)
+
+@@ md
+A variable can be changed later.
+The new value **replaces** the old one.
+
+@@ code
+cups = 2
+print(cups)
+cups = 5
+print(cups)
+
+@@ md
+The right side is worked out **first**, then stored in the name on the left.
+So this line is fine, and very common:
+
+@@ code
+score = 10
+score = score + 5     # take the old score (10), add 5, store 15 back in score
+print(score)
+
+@@ md
+💡 `score = score + 5` can also be written `score += 5`.
+You will see `+=` and `-=` a lot in the exam, for example `self.__balance -= amount`.
+
+**Naming rules**
+
+- Names can use letters, digits and `_`, but cannot start with a digit.
+- No spaces. Use **camelCase** for names with several words: `totalPrice`, `numberOfCups`.
+- Names are case sensitive: `price` and `Price` are different variables.
+
+@@ predict Changing a variable
+@@ run
+a = 3
+b = a
+a = 10
+print(a, b)
+@@ output
+10 3
+@@ explain
+`b = a` copies the value that `a` has **at that moment** (3) into `b`.
+Changing `a` later does not change `b`.
+
+@@ predict Adding to a variable
+@@ run
+balance = 20
+balance = balance - 5
+balance += 2
+print(balance)
+@@ output
+17
+@@ explain
+20 minus 5 is 15.
+Then `+= 2` adds 2, so 17.
+
+@@ exercise Create variables
+Create these three variables:
+
+- `studentName` holding the text `"Aisha"`
+- `age` holding the number `19`
+- `height` holding the number `1.62`
+@@ starter
+studentName = ...
+age = ...
+height = ...
+@@ check
+assert studentName == "Aisha", "❌ studentName should be the text \"Aisha\" (with quotes)"
+assert age == 19, "❌ age should be the number 19 (no quotes)"
+assert height == 1.62, "❌ height should be the number 1.62 (no quotes)"
+@@ hint
+Text needs quotes. Numbers do not.
+@@ solution
+studentName = "Aisha"
+age = 19
+height = 1.62
+
+@@ exercise Update a balance
+A cash card starts with a balance of `50`.
+The owner tops up `20`, then pays `12.5` for lunch.
+
+Use `+=` and `-=` to update `balance`.
+At the end, `balance` should be `57.5`.
+@@ starter
+balance = 50
+# top up 20
+
+# pay 12.5 for lunch
+
+print(balance)
+@@ check
+assert balance == 57.5, f"❌ balance should be 57.5 but it is {balance}"
+@@ hint
+`balance += 20` adds 20.
+`balance -= 12.5` takes away 12.5.
+@@ solution
+balance = 50
+balance += 20
+balance -= 12.5
+print(balance)
+
+@@ md
+## 3. Kinds of values (data types)
+
+Every value has a **type**.
+These are the ones you need:
+
+| Type | Name in Python | Examples |
+| --- | --- | --- |
+| Whole number | `int` | `5`, `-3`, `0` |
+| Decimal number | `float` | `4.5`, `0.09`, `100.0` |
+| Text (a "string") | `str` | `"Amy"`, `'S1234'`, `"5"` |
+| True or False | `bool` | `True`, `False` |
+| Nothing | `NoneType` | `None` |
+
+`type(x)` tells you the type of `x`.
+
+@@ code
+print(type(5))
+print(type(4.5))
+print(type("hello"))
+print(type(True))
+print(type(None))
+
+@@ md
+⚠️ `"5"` (with quotes) is **text**, not a number.
+`True` and `False` start with a capital letter and have no quotes.
+
+`None` means "no value".
+You will use it later, for example a search that finds nothing returns `None`.
+
+@@ predict Text or number?
+@@ run
+print(type("19"))
+print(type(19))
+@@ output
+<class 'str'>
+<class 'int'>
+@@ explain
+The quotes make `"19"` a string (text).
+Without quotes, `19` is an int (a whole number).
+
+@@ exercise Pick the right type
+Give each variable a value of the correct type:
+
+- `isMember` should be the bool **True**.
+- `quantity` should be the int **3**.
+- `discount` should be the float **0.15**.
+- `postalCode` should be the **text** `"520123"` (postal codes are text, because we never do maths with them).
+@@ starter
+isMember = ...
+quantity = ...
+discount = ...
+postalCode = ...
+@@ check
+assert isMember is True, "❌ isMember should be True (capital T, no quotes)"
+assert quantity == 3 and type(quantity) is int, "❌ quantity should be the whole number 3"
+assert discount == 0.15, "❌ discount should be 0.15"
+assert postalCode == "520123", "❌ postalCode should be text in quotes: \"520123\""
+@@ solution
+isMember = True
+quantity = 3
+discount = 0.15
+postalCode = "520123"
+
+@@ md
+## 4. Doing maths
+
+| Symbol | Meaning | Example | Result |
+| --- | --- | --- | --- |
+| `+` | add | `7 + 2` | `9` |
+| `-` | subtract | `7 - 2` | `5` |
+| `*` | multiply | `7 * 2` | `14` |
+| `/` | divide (always gives a float) | `7 / 2` | `3.5` |
+| `//` | divide and drop the decimal part | `7 // 2` | `3` |
+| `%` | remainder | `7 % 2` | `1` |
+| `**` | power | `7 ** 2` | `49` |
+
+Python follows normal maths order: brackets first, then `**`, then `* / // %`, then `+ -`.
+
+@@ code
+print(2 + 3 * 4)       # 3 * 4 first, so 14
+print((2 + 3) * 4)     # brackets first, so 20
+print(10 / 2)          # / always gives a float: 5.0
+
+@@ predict Division
+@@ run
+print(9 / 3)
+print(9 // 2)
+print(9 % 2)
+@@ output
+3.0
+4
+1
+@@ explain
+`/` always gives a float, so `9 / 3` is `3.0`, not `3`.
+`//` drops the part after the decimal point, so `9 // 2` is `4`.
+`%` gives the remainder: 9 divided by 2 is 4 remainder **1**.
+
+@@ exercise Bubble tea bill
+A cup of bubble tea costs `4.80`.
+Amy buys `3` cups.
+
+Store the total cost in a variable called `total`.
+Use the variables `pricePerCup` and `cups`, do not type `14.4` yourself.
+@@ starter
+pricePerCup = 4.80
+cups = 3
+total = ...
+print(total)
+@@ check
+assert abs(total - 14.4) < 0.0001, f"❌ total should be 14.4 (3 cups x 4.80), but it is {total}"
+@@ hint
+Multiply the two variables with `*`.
+@@ solution
+pricePerCup = 4.80
+cups = 3
+total = pricePerCup * cups
+print(total)
+
+@@ exercise Average mark
+A student scored `72`, `85` and `90` in three quizzes.
+Store the average in `average`.
+
+The average is the sum divided by how many there are.
+@@ starter
+quiz1 = 72
+quiz2 = 85
+quiz3 = 90
+average = ...
+print(average)
+@@ check
+assert abs(average - 82.3333) < 0.001, f"❌ average should be about 82.33, but it is {average}. Did you use brackets?"
+@@ hint
+Without brackets, Python divides only `quiz3` by 3.
+Write `(quiz1 + quiz2 + quiz3) / 3`.
+@@ solution
+quiz1 = 72
+quiz2 = 85
+quiz3 = 90
+average = (quiz1 + quiz2 + quiz3) / 3
+print(average)
+
+@@ exercise Price with GST
+An item costs `25.00` before tax.
+GST is `9%`, which is `0.09` as a number.
+
+Work out:
+
+- `gst`, the tax amount (price times the rate)
+- `finalPrice`, the price plus the tax
+@@ starter
+price = 25.00
+gstRate = 0.09
+gst = ...
+finalPrice = ...
+print(gst, finalPrice)
+@@ check
+assert abs(gst - 2.25) < 0.0001, f"❌ gst should be 2.25, but it is {gst}"
+assert abs(finalPrice - 27.25) < 0.0001, f"❌ finalPrice should be 27.25, but it is {finalPrice}"
+@@ solution
+price = 25.00
+gstRate = 0.09
+gst = price * gstRate
+finalPrice = price + gst
+print(gst, finalPrice)
+
+@@ md
+## 5. Working with text (strings)
+
+You can join strings with `+`.
+This is called **concatenation**.
+
+@@ code
+firstName = "Siti"
+lastName = "Rahman"
+fullName = firstName + " " + lastName
+print(fullName)
+print(len(fullName))    # len() counts the characters, including the space
+
+@@ md
+⚠️ **You cannot add text and a number with `+`.**
+Python does not know if you want maths or joining.
+Run this to see the error.
+
+@@ code raises=TypeError
+age = 19
+print("Age: " + age)
+
+@@ md
+Read the last line: `TypeError: can only concatenate str (not "int") to str`.
+It means: "I can only join text to text, but you gave me an int."
+
+The fix is to turn the number into text with `str()`:
+
+@@ code
+age = 19
+print("Age: " + str(age))
+
+@@ predict Adding strings that look like numbers
+@@ run
+a = "5"
+b = "3"
+print(a + b)
+print(int(a) + int(b))
+@@ output
+53
+8
+@@ explain
+`a` and `b` are text, so `+` **joins** them: `"5"` and `"3"` become `"53"`.
+`int()` turns the text into numbers first, so then `+` does maths: `5 + 3 = 8`.
+
+@@ exercise Build a full ID
+Join `prefix` and `number` to make `studentId`, so that it becomes `"S1234"`.
+`number` is an int, so you need to convert it first.
+@@ starter
+prefix = "S"
+number = 1234
+studentId = ...
+print(studentId)
+@@ check
+assert studentId == "S1234", f"❌ studentId should be \"S1234\", but it is {studentId!r}"
+@@ hint
+`str(number)` turns `1234` into `"1234"`.
+Then join with `+`.
+@@ solution
+prefix = "S"
+number = 1234
+studentId = prefix + str(number)
+print(studentId)
+
+@@ md
+## 6. f-strings: the easy way to build messages
+
+Joining with `+` and `str()` gets messy.
+An **f-string** is much easier.
+Put an `f` before the quotes, and put variables inside curly brackets `{ }`.
+
+@@ code
+name = "Ravi"
+cups = 2
+message = f"{name} bought {cups} cups"
+print(message)
+
+@@ md
+**Money with 2 decimal places.**
+Add `:.2f` inside the brackets.
+It means "show this as a decimal number with 2 digits after the point".
+
+@@ code
+price = 4.5
+print(f"Price: ${price:.2f}")
+total = 14.4
+print(f"Total: ${total:.2f}")
+
+@@ md
+🎯 **In the exam**, `__str__` methods almost always need this, for example:
+
+```text
+Id: 123 Balance: $20.00
+```
+
+The `$` is just a normal character in the text.
+The `{balance:.2f}` part is the number.
+
+You can also put maths inside the brackets:
+
+@@ code
+price = 4.8
+cups = 3
+print(f"{cups} cups cost ${price * cups:.2f}")
+
+@@ md
+💡 You will also see the older `.format()` style in exam code.
+It does the same job.
+The `{}` are filled in order with the values inside `.format(...)`.
+
+@@ code
+name = "Ravi"
+price = 4.5
+print("Name: {} Price: ${:.2f}".format(name, price))
+
+@@ predict Format a decimal
+@@ run
+amount = 7
+print(f"Amount: ${amount:.2f}")
+rate = 0.125
+print(f"Rate: {rate:.1f}")
+@@ output
+Amount: $7.00
+Rate: 0.1
+@@ explain
+`:.2f` always shows exactly two decimal places, so `7` becomes `7.00`.
+`:.1f` shows one decimal place, so `0.125` is rounded to `0.1`.
+
+@@ exercise A receipt line
+Use an f-string to build `line` so that it is exactly:
+
+`Item: Milk Tea Qty: 2 Total: $9.60`
+
+Use the variables, do not type the values yourself.
+Work out the total inside the f-string, or in a separate variable first.
+@@ starter
+item = "Milk Tea"
+qty = 2
+unitPrice = 4.80
+line = ...
+print(line)
+@@ check
+assert line == "Item: Milk Tea Qty: 2 Total: $9.60", f"❌ line is {line!r}"
+@@ hint
+`f"Item: {item} Qty: {qty} Total: ${qty * unitPrice:.2f}"`
+Check the spaces carefully.
+@@ solution
+item = "Milk Tea"
+qty = 2
+unitPrice = 4.80
+line = f"Item: {item} Qty: {qty} Total: ${qty * unitPrice:.2f}"
+print(line)
+
+@@ exercise Card summary
+Build `summary` so that it is exactly:
+
+`Id: C001 Balance: $50.00`
+
+`balance` is the number `50`.
+@@ starter
+cardId = "C001"
+balance = 50
+summary = ...
+print(summary)
+@@ check
+assert summary == "Id: C001 Balance: $50.00", f"❌ summary is {summary!r}"
+@@ solution
+cardId = "C001"
+balance = 50
+summary = f"Id: {cardId} Balance: ${balance:.2f}"
+print(summary)
+
+@@ md
+## 7. Converting between types
+
+| Function | Turns a value into | Example | Result |
+| --- | --- | --- | --- |
+| `int(x)` | a whole number | `int("42")` | `42` |
+| `float(x)` | a decimal number | `float("4.5")` | `4.5` |
+| `str(x)` | text | `str(42)` | `"42"` |
+
+⚠️ If the text is not a number, `int()` and `float()` fail with a **ValueError**.
+
+@@ code raises=ValueError
+print(int("abc"))
+
+@@ md
+**`input()` always gives you text.**
+`input()` asks the user to type something.
+Even if they type a number, you get a string, so you must convert it.
+
+@@ code inputs=3
+cups = input("How many cups? ")
+print(type(cups))
+cups = int(cups)
+print(cups * 4.80)
+
+@@ md
+🎯 In the GUI part of the exam, you read text from an entry box with `.get()`.
+It is also always text, so you must use `float()` or `int()` before doing maths.
+This is one of the most common exam mistakes.
+
+@@ predict Converting text
+@@ run
+x = "2.5"
+y = float(x) * 2
+print(y)
+print(int(7.9))
+@@ output
+5.0
+7
+@@ explain
+`float("2.5")` gives the number `2.5`, and `2.5 * 2` is `5.0`.
+`int(7.9)` **cuts off** the decimal part, it does not round. So the result is `7`.
+
+@@ predict Which line fails?
+@@ run raises=ValueError
+a = int("10")
+print(a + 1)
+b = int("ten")
+print(b + 1)
+@@ output
+11
+@@ explain
+`int("10")` works, so `11` is printed.
+`int("ten")` fails because "ten" is not written with digits.
+Python raises a `ValueError` and the last line never runs.
+
+@@ exercise Convert and calculate
+`priceText` and `qtyText` came from the user, so they are text.
+Convert them, then store the total cost in `total`.
+@@ starter
+priceText = "3.50"
+qtyText = "4"
+total = ...
+print(total)
+@@ check
+assert total == 14.0, f"❌ total should be 14.0, but it is {total!r}. Did you convert both values?"
+@@ hint
+The price has a decimal point, so use `float(priceText)`.
+The quantity is a whole number, so use `int(qtyText)`.
+@@ solution
+priceText = "3.50"
+qtyText = "4"
+total = float(priceText) * int(qtyText)
+print(total)
+
+@@ md
+## 8. Putting it together
+
+@@ exercise Cash card story (exam warm-up)
+A cash card has id `"123"` and starts with a balance of `20.0`.
+
+1. The owner tops up `15`.
+2. Then they pay `7.25` for a meal.
+3. Build `report` so that it is exactly `Id: 123 Balance: $27.75`.
+
+Use `+=`, `-=` and an f-string.
+@@ starter
+cardId = "123"
+balance = 20.0
+# 1. top up 15
+
+# 2. pay 7.25
+
+# 3. build the report
+report = ...
+print(report)
+@@ check
+assert abs(balance - 27.75) < 0.0001, f"❌ balance should be 27.75 but it is {balance}"
+assert report == "Id: 123 Balance: $27.75", f"❌ report is {report!r}"
+@@ solution
+cardId = "123"
+balance = 20.0
+balance += 15
+balance -= 7.25
+report = f"Id: {cardId} Balance: ${balance:.2f}"
+print(report)
+
+@@ exercise Shopping summary
+Three items cost `2.40`, `5.10` and `12.00`.
+A member gets a discount of `10%` (`0.10`) on the total.
+
+Work out:
+
+- `subtotal`, the sum of the three prices
+- `discount`, 10% of the subtotal
+- `toPay`, the subtotal minus the discount
+- `message`, exactly `Subtotal: $19.50 Discount: $1.95 To pay: $17.55`
+@@ starter
+item1 = 2.40
+item2 = 5.10
+item3 = 12.00
+discountRate = 0.10
+subtotal = ...
+discount = ...
+toPay = ...
+message = ...
+print(message)
+@@ check
+assert abs(subtotal - 19.5) < 0.0001, f"❌ subtotal should be 19.50 but it is {subtotal}"
+assert abs(discount - 1.95) < 0.0001, f"❌ discount should be 1.95 but it is {discount}"
+assert abs(toPay - 17.55) < 0.0001, f"❌ toPay should be 17.55 but it is {toPay}"
+assert message == "Subtotal: $19.50 Discount: $1.95 To pay: $17.55", f"❌ message is {message!r}"
+@@ solution
+item1 = 2.40
+item2 = 5.10
+item3 = 12.00
+discountRate = 0.10
+subtotal = item1 + item2 + item3
+discount = subtotal * discountRate
+toPay = subtotal - discount
+message = f"Subtotal: ${subtotal:.2f} Discount: ${discount:.2f} To pay: ${toPay:.2f}"
+print(message)
+
+@@ predict Mixed review
+@@ run
+x = 5
+y = 2
+x = x * y
+y = x - y
+print(x, y)
+print(f"{x / y:.2f}")
+@@ output
+10 8
+1.25
+@@ explain
+`x` becomes `5 * 2 = 10`.
+Then `y` becomes `10 - 2 = 8` (it uses the **new** value of `x`).
+`10 / 8` is `1.25`, shown with 2 decimal places.
+
+@@ md
+## 📝 Key points
+
+- `=` puts a value into a variable. Read it as "becomes".
+- `+=` and `-=` update a variable: `balance -= 5`.
+- Types: `int` (5), `float` (4.5), `str` ("text"), `bool` (True/False), `None`.
+- `/` always gives a float. `//` drops the decimals. `%` gives the remainder.
+- You cannot `+` a string and a number. Use `str()` or an f-string.
+- f-strings: `f"Total: ${total:.2f}"` shows money with 2 decimal places.
+- `input()` and GUI `.get()` always give text. Convert with `int()` or `float()`.
+
+## ⚠️ Common mistakes
+
+| Mistake | What happens |
+| --- | --- |
+| `print("Age: " + 19)` | `TypeError` |
+| `int("4.5")` | `ValueError` (use `float()` for decimals) |
+| Forgetting the `f` in `f"{x}"` | Prints `{x}` literally |
+| `{price:.2f}` without the `$` | Prints `4.50` instead of `$4.50` |
+| `true` instead of `True` | `NameError` |
+
+Next: **02_Functions**.

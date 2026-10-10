@@ -1,0 +1,1220 @@
+@@ md
+# 15 - Mock Exam: Cinema
+
+This is a full practice paper in the style of the real ICT162 exam.
+It is original, and the scenario is a cinema that sells tickets.
+
+| Item | Detail |
+| --- | --- |
+| Time | 2 hours |
+| Total marks | 100 |
+| Questions | 4 (answer all) |
+| Allowed | One A4 double-sided memory aid sheet |
+
+| Question | Topic | Marks |
+| --- | --- | --- |
+| 1 | Reading code: error or output | 20 |
+| 2 | Ticket classes: abstract class and inheritance | 30 |
+| 3 | Booking: collection and exceptions | 30 |
+| 4 | tkinter GUI | 20 |
+
+@@ md
+## How to sit this mock exam
+
+1. **Set a timer for 2 hours.** Do not open any hint, solution or answer during that time.
+2. **Do not run your code while you write it.** In the real exam you type your answers without running them. Write on paper, or type into the cells without pressing Shift + Enter.
+3. **When the 2 hours are up, stop.** Now run your cells and the check cells.
+4. **Mark yourself.** Open the answers and the 🎯 marking guides. Give yourself the marks you really earned.
+5. **For every lost mark, write the cause in one line** in the table at the end, for example "forgot `super().__init__()`".
+6. **Redo** any question where you lost more than a third of the marks, a day or two later.
+
+Instructions, as in the real paper:
+
+- Follow the names, messages and output formats **exactly**.
+- Use the class variables in your code. Do not hard code their values.
+- Attributes that start with `__` are private, and `_` are protected. Write them exactly as shown.
+- You do not need to write comments.
+
+Good luck! 🍀
+
+@@ md
+---
+
+## Question 1 (20 marks)
+
+Study the classes below.
+They are used by all five parts of this question.
+Run the cell so the classes exist, but do **not** run the parts until you have written your answers.
+
+Each part is worth 4 marks.
+For each part, state:
+
+- whether there is an error, and if so, which line causes it and why, OR
+- if there is no error, what it prints.
+
+If something is printed before an error, write that output too.
+
+@@ code
+from abc import ABC, abstractmethod
+
+class Screening(ABC):
+    _count = 0
+
+    def __init__(self, movie, hall):
+        self.__movie = movie
+        self._hall = hall
+        Screening._count += 1
+
+    @property
+    def movie(self):
+        return self.__movie
+
+    @abstractmethod
+    def ticketPrice(self):
+        pass
+
+    def __str__(self):
+        return f"{self.__movie} in Hall {self._hall}: ${self.ticketPrice():.2f}"
+
+class Matinee(Screening):
+    def ticketPrice(self):
+        return 8.5
+
+class Premiere(Screening):
+    def __init__(self, movie, hall, guest):
+        super().__init__(movie, hall)
+        self._guest = guest
+
+    def ticketPrice(self):
+        return 25.0
+
+@@ predict Q1(a) (4 marks)
+@@ run raises=TypeError
+s = Screening("Up", 1)
+print(s)
+@@ explain
+**Error on line 1**, `s = Screening("Up", 1)`.
+It is a **TypeError**.
+`Screening` is an abstract class (it inherits from `ABC` and `ticketPrice` is an abstract method that is not implemented), so no object can be created from it.
+Nothing is printed.
+
+🎯 Marking guide: 1 mark for the line, 1 mark for TypeError, 2 marks for "abstract class cannot be instantiated".
+
+@@ predict Q1(b) (4 marks)
+@@ run raises=AttributeError
+m = Matinee("Up", 2)
+print(m)
+m.movie = "Cars"
+print(m.movie)
+@@ output
+Up in Hall 2: $8.50
+@@ explain
+`Matinee` implements `ticketPrice`, so it can be created.
+`print(m)` uses `__str__` from `Screening`, and `self.ticketPrice()` runs the `Matinee` version, so it prints `Up in Hall 2: $8.50`.
+**Error on line 3**, `m.movie = "Cars"`.
+It is an **AttributeError**, because `movie` is a property with **no setter**, so it is read only.
+
+🎯 Marking guide: 1 mark for the output line, 1 mark for the line, 1 mark for AttributeError, 1 mark for "property has no setter".
+
+@@ predict Q1(c) (4 marks)
+@@ run raises=AttributeError
+p = Premiere("Dune", 5, "Director")
+print(p)
+print(p.movie)
+print(p.__movie)
+@@ output
+Dune in Hall 5: $25.00
+Dune
+@@ explain
+`Premiere` calls `super().__init__(movie, hall)`, so all the parent attributes exist.
+The first two prints work.
+**Error on line 4**, `print(p.__movie)`.
+It is an **AttributeError**.
+`__movie` is private: inside the class it is stored as `_Screening__movie` (name mangling), so the name `__movie` cannot be used from outside the class.
+Use the property `p.movie` instead.
+
+🎯 Marking guide: 1 mark for the two output lines, 1 mark for the line, 1 mark for AttributeError, 1 mark for "private attribute / name mangling".
+
+@@ predict Q1(d) (4 marks)
+The first line resets the counter, as if this part runs in a new session.
+@@ run
+Screening._count = 0
+a = Matinee("Up", 1)
+b = Premiere("Dune", 5, "Cast")
+a._count = 10
+print(a._count, b._count, Screening._count)
+Screening._count = 50
+print(a._count, b._count)
+@@ output
+10 2 2
+10 50
+@@ explain
+No error.
+Each object created adds 1 to the **class** variable, so `Screening._count` is 2.
+`a._count = 10` creates a new **instance** variable on `a` only. It does not change the class variable.
+`b` has no copy of its own, so it reads the class value: 2, and later 50.
+`a` keeps its own 10.
+
+🎯 Marking guide: 2 marks for each output line.
+
+@@ predict Q1(e) (4 marks)
+@@ run raises=AttributeError
+class Midnight(Matinee):
+    def __init__(self, movie, hall):
+        self._snack = "Popcorn"
+
+    def ticketPrice(self):
+        return super().ticketPrice() + 2
+
+n = Midnight("Up", 3)
+print(n.ticketPrice())
+print(n)
+@@ output
+10.5
+@@ explain
+`Midnight` implements `ticketPrice`, so the object can be created.
+`ticketPrice` refines the parent version: `8.5 + 2`, so `10.5` is printed.
+**Error on the last line**, `print(n)`.
+It is an **AttributeError**.
+`Midnight.__init__` does **not** call `super().__init__(movie, hall)`, so `__movie` and `_hall` were never created.
+`__str__` tries to read `self.__movie` and fails.
+
+🎯 Marking guide: 1 mark for `10.5`, 1 mark for the line, 1 mark for AttributeError, 1 mark for "missing `super().__init__()`, so the parent attributes do not exist".
+
+@@ md
+---
+
+## Question 2 (30 marks)
+
+The cinema sells two kinds of tickets: standard tickets and premium tickets (with a recliner seat).
+They are modelled with an abstract class `Ticket` and two subclasses.
+
+```text
++------------------------------------------------+
+|              Ticket  (abstract)                |
++------------------------------------------------+
+| _nextId = 1                     (class)        |
+| __ticketId                                     |
+| __movie                                        |
+| __basePrice                                    |
++------------------------------------------------+
+| __init__(movie, basePrice)                     |
+| ticketId   (property, read only)               |
+| movie      (property, read only)               |
+| basePrice  (property, read only)               |
+| price()    {abstract}                          |
+| __str__()                                      |
++------------------------------------------------+
+            ^                         ^
+            |                         |
++-------------------------------+  +-------------------------------+
+|        StandardTicket         |  |         PremiumTicket         |
++-------------------------------+  +-------------------------------+
+| _STUDENT_DISCOUNT = 0.2       |  | _RECLINER_FEE = 6.0           |
+|                     (class)   |  | _SNACK_FEE = 4.5   (class)    |
+| __isStudent                   |  | __withSnack                   |
++-------------------------------+  +-------------------------------+
+| __init__(movie, basePrice,    |  | __init__(movie, basePrice,    |
+|          isStudent)           |  |          withSnack)           |
+| isStudent (property)          |  | price()                       |
+| price()                       |  | __str__()                     |
+| __str__()                     |  |                               |
++-------------------------------+  +-------------------------------+
+```
+
+Sample code:
+
+```python
+tickets = [StandardTicket("Dune", 12.0, False),
+           StandardTicket("Dune", 12.0, True),
+           PremiumTicket("Wicked", 15.0, False),
+           PremiumTicket("Wicked", 15.0, True)]
+for t in tickets:
+    print(t)
+```
+
+Expected output:
+
+```text
+#1 Dune: $12.00
+#2 Dune: $9.60 (Student)
+#3 Wicked: $21.00 (Premium)
+#4 Wicked: $25.50 (Premium + Snack)
+```
+
+@@ exercise Q2(a) The abstract class Ticket (10 marks)
+Write the abstract class `Ticket`.
+
+- The constructor stores the movie and base price.
+  The ticket ID is taken from the class variable `_nextId`, and then `_nextId` goes up by 1, so the tickets are numbered 1, 2, 3, ...
+- `ticketId`, `movie` and `basePrice` are read only properties.
+- `price()` is an abstract method.
+- `__str__()` returns `#`, the ticket ID, a space, the movie, `: $` and the price with 2 decimal places, for example `#1 Dune: $12.00`.
+  It must call `price()`.
+@@ starter
+from abc import ABC, abstractmethod
+
+class Ticket(ABC):
+    _nextId = 1
+
+    # write the constructor, the three properties, price() and __str__() here
+@@ check
+try:
+    Ticket("Dune", 12.0)
+    made = True
+except TypeError:
+    made = False
+assert not made, "❌ Ticket should be abstract, so Ticket(...) must raise a TypeError"
+
+class _TestTicket(Ticket):
+    def price(self):
+        return self.basePrice + 1
+
+Ticket._nextId = 1
+t1 = _TestTicket("Dune", 12.0)
+t2 = _TestTicket("Up", 8)
+assert (t1.ticketId, t2.ticketId) == (1, 2), "❌ The first two tickets should get IDs 1 and 2"
+assert Ticket._nextId == 3, "❌ _nextId should go up by 1 for every ticket"
+assert t1.movie == "Dune" and t1.basePrice == 12.0, "❌ Check the movie and basePrice properties"
+assert str(t2) == "#2 Up: $9.00", f"❌ str() should call price(). Expected '#2 Up: $9.00' but got {str(t2)!r}"
+try:
+    t1.movie = "Cars"
+    readOnly = False
+except AttributeError:
+    readOnly = True
+assert readOnly, "❌ movie should be read only (no setter)"
+@@ solution
+from abc import ABC, abstractmethod
+
+class Ticket(ABC):
+    _nextId = 1
+
+    def __init__(self, movie, basePrice):
+        self.__ticketId = Ticket._nextId
+        Ticket._nextId += 1
+        self.__movie = movie
+        self.__basePrice = basePrice
+
+    @property
+    def ticketId(self):
+        return self.__ticketId
+
+    @property
+    def movie(self):
+        return self.__movie
+
+    @property
+    def basePrice(self):
+        return self.__basePrice
+
+    @abstractmethod
+    def price(self):
+        pass
+
+    def __str__(self):
+        return f"#{self.__ticketId} {self.__movie}: ${self.price():.2f}"
+
+@@ md
+<details>
+<summary>🎯 Marking guide for Q2(a)</summary>
+
+- 1 mark: `class Ticket(ABC)` with the import.
+- 3 marks: constructor uses `Ticket._nextId`, then increments it, and stores movie and base price as private attributes.
+- 3 marks: three properties (1 each), with no setters.
+- 1 mark: `@abstractmethod` on `price`.
+- 2 marks: `__str__` in the exact format, calling `self.price()`.
+
+</details>
+
+@@ exercise Q2(b) StandardTicket (7 marks)
+Write the class `StandardTicket`.
+
+- It inherits from `Ticket`, and its constructor also takes `isStudent` (True or False).
+- `isStudent` is a read only property.
+- `price()` returns the base price.
+  A student gets a discount of `_STUDENT_DISCOUNT` (20%), so a student pays 80% of the base price.
+- `__str__()` returns the `Ticket` string, and adds ` (Student)` at the end for a student ticket.
+  Use `super()`.
+@@ starter
+class StandardTicket(Ticket):
+    _STUDENT_DISCOUNT = 0.2
+
+    # write the constructor, isStudent, price() and __str__() here
+@@ check
+Ticket._nextId = 1
+s1 = StandardTicket("Dune", 12.0, False)
+s2 = StandardTicket("Dune", 12.0, True)
+assert isinstance(s1, Ticket), "❌ StandardTicket should inherit from Ticket"
+assert s1.ticketId == 1 and s2.ticketId == 2, "❌ Did you call super().__init__(movie, basePrice)?"
+assert s2.isStudent is True and s1.isStudent is False, "❌ Check the isStudent property"
+assert abs(s1.price() - 12.0) < 0.001, "❌ A non-student pays the base price"
+assert abs(s2.price() - 9.6) < 0.001, "❌ A student pays 80% of the base price (9.60)"
+assert str(s1) == "#1 Dune: $12.00", f"❌ str(s1) is {str(s1)!r}"
+assert str(s2) == "#2 Dune: $9.60 (Student)", f"❌ str(s2) is {str(s2)!r}"
+StandardTicket._STUDENT_DISCOUNT = 0.5
+try:
+    assert abs(s2.price() - 6.0) < 0.001, "❌ price() should use the class variable _STUDENT_DISCOUNT, not 0.2"
+finally:
+    StandardTicket._STUDENT_DISCOUNT = 0.2
+@@ solution
+class StandardTicket(Ticket):
+    _STUDENT_DISCOUNT = 0.2
+
+    def __init__(self, movie, basePrice, isStudent):
+        super().__init__(movie, basePrice)
+        self.__isStudent = isStudent
+
+    @property
+    def isStudent(self):
+        return self.__isStudent
+
+    def price(self):
+        if self.__isStudent:
+            return self.basePrice * (1 - StandardTicket._STUDENT_DISCOUNT)
+        return self.basePrice
+
+    def __str__(self):
+        if self.__isStudent:
+            return super().__str__() + " (Student)"
+        return super().__str__()
+
+@@ md
+<details>
+<summary>🎯 Marking guide for Q2(b)</summary>
+
+- 2 marks: `class StandardTicket(Ticket)` and `super().__init__(movie, basePrice)`, then store `__isStudent`.
+- 1 mark: `isStudent` property.
+- 2 marks: `price()` uses `self.basePrice` (the property, because `__basePrice` is private to `Ticket`) and the class variable.
+- 2 marks: `__str__` uses `super().__str__()` and adds ` (Student)` only for students.
+
+</details>
+
+@@ exercise Q2(c) PremiumTicket and the sample code (8 marks)
+Write the class `PremiumTicket`.
+
+- It inherits from `Ticket`, and its constructor also takes `withSnack` (True or False).
+- `price()` returns the base price plus `_RECLINER_FEE`, plus `_SNACK_FEE` if the ticket comes with a snack.
+- `__str__()` returns the `Ticket` string, and adds ` (Premium)`, or ` (Premium + Snack)` if the ticket comes with a snack.
+
+Then write the sample code: create the list `tickets` with the four tickets shown above, and print them.
+@@ starter
+class PremiumTicket(Ticket):
+    _RECLINER_FEE = 6.0
+    _SNACK_FEE = 4.5
+
+    # write the constructor, price() and __str__() here
+
+
+# sample code
+Ticket._nextId = 1   # start numbering at 1 (only needed in the notebook)
+tickets = []
+@@ check
+Ticket._nextId = 1
+p1 = PremiumTicket("Wicked", 15.0, False)
+p2 = PremiumTicket("Wicked", 15.0, True)
+assert isinstance(p1, Ticket), "❌ PremiumTicket should inherit from Ticket"
+assert abs(p1.price() - 21.0) < 0.001, "❌ Without a snack: 15 + 6 = 21.00"
+assert abs(p2.price() - 25.5) < 0.001, "❌ With a snack: 15 + 6 + 4.5 = 25.50"
+assert str(p1) == "#1 Wicked: $21.00 (Premium)", f"❌ str(p1) is {str(p1)!r}"
+assert str(p2) == "#2 Wicked: $25.50 (Premium + Snack)", f"❌ str(p2) is {str(p2)!r}"
+PremiumTicket._SNACK_FEE = 1.0
+try:
+    assert abs(p2.price() - 22.0) < 0.001, "❌ price() should use the class variables, not 6.0 and 4.5"
+finally:
+    PremiumTicket._SNACK_FEE = 4.5
+assert len(tickets) == 4, "❌ tickets should hold the 4 tickets from the sample code"
+expected = ["#1 Dune: $12.00", "#2 Dune: $9.60 (Student)",
+            "#3 Wicked: $21.00 (Premium)", "#4 Wicked: $25.50 (Premium + Snack)"]
+actual = []
+for t in tickets:
+    actual.append(str(t))
+assert actual == expected, f"❌ Your tickets print as {actual}"
+@@ solution
+class PremiumTicket(Ticket):
+    _RECLINER_FEE = 6.0
+    _SNACK_FEE = 4.5
+
+    def __init__(self, movie, basePrice, withSnack):
+        super().__init__(movie, basePrice)
+        self.__withSnack = withSnack
+
+    def price(self):
+        total = self.basePrice + PremiumTicket._RECLINER_FEE
+        if self.__withSnack:
+            total += PremiumTicket._SNACK_FEE
+        return total
+
+    def __str__(self):
+        if self.__withSnack:
+            return super().__str__() + " (Premium + Snack)"
+        return super().__str__() + " (Premium)"
+
+
+# sample code
+Ticket._nextId = 1   # start numbering at 1 (only needed in the notebook)
+tickets = [StandardTicket("Dune", 12.0, False),
+           StandardTicket("Dune", 12.0, True),
+           PremiumTicket("Wicked", 15.0, False),
+           PremiumTicket("Wicked", 15.0, True)]
+for t in tickets:
+    print(t)
+
+@@ md
+<details>
+<summary>🎯 Marking guide for Q2(c)</summary>
+
+- 2 marks: class header, `super().__init__(movie, basePrice)`, store `__withSnack`.
+- 2 marks: `price()` with both class variables, and the snack fee only when `withSnack` is True.
+- 2 marks: `__str__` with `super().__str__()` and both endings.
+- 2 marks: sample code creates the four objects in a list and prints them in a loop.
+
+</details>
+
+@@ write Q2(d) Types of overriding (5 marks)
+(i) What type of overriding is `PremiumTicket.__str__()`? Explain. (2 marks)
+
+(ii) What type of overriding is `PremiumTicket.price()`? Explain. (2 marks)
+
+(iii) In the sample code, `print(t)` gives a different result for different tickets. What is this OOP idea called? (1 mark)
+@@ answer
+(i) **Overriding by refinement.**
+`PremiumTicket.__str__()` has the same name and parameters as `Ticket.__str__()`, and it calls the parent version with `super().__str__()`, then adds more text.
+
+(ii) **Overriding by replacement.**
+`PremiumTicket.price()` overrides `Ticket.price()` but does **not** call `super().price()`.
+It provides its own complete calculation (here it implements the abstract method).
+
+(iii) **Polymorphism.**
+The same call `print(t)` (which calls `t.__str__()` and `t.price()`) runs a different method depending on the class of the object `t`.
+
+@@ md
+---
+
+## Question 3 (30 marks)
+
+A customer can book several tickets in one `Booking`.
+The booking must follow these rules:
+
+- A ticket cannot be added twice (same ticket ID).
+- A booking can have at most `_MAX_TICKETS` (4) tickets.
+- A booking can have at most `_MAX_PREMIUM` (2) premium tickets.
+
+```text
++--------------------------------------------+
+|                 Booking                    |
++--------------------------------------------+
+| _MAX_TICKETS = 4                (class)    |
+| _MAX_PREMIUM = 2                (class)    |
+| __customer                                 |
+| __tickets   (list of Ticket objects)       |
++--------------------------------------------+
+| __init__(customer)                         |
+| customer   (property, read only)           |
+| findTicket(ticketId)                       |
+| addTicket(ticket)                          |
+| removeTicket(ticketId)                     |
+| total()                                    |
+| __str__()                                  |
++--------------------------------------------+
+```
+
+You need the classes from Question 2.
+If your Question 2 does not work, run the solution cells of Question 2 first.
+
+@@ exercise Q3(a) CinemaException (2 marks)
+Write the exception class `CinemaException`.
+It is a subclass of `Exception`.
+@@ starter
+# write the CinemaException class here
+@@ check
+assert issubclass(CinemaException, Exception), "❌ CinemaException should inherit from Exception"
+try:
+    raise CinemaException("Test message")
+except CinemaException as e:
+    assert str(e) == "Test message", "❌ The message should be kept"
+@@ solution
+class CinemaException(Exception):
+    pass
+
+@@ exercise Q3(b) Booking: constructor, findTicket and addTicket (14 marks)
+Write the class `Booking` with:
+
+- The constructor, which takes the customer name. The list of tickets starts empty.
+- `customer`, a read only property.
+- `findTicket(ticketId)`, which returns the ticket with that ID, or `None` if it is not in the booking.
+- `addTicket(ticket)`, which adds the ticket to the booking.
+  It raises a `CinemaException` with these exact messages.
+  Do the checks **in this order**:
+  1. If the booking already has a ticket with the same ID: `Ticket already in booking`
+  2. If this addition results in more than `_MAX_TICKETS` tickets: `Cannot book more than 4 tickets`
+  3. If the ticket is a `PremiumTicket`, and this addition results in more than `_MAX_PREMIUM` premium tickets: `Cannot book more than 2 premium tickets`
+
+  Use the class variables to build the messages, do not type the numbers.
+  Do **not** handle the exception in this method.
+@@ starter
+class Booking:
+    _MAX_TICKETS = 4
+    _MAX_PREMIUM = 2
+
+    # write the constructor, customer, findTicket and addTicket here
+@@ check
+Ticket._nextId = 1
+b = Booking("Amy")
+assert b.customer == "Amy", "❌ customer property should return 'Amy'"
+s = StandardTicket("Dune", 12.0, True)
+p1 = PremiumTicket("Dune", 15.0, False)
+p2 = PremiumTicket("Dune", 15.0, True)
+p3 = PremiumTicket("Dune", 15.0, False)
+s2 = StandardTicket("Up", 8.0, False)
+s3 = StandardTicket("Up", 8.0, False)
+assert b.findTicket(1) is None, "❌ An empty booking should not find ticket 1"
+b.addTicket(s)
+b.addTicket(p1)
+b.addTicket(p2)
+assert b.findTicket(2) is p1, "❌ findTicket(2) should return the ticket with ID 2"
+assert b.findTicket(99) is None, "❌ findTicket(99) should return None"
+
+def _message(ticket):
+    try:
+        b.addTicket(ticket)
+    except CinemaException as e:
+        return str(e)
+    return None
+
+assert _message(s) == "Ticket already in booking", "❌ Adding the same ticket twice should raise 'Ticket already in booking'"
+assert _message(p3) == "Cannot book more than 2 premium tickets", "❌ The third premium ticket should be refused"
+assert _message(s2) is None, "❌ A 4th standard ticket should be allowed"
+assert _message(s3) == "Cannot book more than 4 tickets", "❌ A 5th ticket should raise 'Cannot book more than 4 tickets'"
+assert _message(p1) == "Ticket already in booking", "❌ Check the ORDER: the duplicate check comes first"
+Booking._MAX_TICKETS = 6
+try:
+    assert _message(s3) is None, "❌ Use Booking._MAX_TICKETS, not the number 4"
+finally:
+    Booking._MAX_TICKETS = 4
+@@ hint
+For the premium rule, count the premium tickets that are already in the list with a loop and `isinstance(t, PremiumTicket)`.
+Then test `premiumCount + 1 > Booking._MAX_PREMIUM`.
+@@ solution
+class Booking:
+    _MAX_TICKETS = 4
+    _MAX_PREMIUM = 2
+
+    def __init__(self, customer):
+        self.__customer = customer
+        self.__tickets = []
+
+    @property
+    def customer(self):
+        return self.__customer
+
+    def findTicket(self, ticketId):
+        for t in self.__tickets:
+            if t.ticketId == ticketId:
+                return t
+        return None
+
+    def addTicket(self, ticket):
+        if self.findTicket(ticket.ticketId) is not None:
+            raise CinemaException("Ticket already in booking")
+        if len(self.__tickets) + 1 > Booking._MAX_TICKETS:
+            raise CinemaException(f"Cannot book more than {Booking._MAX_TICKETS} tickets")
+        if isinstance(ticket, PremiumTicket):
+            premiumCount = 0
+            for t in self.__tickets:
+                if isinstance(t, PremiumTicket):
+                    premiumCount += 1
+            if premiumCount + 1 > Booking._MAX_PREMIUM:
+                raise CinemaException(f"Cannot book more than {Booking._MAX_PREMIUM} premium tickets")
+        self.__tickets.append(ticket)
+
+@@ md
+<details>
+<summary>🎯 Marking guide for Q3(b)</summary>
+
+- 2 marks: constructor with a new empty list created inside `__init__`.
+- 1 mark: `customer` property.
+- 3 marks: `findTicket` loops, compares `ticketId`, returns the ticket, and returns `None` **after** the loop.
+- 2 marks: duplicate check first, with the exact message.
+- 2 marks: maximum check with `len(...) + 1 > Booking._MAX_TICKETS`.
+- 3 marks: premium check counts only premium tickets, uses `+ 1`, and uses the class variable.
+- 1 mark: append only when all checks pass, and no `try` in this method.
+
+</details>
+
+@@ exercise Q3(c) Booking: removeTicket, total and __str__ (8 marks)
+Copy your whole `Booking` class from Q3(b) into the cell below, and add these methods.
+(In the real exam you would write the class only once.)
+
+- `removeTicket(ticketId)` removes the ticket with that ID and **returns** it.
+  If the ID is not in the booking, raise a `CinemaException` with the message `Ticket not found`.
+- `total()` returns the sum of the prices of all the tickets.
+- `__str__()` returns `Booking for` and the customer name, then each ticket on its own line, then the total.
+  Example:
+
+```text
+Booking for Amy
+#1 Dune: $9.60 (Student)
+#2 Dune: $21.00 (Premium)
+Total: $30.60
+```
+@@ starter
+# paste your Booking class from Q3(b) here, then add removeTicket, total and __str__
+@@ check
+Ticket._nextId = 1
+b = Booking("Amy")
+s = StandardTicket("Dune", 12.0, True)
+p = PremiumTicket("Dune", 15.0, False)
+b.addTicket(s)
+b.addTicket(p)
+assert abs(b.total() - 30.6) < 0.001, "❌ total() should be 9.60 + 21.00 = 30.60"
+assert str(b) == "Booking for Amy\n#1 Dune: $9.60 (Student)\n#2 Dune: $21.00 (Premium)\nTotal: $30.60", f"❌ str(b) is {str(b)!r}"
+try:
+    b.removeTicket(9)
+    raised = False
+except CinemaException as e:
+    raised = str(e) == "Ticket not found"
+assert raised, "❌ removeTicket(9) should raise CinemaException('Ticket not found')"
+assert b.removeTicket(1) is s, "❌ removeTicket(1) should return the removed ticket"
+assert b.findTicket(1) is None, "❌ After removing ticket 1, it should not be found"
+assert abs(b.total() - 21.0) < 0.001, "❌ After removing the student ticket, total() should be 21.00"
+assert Booking("Ben").total() == 0, "❌ An empty booking should have a total of 0"
+@@ solution
+class Booking:
+    _MAX_TICKETS = 4
+    _MAX_PREMIUM = 2
+
+    def __init__(self, customer):
+        self.__customer = customer
+        self.__tickets = []
+
+    @property
+    def customer(self):
+        return self.__customer
+
+    def findTicket(self, ticketId):
+        for t in self.__tickets:
+            if t.ticketId == ticketId:
+                return t
+        return None
+
+    def addTicket(self, ticket):
+        if self.findTicket(ticket.ticketId) is not None:
+            raise CinemaException("Ticket already in booking")
+        if len(self.__tickets) + 1 > Booking._MAX_TICKETS:
+            raise CinemaException(f"Cannot book more than {Booking._MAX_TICKETS} tickets")
+        if isinstance(ticket, PremiumTicket):
+            premiumCount = 0
+            for t in self.__tickets:
+                if isinstance(t, PremiumTicket):
+                    premiumCount += 1
+            if premiumCount + 1 > Booking._MAX_PREMIUM:
+                raise CinemaException(f"Cannot book more than {Booking._MAX_PREMIUM} premium tickets")
+        self.__tickets.append(ticket)
+
+    def removeTicket(self, ticketId):
+        ticket = self.findTicket(ticketId)
+        if ticket is None:
+            raise CinemaException("Ticket not found")
+        self.__tickets.remove(ticket)
+        return ticket
+
+    def total(self):
+        total = 0
+        for t in self.__tickets:
+            total += t.price()
+        return total
+
+    def __str__(self):
+        result = f"Booking for {self.__customer}\n"
+        for t in self.__tickets:
+            result += f"{t}\n"
+        result += f"Total: ${self.total():.2f}"
+        return result
+
+@@ md
+<details>
+<summary>🎯 Marking guide for Q3(c)</summary>
+
+- 3 marks: `removeTicket` reuses `findTicket`, raises with the exact message when not found, removes and **returns** the ticket.
+- 2 marks: `total` loops and adds `t.price()` (polymorphism: each ticket calculates its own price).
+- 3 marks: `__str__` returns (not prints) the heading, one ticket per line using `str(t)`, and the total with 2 decimals.
+
+</details>
+
+@@ exercise Q3(d) The main function (6 marks)
+Write a function `main()` that does the following.
+
+1. Create a `Booking` for `Amy`.
+2. Create these four tickets, in this order, and try to add each one.
+   Print `Added ticket #` and the ID when it works, or `Error:` and the message when a `CinemaException` is raised.
+   - a standard **student** ticket for `Dune`, base price `12.0`
+   - a premium ticket for `Dune`, base price `15.0`, no snack
+   - a premium ticket for `Dune`, base price `15.0`, with a snack
+   - a premium ticket for `Dune`, base price `15.0`, no snack
+3. Try to add the **first** ticket again.
+4. Try to remove ticket `9`.
+5. Print the booking.
+
+Every call that can raise must be inside `try` / `except`, so the program never crashes.
+
+Expected output:
+
+```text
+Added ticket #1
+Added ticket #2
+Added ticket #3
+Error: Cannot book more than 2 premium tickets
+Error: Ticket already in booking
+Error: Ticket not found
+Booking for Amy
+#1 Dune: $9.60 (Student)
+#2 Dune: $21.00 (Premium)
+#3 Dune: $25.50 (Premium + Snack)
+Total: $56.10
+```
+@@ starter
+def main():
+    ...
+@@ check
+import io, contextlib
+Ticket._nextId = 1
+_buffer = io.StringIO()
+with contextlib.redirect_stdout(_buffer):
+    main()
+_lines = ["Added ticket #1",
+          "Added ticket #2",
+          "Added ticket #3",
+          "Error: Cannot book more than 2 premium tickets",
+          "Error: Ticket already in booking",
+          "Error: Ticket not found",
+          "Booking for Amy",
+          "#1 Dune: $9.60 (Student)",
+          "#2 Dune: $21.00 (Premium)",
+          "#3 Dune: $25.50 (Premium + Snack)",
+          "Total: $56.10"]
+_expected = "\n".join(_lines) + "\n"
+assert _buffer.getvalue() == _expected, "❌ main() printed:\n" + _buffer.getvalue()
+@@ solution
+def main():
+    booking = Booking("Amy")
+    tickets = [StandardTicket("Dune", 12.0, True),
+               PremiumTicket("Dune", 15.0, False),
+               PremiumTicket("Dune", 15.0, True),
+               PremiumTicket("Dune", 15.0, False)]
+    for t in tickets:
+        try:
+            booking.addTicket(t)
+            print(f"Added ticket #{t.ticketId}")
+        except CinemaException as e:
+            print(f"Error: {e}")
+
+    try:
+        booking.addTicket(tickets[0])
+    except CinemaException as e:
+        print(f"Error: {e}")
+
+    try:
+        booking.removeTicket(9)
+    except CinemaException as e:
+        print(f"Error: {e}")
+
+    print(booking)
+
+@@ md
+<details>
+<summary>🎯 Marking guide for Q3(d)</summary>
+
+- 1 mark: create the booking and the four tickets correctly.
+- 2 marks: `try` / `except CinemaException as e` around each add, printing the right messages.
+- 2 marks: the duplicate add and the remove are each inside their own `try` / `except`.
+- 1 mark: print the booking at the end.
+
+</details>
+
+@@ md
+---
+
+## Question 4 (20 marks)
+
+The cinema wants a small window for walk-in customers.
+The staff type the movie and the base price, choose Standard or Premium, and click **Add Ticket**.
+Every ticket goes into one `Booking` for the customer `Walk-in`.
+
+The window looks like this:
+
+```text
++--------------------------------------------+
+| Movie:            [____________________]   |
+| Base price ($):   [____________________]   |
+|          (o) Standard   ( ) Premium        |
+|    [ Add Ticket ]         [ Clear ]        |
+| +----------------------------------------+ |
+| | Added #1 Dune: $12.00                  | |
+| | Total: $12.00                          | |
+| +----------------------------------------+ |
++--------------------------------------------+
+```
+
+💡 To try your window, run the cell at the end of Question 4.
+A new window opens.
+The cell stays busy (`[*]`) until you close that window.
+This only works in Jupyter on your own computer, not in Google Colab.
+
+@@ exercise Q4(a) The layout (7 marks)
+Complete the constructor of `TicketGUI`.
+Use these exact attribute names, because the check looks for them.
+
+| Row | Column 0 | Column 1 |
+| --- | --- | --- |
+| 0 | Label `Movie:` | Entry `self.__movieEntry` |
+| 1 | Label `Base price ($):` | Entry `self.__priceEntry` |
+| 2 | Two Radiobuttons `Standard` (value 1) and `Premium` (value 2), inside a Frame that spans both columns. They share `self.__typeVar`, an `IntVar` that starts at 1. | |
+| 3 | Button `self.__addButton`, text `Add Ticket`, runs `self.addTicket` | Button `self.__clearButton`, text `Clear`, runs `self.clear` |
+| 4 | ScrolledText `self.__output`, width 40, height 5, spanning both columns, and starting **disabled** | |
+
+The two callback methods are left empty for now.
+You write them in Q4(b).
+@@ starter
+import tkinter as tk
+from tkinter import scrolledtext
+
+class TicketGUI:
+    def __init__(self):
+        self.__booking = Booking("Walk-in")
+        self.__win = tk.Tk()
+        self.__win.title("Cinema Tickets")
+
+        # create and place the widgets here
+
+        self.__win.mainloop()
+
+    def addTicket(self):
+        pass
+
+    def clear(self):
+        pass
+@@ check
+import tkinter as tk
+_savedMainloop = tk.Misc.mainloop
+tk.Misc.mainloop = lambda self, n=0: None
+app = None
+try:
+    app = TicketGUI()
+    def _cell(widget):
+        info = widget.grid_info()
+        return int(info["row"]), int(info["column"])
+    assert _cell(app._TicketGUI__movieEntry) == (0, 1), "❌ The movie entry should be at row 0, column 1"
+    assert _cell(app._TicketGUI__priceEntry) == (1, 1), "❌ The price entry should be at row 1, column 1"
+    assert _cell(app._TicketGUI__addButton) == (3, 0), "❌ The Add Ticket button should be at row 3, column 0"
+    assert _cell(app._TicketGUI__clearButton) == (3, 1), "❌ The Clear button should be at row 3, column 1"
+    assert app._TicketGUI__addButton.cget("text") == "Add Ticket", "❌ The add button text should be 'Add Ticket'"
+    assert str(app._TicketGUI__addButton.cget("command")) != "", "❌ The Add Ticket button needs command=self.addTicket"
+    assert str(app._TicketGUI__clearButton.cget("command")) != "", "❌ The Clear button needs command=self.clear"
+    output = app._TicketGUI__output
+    assert _cell(output) == (4, 0), "❌ The ScrolledText should be at row 4, column 0"
+    assert int(output.grid_info()["columnspan"]) == 2, "❌ The ScrolledText should span 2 columns"
+    assert str(output.cget("state")) == "disabled", "❌ The ScrolledText should start disabled"
+    assert app._TicketGUI__typeVar.get() == 1, "❌ self.__typeVar should be an IntVar that starts at 1"
+finally:
+    tk.Misc.mainloop = _savedMainloop
+    if app is not None:
+        app._TicketGUI__win.destroy()
+@@ hint
+Follow the same pattern for every widget: create it with the window as the first argument, then call `.grid(row=..., column=...)`.
+For the radio buttons: create `typeFrame = tk.Frame(self.__win)`, grid it with `columnspan=2`, and put the two `tk.Radiobutton(typeFrame, text=..., variable=self.__typeVar, value=...)` inside it.
+After creating the ScrolledText, call `self.__output.config(state=tk.DISABLED)`.
+@@ solution
+import tkinter as tk
+from tkinter import scrolledtext
+
+class TicketGUI:
+    def __init__(self):
+        self.__booking = Booking("Walk-in")
+        self.__win = tk.Tk()
+        self.__win.title("Cinema Tickets")
+
+        tk.Label(self.__win, text="Movie:").grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
+        self.__movieEntry = tk.Entry(self.__win, width=20)
+        self.__movieEntry.grid(row=0, column=1, padx=5, pady=5)
+
+        tk.Label(self.__win, text="Base price ($):").grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
+        self.__priceEntry = tk.Entry(self.__win, width=20)
+        self.__priceEntry.grid(row=1, column=1, padx=5, pady=5)
+
+        self.__typeVar = tk.IntVar(value=1)
+        typeFrame = tk.Frame(self.__win)
+        typeFrame.grid(row=2, column=0, columnspan=2)
+        tk.Radiobutton(typeFrame, text="Standard", variable=self.__typeVar, value=1).grid(row=0, column=0)
+        tk.Radiobutton(typeFrame, text="Premium", variable=self.__typeVar, value=2).grid(row=0, column=1)
+
+        self.__addButton = tk.Button(self.__win, text="Add Ticket", command=self.addTicket)
+        self.__addButton.grid(row=3, column=0, padx=5, pady=5)
+        self.__clearButton = tk.Button(self.__win, text="Clear", command=self.clear)
+        self.__clearButton.grid(row=3, column=1, padx=5, pady=5)
+
+        self.__output = scrolledtext.ScrolledText(self.__win, width=40, height=5, wrap=tk.WORD)
+        self.__output.grid(row=4, column=0, columnspan=2, padx=5, pady=5)
+        self.__output.config(state=tk.DISABLED)
+
+        self.__win.mainloop()
+
+    def addTicket(self):
+        pass
+
+    def clear(self):
+        pass
+
+@@ md
+<details>
+<summary>🎯 Marking guide for Q4(a)</summary>
+
+- 2 marks: the two labels and two entries in the right rows and columns.
+- 2 marks: `IntVar(value=1)` and two Radiobuttons sharing it, in a Frame with `columnspan=2`.
+- 1 mark: the two buttons with `command=self.addTicket` and `command=self.clear` (no brackets after the method name).
+- 2 marks: the ScrolledText with `columnspan=2`, then `state=tk.DISABLED`.
+
+</details>
+
+@@ exercise Q4(b) The callbacks (10 marks)
+The layout from Q4(a) is given below.
+Write the two callback methods.
+
+**`addTicket()`**
+
+1. Read the movie and the base price from the entries, and remove spaces at both ends.
+2. If the movie is empty, show `Please enter the movie name`.
+3. Otherwise, if the base price is not a number, show `Base price must be a number`.
+4. Otherwise, if the base price is 0 or less, show `Base price must be more than 0`.
+5. Otherwise, create a `StandardTicket` (not a student) if Standard is chosen, or a `PremiumTicket` (no snack) if Premium is chosen.
+   Add it to `self.__booking`.
+   - If it works, show `Added `, the ticket, a new line, and `Total: $` with the booking total, for example:
+     `Added #1 Dune: $12.00` then on the next line `Total: $12.00`.
+   - If a `CinemaException` is raised, show `Error: ` and its message.
+
+"Show" means: clear the ScrolledText and write the message in it.
+The ScrolledText must be **disabled** again afterwards.
+
+**`clear()`**
+
+Empty both entries, set the ticket type back to Standard, and clear the ScrolledText.
+
+💡 A small helper method `__show(message)` that does the "enable, delete, insert, disable" steps saves a lot of typing.
+@@ starter
+import tkinter as tk
+from tkinter import scrolledtext
+
+class TicketGUI:
+    def __init__(self):
+        self.__booking = Booking("Walk-in")
+        self.__win = tk.Tk()
+        self.__win.title("Cinema Tickets")
+
+        tk.Label(self.__win, text="Movie:").grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
+        self.__movieEntry = tk.Entry(self.__win, width=20)
+        self.__movieEntry.grid(row=0, column=1, padx=5, pady=5)
+
+        tk.Label(self.__win, text="Base price ($):").grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
+        self.__priceEntry = tk.Entry(self.__win, width=20)
+        self.__priceEntry.grid(row=1, column=1, padx=5, pady=5)
+
+        self.__typeVar = tk.IntVar(value=1)
+        typeFrame = tk.Frame(self.__win)
+        typeFrame.grid(row=2, column=0, columnspan=2)
+        tk.Radiobutton(typeFrame, text="Standard", variable=self.__typeVar, value=1).grid(row=0, column=0)
+        tk.Radiobutton(typeFrame, text="Premium", variable=self.__typeVar, value=2).grid(row=0, column=1)
+
+        self.__addButton = tk.Button(self.__win, text="Add Ticket", command=self.addTicket)
+        self.__addButton.grid(row=3, column=0, padx=5, pady=5)
+        self.__clearButton = tk.Button(self.__win, text="Clear", command=self.clear)
+        self.__clearButton.grid(row=3, column=1, padx=5, pady=5)
+
+        self.__output = scrolledtext.ScrolledText(self.__win, width=40, height=5, wrap=tk.WORD)
+        self.__output.grid(row=4, column=0, columnspan=2, padx=5, pady=5)
+        self.__output.config(state=tk.DISABLED)
+
+        self.__win.mainloop()
+
+    def addTicket(self):
+        pass   # replace with your code
+
+    def clear(self):
+        pass   # replace with your code
+@@ check
+import tkinter as tk
+_savedMainloop = tk.Misc.mainloop
+tk.Misc.mainloop = lambda self, n=0: None
+app = None
+try:
+    Ticket._nextId = 1
+    app = TicketGUI()
+    movie = app._TicketGUI__movieEntry
+    price = app._TicketGUI__priceEntry
+    output = app._TicketGUI__output
+    typeVar = app._TicketGUI__typeVar
+
+    def _fill(movieText, priceText, kind):
+        movie.delete(0, tk.END)
+        movie.insert(0, movieText)
+        price.delete(0, tk.END)
+        price.insert(0, priceText)
+        typeVar.set(kind)
+        app.addTicket()
+        return output.get("1.0", tk.END).strip()
+
+    assert _fill("  ", "12", 1) == "Please enter the movie name", "❌ An empty movie should show 'Please enter the movie name'"
+    assert _fill("Dune", "abc", 1) == "Base price must be a number", "❌ 'abc' should show 'Base price must be a number'"
+    assert _fill("Dune", "-3", 1) == "Base price must be more than 0", "❌ -3 should show 'Base price must be more than 0'"
+    assert _fill("Dune", "0", 1) == "Base price must be more than 0", "❌ 0 should show 'Base price must be more than 0'"
+    assert str(output.cget("state")) == "disabled", "❌ The ScrolledText should be disabled again after writing"
+    shown = _fill("Dune", "12", 1)
+    assert shown == "Added #1 Dune: $12.00\nTotal: $12.00", f"❌ After adding a standard ticket the output is {shown!r}"
+    shown = _fill("Dune", " 12 ", 2)
+    assert shown == "Added #2 Dune: $18.00 (Premium)\nTotal: $30.00", f"❌ After adding a premium ticket the output is {shown!r}"
+    _fill("Dune", "12", 2)
+    shown = _fill("Dune", "12", 2)
+    assert shown == "Error: Cannot book more than 2 premium tickets", f"❌ The third premium ticket should show the error, but the output is {shown!r}"
+    assert str(output.cget("state")) == "disabled", "❌ The ScrolledText should be disabled again after writing"
+    app.clear()
+    assert movie.get() == "" and price.get() == "", "❌ clear() should empty both entries"
+    assert typeVar.get() == 1, "❌ clear() should set the type back to Standard (1)"
+    assert output.get("1.0", tk.END).strip() == "", "❌ clear() should empty the ScrolledText"
+finally:
+    tk.Misc.mainloop = _savedMainloop
+    if app is not None:
+        app._TicketGUI__win.destroy()
+@@ solution
+import tkinter as tk
+from tkinter import scrolledtext
+
+class TicketGUI:
+    def __init__(self):
+        self.__booking = Booking("Walk-in")
+        self.__win = tk.Tk()
+        self.__win.title("Cinema Tickets")
+
+        tk.Label(self.__win, text="Movie:").grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
+        self.__movieEntry = tk.Entry(self.__win, width=20)
+        self.__movieEntry.grid(row=0, column=1, padx=5, pady=5)
+
+        tk.Label(self.__win, text="Base price ($):").grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
+        self.__priceEntry = tk.Entry(self.__win, width=20)
+        self.__priceEntry.grid(row=1, column=1, padx=5, pady=5)
+
+        self.__typeVar = tk.IntVar(value=1)
+        typeFrame = tk.Frame(self.__win)
+        typeFrame.grid(row=2, column=0, columnspan=2)
+        tk.Radiobutton(typeFrame, text="Standard", variable=self.__typeVar, value=1).grid(row=0, column=0)
+        tk.Radiobutton(typeFrame, text="Premium", variable=self.__typeVar, value=2).grid(row=0, column=1)
+
+        self.__addButton = tk.Button(self.__win, text="Add Ticket", command=self.addTicket)
+        self.__addButton.grid(row=3, column=0, padx=5, pady=5)
+        self.__clearButton = tk.Button(self.__win, text="Clear", command=self.clear)
+        self.__clearButton.grid(row=3, column=1, padx=5, pady=5)
+
+        self.__output = scrolledtext.ScrolledText(self.__win, width=40, height=5, wrap=tk.WORD)
+        self.__output.grid(row=4, column=0, columnspan=2, padx=5, pady=5)
+        self.__output.config(state=tk.DISABLED)
+
+        self.__win.mainloop()
+
+    def __show(self, message):
+        self.__output.config(state=tk.NORMAL)
+        self.__output.delete("1.0", tk.END)
+        self.__output.insert(tk.END, message)
+        self.__output.config(state=tk.DISABLED)
+
+    def addTicket(self):
+        movie = self.__movieEntry.get().strip()
+        priceText = self.__priceEntry.get().strip()
+        if movie == "":
+            self.__show("Please enter the movie name")
+            return
+        try:
+            basePrice = float(priceText)
+        except ValueError:
+            self.__show("Base price must be a number")
+            return
+        if basePrice <= 0:
+            self.__show("Base price must be more than 0")
+            return
+
+        if self.__typeVar.get() == 1:
+            ticket = StandardTicket(movie, basePrice, False)
+        else:
+            ticket = PremiumTicket(movie, basePrice, False)
+
+        try:
+            self.__booking.addTicket(ticket)
+            self.__show(f"Added {ticket}\nTotal: ${self.__booking.total():.2f}")
+        except CinemaException as e:
+            self.__show(f"Error: {e}")
+
+    def clear(self):
+        self.__movieEntry.delete(0, tk.END)
+        self.__priceEntry.delete(0, tk.END)
+        self.__typeVar.set(1)
+        self.__show("")
+
+@@ md
+<details>
+<summary>🎯 Marking guide for Q4(b)</summary>
+
+- 1 mark: read both entries with `.get().strip()`.
+- 1 mark: empty movie check.
+- 2 marks: `try: float(...)` with `except ValueError`.
+- 1 mark: the "0 or less" check.
+- 2 marks: create the right ticket type from `self.__typeVar.get()` and add it to the booking.
+- 1 mark: `try` / `except CinemaException as e` around `addTicket`, showing `Error: ...`.
+- 1 mark: `state=tk.NORMAL` before writing and `state=tk.DISABLED` after.
+- 1 mark: `clear()` empties the entries, resets the type and clears the output.
+
+</details>
+
+@@ md
+Run the cell below to try your window.
+Test each message: an empty movie, a price like `abc`, a price of `0`, and three premium tickets.
+Close the window when you are done.
+
+@@ code
+TicketGUI()
+
+@@ write Q4(c) Changing the layout (3 marks)
+In Q4(a), the ScrolledText is placed with `grid(row=4, column=0, columnspan=2, ...)`.
+
+What happens to the layout if `columnspan=2` is removed?
+@@ answer
+The ScrolledText would only sit in **column 0** instead of across both columns.
+Column 0 would then become as wide as the ScrolledText.
+So the labels column becomes very wide, and the entries and the Clear button in column 1 are pushed far to the right, next to the ScrolledText instead of above it.
+
+🎯 Marking guide: 1 mark for "only in column 0", 2 marks for the effect on the other widgets (column 0 grows, column 1 is pushed right).
+
+@@ md
+---
+
+## After the exam: mark yourself
+
+Add up your marks, then fill in this table (double-click to edit).
+Writing down **why** you lost each mark is the most useful part of a mock exam.
+
+| Question | Marks | My marks | Why I lost marks |
+| --- | --- | --- | --- |
+| Q1 Reading code | 20 | | |
+| Q2 Ticket classes | 30 | | |
+| Q3 Booking | 30 | | |
+| Q4 GUI | 20 | | |
+| **Total** | **100** | | |
+
+**What to do next**
+
+- Lost marks in Q1? Redo the drills in **14_Exam_Drills**, sections 1 to 6.
+- Lost marks in Q2? Redo notebooks **10_Inheritance** and **11_Abstract_Classes_and_Polymorphism**.
+- Lost marks in Q3? Redo notebooks **09_Composition_and_Collections** and **12_Exceptions**.
+- Lost marks in Q4? Redo notebook **13_GUI_with_tkinter**.
+- Then ask your tutor for another practice paper, and sit it under the same 2 hour rules.
+
+📝 **The night before the exam**
+
+- Read the mark-saving checklist at the end of **14_Exam_Drills**.
+- Write the five templates from memory: a class with properties and `__str__`, an abstract class with a subclass, a custom exception with `raise` and `try`, a class method on a class dictionary, and a GUI callback with validation.
+- Sleep well. A rested brain reads code much better. 😊

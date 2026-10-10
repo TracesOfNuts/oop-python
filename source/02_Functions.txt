@@ -1,0 +1,991 @@
+@@ md
+# 02 - Functions
+
+**What you will learn**
+
+- What a function is, and why we use them.
+- How to **define** a function and how to **call** it.
+- How to give a function values to work with (**parameters**).
+- The difference between `return` and `print`. This is the most important idea in this notebook.
+- How to give a parameter a **default value**.
+- How to read the error messages that functions give you.
+
+**Why this matters for the exam**
+
+In a class, every **method** is just a function that lives inside the class.
+`topUp`, `deduct`, `addContact`, `__str__`: they are all functions.
+If functions feel easy, classes will feel easy too.
+So we will go slowly and practise a lot.
+
+@@ md
+## 1. What is a function?
+
+Think of a **vending machine**.
+
+- You put something **in** (money and a button number).
+- The machine does some work inside. You do not see how.
+- Something comes **out** (a drink).
+
+A function is the same:
+
+- You give it some values (the **inputs**).
+- It runs some lines of code.
+- It can give you back a result (the **output**).
+
+You already know some functions that Python gives you: `print()`, `len()`, `int()`, `type()`.
+Now you will learn to write your own.
+
+@@ md
+## 2. Defining and calling a function
+
+Here is a very small function:
+
+```python
+def showMenu():
+    print("Milk Tea   $4.80")
+    print("Green Tea  $3.90")
+```
+
+Let us read it piece by piece:
+
+- `def` means "I am **def**ining a new function".
+- `showMenu` is the name we chose. Use camelCase, like variables.
+- `()` the brackets hold the inputs. This function needs none, so they are empty.
+- `:` the colon says "the body starts on the next line".
+- The body is the lines **indented** under it (4 spaces). They belong to the function.
+
+⚠️ **Defining a function does not run it.**
+It only teaches Python a new word.
+To run it, you **call** it by writing its name with brackets: `showMenu()`.
+
+@@ code
+def showMenu():
+    print("Milk Tea   $4.80")
+    print("Green Tea  $3.90")
+
+print("Before the call")
+showMenu()
+print("After the call")
+
+@@ md
+You can call a function as many times as you like.
+That is the point of a function: write it once, use it many times.
+
+@@ code
+showMenu()
+showMenu()
+
+@@ predict Defining is not running
+@@ run
+def sayHi():
+    print("Hi!")
+
+print("Start")
+print("End")
+@@ output
+Start
+End
+@@ explain
+The function `sayHi` is defined, but it is never **called**.
+There is no `sayHi()` line, so `Hi!` is never printed.
+
+@@ predict Calling twice
+@@ run
+def cheer():
+    print("Go")
+    print("team!")
+
+cheer()
+print("---")
+cheer()
+@@ output
+Go
+team!
+---
+Go
+team!
+@@ explain
+Each call to `cheer()` runs both lines of its body.
+The function is called twice, so the two lines appear twice.
+
+@@ exercise Your first function
+Complete the function `showWelcome` so that when it is called, it prints exactly:
+
+`Welcome to the cafe`
+
+Keep the line indented under the `def` line.
+@@ starter
+def showWelcome():
+    ...   # replace ... with a print line
+
+showWelcome()   # this line calls the function so you can see the result
+@@ check
+import io, contextlib
+_buffer = io.StringIO()
+with contextlib.redirect_stdout(_buffer):
+    showWelcome()
+assert _buffer.getvalue() == "Welcome to the cafe\n", f"❌ showWelcome() printed {_buffer.getvalue()!r}"
+@@ hint
+Replace `...` with `print("Welcome to the cafe")`.
+Keep the 4 spaces in front of it.
+@@ solution
+def showWelcome():
+    print("Welcome to the cafe")
+
+showWelcome()
+
+@@ exercise Write a function from nothing
+Write a function called `showGoodbye`.
+When it is called, it prints two lines:
+
+```text
+Thank you
+See you again
+```
+
+Then call it once.
+@@ starter
+# write the def line, then the two indented print lines
+
+# then call the function
+
+@@ check
+import io, contextlib
+_buffer = io.StringIO()
+with contextlib.redirect_stdout(_buffer):
+    showGoodbye()
+assert _buffer.getvalue() == "Thank you\nSee you again\n", f"❌ showGoodbye() printed {_buffer.getvalue()!r}"
+@@ hint
+Copy the shape of `showMenu` above:
+`def showGoodbye():` then two indented `print(...)` lines.
+@@ solution
+def showGoodbye():
+    print("Thank you")
+    print("See you again")
+
+showGoodbye()
+
+@@ md
+## 3. Parameters: giving the function some input
+
+Most functions need some information to do their job.
+You put a name inside the brackets of the `def` line.
+This name is a **parameter**: a variable that gets its value when the function is called.
+
+@@ code
+def greet(name):
+    print(f"Hello, {name}!")
+
+greet("Amy")
+greet("Ben")
+
+@@ md
+When we call `greet("Amy")`:
+
+1. Python jumps into the function.
+2. The parameter `name` gets the value `"Amy"`.
+3. The body runs, and prints `Hello, Amy!`.
+4. Python comes back and carries on after the call.
+
+Two words that are easy to mix up:
+
+- **Parameter**: the name in the `def` line (`name`).
+- **Argument**: the actual value you pass in when you call it (`"Amy"`).
+
+@@ predict One parameter
+@@ run
+def shout(word):
+    print(word + "!!!")
+
+shout("Hello")
+shout("Stop")
+@@ output
+Hello!!!
+Stop!!!
+@@ explain
+The first call sets `word` to `"Hello"`, the second call sets it to `"Stop"`.
+Each time, the body joins `"!!!"` to the end.
+
+@@ exercise Print a receipt line
+Complete `printReceipt` so that `printReceipt("Milk Tea")` prints exactly:
+
+`You bought Milk Tea`
+
+It must work for any item, so use the parameter `item`, not the words `Milk Tea`.
+@@ starter
+def printReceipt(item):
+    ...
+
+printReceipt("Milk Tea")
+@@ check
+import io, contextlib
+_buffer = io.StringIO()
+with contextlib.redirect_stdout(_buffer):
+    printReceipt("Milk Tea")
+    printReceipt("Coffee")
+assert _buffer.getvalue() == "You bought Milk Tea\nYou bought Coffee\n", f"❌ For Milk Tea and Coffee your function printed {_buffer.getvalue()!r}"
+@@ hint
+Use an f-string: `print(f"You bought {item}")`.
+@@ solution
+def printReceipt(item):
+    print(f"You bought {item}")
+
+printReceipt("Milk Tea")
+
+@@ md
+## 4. Several parameters
+
+A function can have several parameters.
+Separate them with commas.
+When you call it, the arguments are matched **in the same order**.
+
+@@ code
+def showOrder(drink, cups):
+    print(f"{cups} x {drink}")
+
+showOrder("Milk Tea", 2)     # drink gets "Milk Tea", cups gets 2
+showOrder("Coffee", 1)
+
+@@ predict The order of arguments matters
+@@ run
+def describe(name, age):
+    print(f"{name} is {age} years old")
+
+describe("Ali", 20)
+describe(20, "Ali")
+@@ output
+Ali is 20 years old
+20 is Ali years old
+@@ explain
+Arguments are matched by **position**.
+In the second call, the first value (`20`) goes into `name` and the second (`"Ali"`) goes into `age`.
+Python does not know that this is silly. It just follows the order.
+
+@@ md
+**Keyword arguments.**
+You can also say which parameter gets which value, by writing its name.
+Then the order does not matter.
+You will see this in the course slides, for example `Customer('Jack', id='2', amt=50)`.
+
+@@ code
+def describe(name, age):
+    print(f"{name} is {age} years old")
+
+describe(age=20, name="Ali")
+
+@@ exercise Two parameters
+Complete `showPrice(item, price)` so that `showPrice("Coffee", 3.5)` prints exactly:
+
+`Coffee: $3.50`
+@@ starter
+def showPrice(item, price):
+    ...
+
+showPrice("Coffee", 3.5)
+@@ check
+import io, contextlib
+_buffer = io.StringIO()
+with contextlib.redirect_stdout(_buffer):
+    showPrice("Coffee", 3.5)
+    showPrice("Cake", 6)
+assert _buffer.getvalue() == "Coffee: $3.50\nCake: $6.00\n", f"❌ Your function printed {_buffer.getvalue()!r}"
+@@ hint
+Remember `:.2f` for money: `f"{item}: ${price:.2f}"`.
+@@ solution
+def showPrice(item, price):
+    print(f"{item}: ${price:.2f}")
+
+showPrice("Coffee", 3.5)
+
+@@ exercise Three parameters
+Write a function `showStudent(name, studentId, course)` from nothing.
+`showStudent("Mei", "S123", "ICT162")` must print exactly:
+
+`Mei (S123) takes ICT162`
+@@ starter
+# write the whole function here
+
+showStudent("Mei", "S123", "ICT162")
+@@ check
+import io, contextlib
+_buffer = io.StringIO()
+with contextlib.redirect_stdout(_buffer):
+    showStudent("Mei", "S123", "ICT162")
+assert _buffer.getvalue() == "Mei (S123) takes ICT162\n", f"❌ Your function printed {_buffer.getvalue()!r}"
+@@ solution
+def showStudent(name, studentId, course):
+    print(f"{name} ({studentId}) takes {course}")
+
+showStudent("Mei", "S123", "ICT162")
+
+@@ md
+## 5. `return`: giving a value back
+
+So far our functions only **print**.
+Printing shows something on the screen, but the rest of your program cannot use it.
+
+Remember the vending machine.
+Printing is like the machine showing a picture of a drink on its screen.
+`return` is the machine **dropping the real drink** into your hand, so you can use it.
+
+@@ code
+def double(number):
+    return number * 2
+
+result = double(4)
+print(result)
+print(double(10) + 1)
+
+@@ md
+When Python reaches `return`:
+
+1. It works out the value after `return`.
+2. It leaves the function **immediately**.
+3. The function call is replaced by that value.
+
+So `double(4)` becomes `8`, and `result = double(4)` is the same as `result = 8`.
+
+🎯 Most exam methods **return** a value, for example "returns the total fees" or "returns True if added".
+If the question says "returns", you must use `return`, not `print`.
+
+@@ predict Return gives a value back
+@@ run
+def addOne(x):
+    return x + 1
+
+a = addOne(5)
+b = addOne(a)
+print(a, b)
+@@ output
+6 7
+@@ explain
+`addOne(5)` returns `6`, so `a` is `6`.
+Then `addOne(a)` is `addOne(6)`, which returns `7`.
+
+@@ predict Print is not return
+@@ run
+def addOneAndPrint(x):
+    print(x + 1)
+
+value = addOneAndPrint(5)
+print(value)
+@@ output
+6
+None
+@@ explain
+The function **prints** `6`, but it has no `return`.
+A function without `return` gives back `None` (nothing).
+So `value` is `None`, and `print(value)` shows `None`.
+This is the most common function mistake. Learn to spot it.
+
+@@ predict Printing the call
+@@ run
+def greetBack(name):
+    print("Hi " + name)
+
+print(greetBack("Sam"))
+@@ output
+Hi Sam
+None
+@@ explain
+First Python runs `greetBack("Sam")`, which prints `Hi Sam`.
+The function returns `None`, so the outer `print(...)` prints `None`.
+
+@@ predict Return stops the function
+@@ run
+def getPrice():
+    print("Looking up price")
+    return 4.5
+    print("This line is never reached")
+
+p = getPrice()
+print(p)
+@@ output
+Looking up price
+4.5
+@@ explain
+`return` leaves the function straight away.
+The line after `return` can never run.
+
+@@ predict A returned value that nobody keeps
+@@ run
+def triple(n):
+    return n * 3
+
+triple(5)
+answer = triple(2)
+print(answer)
+@@ output
+6
+@@ explain
+`triple(5)` does return `15`, but the value is not stored or printed, so it is thrown away.
+Only `triple(2)` is stored, in `answer`, and then printed.
+
+@@ exercise Return a square
+Complete `square(n)` so that it **returns** `n` times `n`.
+For example `square(4)` returns `16`.
+@@ starter
+def square(n):
+    ...
+
+print(square(4))
+@@ check
+assert square(4) == 16, f"❌ square(4) should return 16 but it returned {square(4)!r}"
+assert square(10) == 100, f"❌ square(10) should return 100 but it returned {square(10)!r}"
+@@ hint
+`return n * n`
+@@ solution
+def square(n):
+    return n * n
+
+print(square(4))
+
+@@ exercise Add GST
+Complete `addGst(price)` so that it returns the price plus 9% GST.
+For example `addGst(100)` returns `109.0`.
+@@ starter
+def addGst(price):
+    ...
+
+print(addGst(100))
+@@ check
+assert addGst(100) is not None, "❌ addGst(100) returned None. Did you use return?"
+assert abs(addGst(100) - 109) < 0.0001, f"❌ addGst(100) should return 109.0 but it returned {addGst(100)!r}"
+assert abs(addGst(20) - 21.8) < 0.0001, f"❌ addGst(20) should return 21.8 but it returned {addGst(20)!r}"
+@@ hint
+The price plus 9% is `price + price * 0.09`, which is the same as `price * 1.09`.
+@@ solution
+def addGst(price):
+    return price * 1.09
+
+print(addGst(100))
+
+@@ exercise Fix it: print instead of return
+This function is meant to **return** the total cost, but it prints it instead.
+So `bill` below becomes `None`.
+Fix the function.
+@@ starter
+def totalCost(price, qty):
+    print(price * qty)
+
+bill = totalCost(2.5, 4)
+print("Bill is", bill)
+@@ check
+assert totalCost(2.5, 4) == 10.0, f"❌ totalCost(2.5, 4) should return 10.0 but it returned {totalCost(2.5, 4)!r}"
+assert totalCost(3, 3) == 9, f"❌ totalCost(3, 3) should return 9 but it returned {totalCost(3, 3)!r}"
+@@ hint
+Change the word `print` to `return`.
+`return` does not need brackets: `return price * qty`.
+@@ solution
+def totalCost(price, qty):
+    return price * qty
+
+bill = totalCost(2.5, 4)
+print("Bill is", bill)
+
+@@ exercise Return a full name
+Complete `fullName(first, last)` so that it returns the first name, a space, and the last name.
+For example `fullName("Siti", "Rahman")` returns `"Siti Rahman"`.
+@@ starter
+def fullName(first, last):
+    ...
+
+print(fullName("Siti", "Rahman"))
+@@ check
+assert fullName("Siti", "Rahman") == "Siti Rahman", f"❌ fullName(\"Siti\", \"Rahman\") returned {fullName('Siti', 'Rahman')!r}"
+assert fullName("Tan", "Wei") == "Tan Wei", f"❌ fullName(\"Tan\", \"Wei\") returned {fullName('Tan', 'Wei')!r}"
+@@ solution
+def fullName(first, last):
+    return first + " " + last
+
+print(fullName("Siti", "Rahman"))
+
+@@ exercise Format money
+Write a function `formatMoney(amount)` from nothing.
+It **returns** the text `$` followed by the amount with 2 decimal places.
+For example `formatMoney(4.5)` returns `"$4.50"`.
+@@ starter
+# write the whole function here
+
+print(formatMoney(4.5))
+@@ check
+assert formatMoney(4.5) == "$4.50", f"❌ formatMoney(4.5) returned {formatMoney(4.5)!r}"
+assert formatMoney(12) == "$12.00", f"❌ formatMoney(12) returned {formatMoney(12)!r}"
+@@ hint
+`return f"${amount:.2f}"`
+@@ solution
+def formatMoney(amount):
+    return f"${amount:.2f}"
+
+print(formatMoney(4.5))
+
+@@ md
+## 6. Using returned values
+
+Because `return` gives back a real value, you can use the call anywhere you could use a value:
+in maths, in an f-string, or as the argument of another function.
+
+@@ code
+def priceOf(cups):
+    return cups * 4.80
+
+total = priceOf(2) + priceOf(3)
+print(f"Total: ${total:.2f}")
+print(f"One cup: ${priceOf(1):.2f}")
+
+@@ predict Calls inside maths
+@@ run
+def half(x):
+    return x / 2
+
+print(half(10) + half(4))
+print(half(half(8)))
+@@ output
+7.0
+2.0
+@@ explain
+`half(10)` is `5.0` and `half(4)` is `2.0`, so the sum is `7.0`.
+In `half(half(8))`, the inner call runs first: `half(8)` is `4.0`, then `half(4.0)` is `2.0`.
+
+@@ exercise Use the returned value
+The function `subtotal` is written for you.
+Use it to set `orderTotal` to the cost of **2 cakes at 6.50** plus **3 coffees at 3.20**.
+Call `subtotal` twice. Do not work out the numbers yourself.
+@@ starter
+def subtotal(price, qty):
+    return price * qty
+
+orderTotal = ...
+print(orderTotal)
+@@ check
+assert orderTotal is not ..., "❌ Replace ... with your answer"
+assert abs(orderTotal - 22.6) < 0.0001, f"❌ orderTotal should be 22.6 but it is {orderTotal!r}"
+@@ hint
+`subtotal(6.50, 2)` gives the cakes.
+Add the coffees with another call.
+@@ solution
+def subtotal(price, qty):
+    return price * qty
+
+orderTotal = subtotal(6.50, 2) + subtotal(3.20, 3)
+print(orderTotal)
+
+@@ md
+## 7. A function can call another function
+
+Big jobs are made of small jobs.
+A function can call another function that you wrote before.
+
+@@ code
+def area(length, width):
+    return length * width
+
+def carpetCost(length, width, pricePerSqm):
+    return area(length, width) * pricePerSqm
+
+print(carpetCost(3, 4, 10))
+
+@@ md
+`carpetCost` does not repeat the area calculation.
+It asks `area` to do it.
+This is exactly how methods in a class will use each other, for example a `topUp` method calling `addBonus`.
+
+@@ predict Following the calls
+@@ run
+def addTax(price):
+    return price + 1
+
+def finalPrice(price):
+    return addTax(price) * 2
+
+print(finalPrice(4))
+@@ output
+10
+@@ explain
+`finalPrice(4)` calls `addTax(4)`, which returns `5`.
+Then `5 * 2` is `10`.
+
+@@ exercise Paint a wall
+Two functions are started for you.
+
+- `wallArea(height, width)` must return height times width.
+- `paintNeeded(height, width)` must return the litres of paint needed. One litre covers 10 square metres, so it is the area divided by 10.
+
+`paintNeeded` must **call** `wallArea`.
+@@ starter
+def wallArea(height, width):
+    ...
+
+def paintNeeded(height, width):
+    ...
+
+print(paintNeeded(3, 5))
+@@ check
+assert wallArea(3, 5) == 15, f"❌ wallArea(3, 5) should return 15 but returned {wallArea(3, 5)!r}"
+assert paintNeeded(3, 5) == 1.5, f"❌ paintNeeded(3, 5) should return 1.5 but returned {paintNeeded(3, 5)!r}"
+assert paintNeeded(4, 10) == 4.0, f"❌ paintNeeded(4, 10) should return 4.0 but returned {paintNeeded(4, 10)!r}"
+@@ hint
+Inside `paintNeeded`, write `return wallArea(height, width) / 10`.
+@@ solution
+def wallArea(height, width):
+    return height * width
+
+def paintNeeded(height, width):
+    return wallArea(height, width) / 10
+
+print(paintNeeded(3, 5))
+
+@@ exercise Card summary with a helper
+`money(amount)` is written for you.
+Complete `cardSummary(cardId, balance)` so that it **returns** text like:
+
+`Id: C001 Balance: $50.00`
+
+Use `money` inside it.
+@@ starter
+def money(amount):
+    return f"${amount:.2f}"
+
+def cardSummary(cardId, balance):
+    ...
+
+print(cardSummary("C001", 50))
+@@ check
+assert cardSummary("C001", 50) == "Id: C001 Balance: $50.00", f"❌ cardSummary(\"C001\", 50) returned {cardSummary('C001', 50)!r}"
+assert cardSummary("X9", 7.5) == "Id: X9 Balance: $7.50", f"❌ cardSummary(\"X9\", 7.5) returned {cardSummary('X9', 7.5)!r}"
+@@ hint
+`return f"Id: {cardId} Balance: {money(balance)}"`
+(The `$` comes from `money`, so do not add another one.)
+@@ solution
+def money(amount):
+    return f"${amount:.2f}"
+
+def cardSummary(cardId, balance):
+    return f"Id: {cardId} Balance: {money(balance)}"
+
+print(cardSummary("C001", 50))
+
+@@ md
+## 8. Default values for parameters
+
+You can give a parameter a **default value** with `=` in the `def` line.
+If the caller leaves that argument out, the default is used.
+
+@@ code
+def topUp(balance, amount=10):
+    return balance + amount
+
+print(topUp(5))        # amount is not given, so it is 10
+print(topUp(5, 50))    # amount is given, so it is 50
+
+@@ md
+⚠️ Parameters with defaults must come **after** the ones without defaults.
+`def topUp(amount=10, balance):` is a `SyntaxError`.
+
+🎯 **Why this matters for the exam.**
+Some languages let you write two functions with the same name but different parameters.
+This is called **overloading**.
+Python does not allow that, so we use default values instead.
+The course slides do this with `def deduct(self, amount=5):`.
+The exam has asked you to fix "overloading" code using default values.
+
+@@ predict Default values
+@@ run
+def makeDrink(size="Regular", sugar=50):
+    return f"{size} drink, {sugar}% sugar"
+
+print(makeDrink())
+print(makeDrink("Large"))
+print(makeDrink("Small", 0))
+print(makeDrink(sugar=25))
+@@ output
+Regular drink, 50% sugar
+Large drink, 50% sugar
+Small drink, 0% sugar
+Regular drink, 25% sugar
+@@ explain
+With no arguments, both defaults are used.
+With one argument, it goes into the first parameter, `size`.
+With `sugar=25`, only `sugar` is given, so `size` keeps its default.
+
+@@ exercise A default amount
+Complete `deduct(balance, amount=5)`.
+It returns the balance minus the amount.
+If no amount is given, `5` is taken off.
+@@ starter
+def deduct(balance, amount=5):
+    ...
+
+print(deduct(20))
+print(deduct(20, 8))
+@@ check
+assert deduct(20) == 15, f"❌ deduct(20) should return 15 but returned {deduct(20)!r}"
+assert deduct(20, 8) == 12, f"❌ deduct(20, 8) should return 12 but returned {deduct(20, 8)!r}"
+@@ solution
+def deduct(balance, amount=5):
+    return balance - amount
+
+print(deduct(20))
+print(deduct(20, 8))
+
+@@ exercise Add the default yourself
+Write `ticketPrice(adults, children=0)` from nothing.
+An adult ticket costs `12` and a child ticket costs `8`.
+It returns the total price.
+If the number of children is not given, it is `0`.
+@@ starter
+# write the whole function here
+
+print(ticketPrice(2))
+print(ticketPrice(2, 3))
+@@ check
+assert ticketPrice(2) == 24, f"❌ ticketPrice(2) should return 24 but returned {ticketPrice(2)!r}"
+assert ticketPrice(2, 3) == 48, f"❌ ticketPrice(2, 3) should return 48 but returned {ticketPrice(2, 3)!r}"
+assert ticketPrice(adults=1, children=1) == 20, "❌ ticketPrice(adults=1, children=1) should return 20"
+@@ hint
+`def ticketPrice(adults, children=0):`
+then `return adults * 12 + children * 8`
+@@ solution
+def ticketPrice(adults, children=0):
+    return adults * 12 + children * 8
+
+print(ticketPrice(2))
+print(ticketPrice(2, 3))
+
+@@ md
+## 9. Variables inside a function stay inside
+
+A variable created inside a function is **local**.
+It only exists while the function is running.
+Outside the function, Python has never heard of it.
+
+@@ predict A local variable
+@@ run raises=NameError
+def makeSum(a, b):
+    insideOnly = a + b
+    return insideOnly
+
+print(makeSum(2, 3))
+print(insideOnly)
+@@ output
+5
+@@ explain
+`makeSum(2, 3)` returns `5`, which is printed.
+But `insideOnly` was created **inside** the function.
+Outside the function it does not exist, so `print(insideOnly)` fails with a `NameError`.
+If you need the value outside, use what the function **returns**.
+
+@@ predict Same name, different variable
+@@ run
+fee = 100
+
+def addFee(amount):
+    fee = amount + 5
+    return fee
+
+print(addFee(10))
+print(fee)
+@@ output
+15
+100
+@@ explain
+The `fee` inside the function is a **different** local variable that happens to have the same name.
+Changing it does not change the `fee` outside, which is still `100`.
+
+@@ md
+## 10. Common mistakes and their error messages
+
+**Forgetting the brackets when you call.**
+Without `()`, the function is not called.
+Python just shows that the name is a function.
+
+@@ code
+def getMessage():
+    return "Hello"
+
+print(getMessage)      # no brackets: prints something like <function getMessage at 0x...>
+print(getMessage())    # with brackets: calls it and prints Hello
+
+@@ md
+**Giving the wrong number of arguments.**
+Read the message: it tells you which argument is missing.
+
+@@ code raises=TypeError
+def greet(name):
+    print(f"Hello, {name}!")
+
+greet()
+
+@@ md
+`TypeError: greet() missing 1 required positional argument: 'name'`
+
+**Forgetting the colon** at the end of the `def` line.
+
+@@ code raises=SyntaxError
+def greet(name)
+    print(f"Hello, {name}!")
+
+@@ md
+**Forgetting to indent** the body.
+
+@@ code raises=IndentationError
+def greet(name):
+print(f"Hello, {name}!")
+
+@@ md
+**Calling a function before it is defined.**
+Python reads from top to bottom, so the `def` must run first.
+
+@@ code raises=NameError
+showTotal(5)
+
+def showTotal(amount):
+    print(amount)
+
+@@ predict Too many arguments
+@@ run raises=TypeError
+def area(length, width):
+    return length * width
+
+print(area(2, 3))
+print(area(2, 3, 4))
+@@ output
+6
+@@ explain
+The first call has two arguments and works.
+The second call gives three values, but `area` only has two parameters.
+Python stops with `TypeError: area() takes 2 positional arguments but 3 were given`.
+
+@@ exercise Fix three mistakes
+This function should return the price of `qty` cups at `4.80` each.
+It has **three** mistakes: one on the `def` line, one with spaces, and one where the value is not given back.
+Read the error messages to help you.
+@@ starter
+def cupsPrice(qty)
+total = qty * 4.80
+print(total)
+@@ check
+assert abs(cupsPrice(2) - 9.6) < 0.0001, f"❌ cupsPrice(2) should return 9.6 but returned {cupsPrice(2)!r}"
+assert abs(cupsPrice(5) - 24.0) < 0.0001, f"❌ cupsPrice(5) should return 24.0 but returned {cupsPrice(5)!r}"
+@@ hint
+1. The `def` line needs a `:` at the end.
+2. The two lines of the body need 4 spaces in front.
+3. Change `print` to `return`.
+@@ solution
+def cupsPrice(qty):
+    total = qty * 4.80
+    return total
+
+@@ md
+## 11. Putting it together
+
+@@ exercise Cash card functions (exam warm-up)
+Write three functions for a cash card.
+Each one **returns** a value. None of them prints.
+
+- `topUp(balance, amount)` returns the new balance after adding `amount`.
+- `pay(balance, amount)` returns the new balance after taking away `amount`.
+- `report(cardId, balance)` returns text like `Id: 123 Balance: $27.75`.
+
+The lines at the bottom use your functions.
+@@ starter
+def topUp(balance, amount):
+    ...
+
+def pay(balance, amount):
+    ...
+
+def report(cardId, balance):
+    ...
+
+balance = 20.0
+balance = topUp(balance, 15)
+balance = pay(balance, 7.25)
+print(report("123", balance))
+@@ check
+assert topUp(20.0, 15) == 35.0, f"❌ topUp(20.0, 15) should return 35.0 but returned {topUp(20.0, 15)!r}"
+assert pay(35.0, 7.25) == 27.75, f"❌ pay(35.0, 7.25) should return 27.75 but returned {pay(35.0, 7.25)!r}"
+assert report("123", 27.75) == "Id: 123 Balance: $27.75", f"❌ report(\"123\", 27.75) returned {report('123', 27.75)!r}"
+assert report("9", 5) == "Id: 9 Balance: $5.00", f"❌ report(\"9\", 5) returned {report('9', 5)!r}"
+@@ solution
+def topUp(balance, amount):
+    return balance + amount
+
+def pay(balance, amount):
+    return balance - amount
+
+def report(cardId, balance):
+    return f"Id: {cardId} Balance: ${balance:.2f}"
+
+balance = 20.0
+balance = topUp(balance, 15)
+balance = pay(balance, 7.25)
+print(report("123", balance))
+
+@@ exercise Order line
+Write `orderLine(item, price, qty=1)` from nothing.
+It **returns** text like:
+
+`2 x Milk Tea = $9.60`
+
+If `qty` is not given, it is `1`.
+For example `orderLine("Cake", 6.5)` returns `"1 x Cake = $6.50"`.
+@@ starter
+# write the whole function here
+
+print(orderLine("Milk Tea", 4.80, 2))
+print(orderLine("Cake", 6.5))
+@@ check
+assert orderLine("Milk Tea", 4.80, 2) == "2 x Milk Tea = $9.60", f"❌ orderLine(\"Milk Tea\", 4.80, 2) returned {orderLine('Milk Tea', 4.80, 2)!r}"
+assert orderLine("Cake", 6.5) == "1 x Cake = $6.50", f"❌ orderLine(\"Cake\", 6.5) returned {orderLine('Cake', 6.5)!r}"
+@@ hint
+`def orderLine(item, price, qty=1):`
+then return an f-string. Work out `price * qty` inside the brackets.
+@@ solution
+def orderLine(item, price, qty=1):
+    return f"{qty} x {item} = ${price * qty:.2f}"
+
+print(orderLine("Milk Tea", 4.80, 2))
+print(orderLine("Cake", 6.5))
+
+@@ write Return or print?
+Explain the difference between `return` and `print` in a function.
+Say what you get if you store the result of a function that only prints.
+@@ answer
+`print` only shows a value on the screen.
+The rest of the program cannot use it.
+`return` gives the value back to the line that called the function, so it can be stored, used in maths, or passed to another function.
+A function that only prints (and has no `return`) gives back `None`.
+So `x = functionThatOnlyPrints()` makes `x` equal to `None`.
+
+@@ md
+## 📝 Key points
+
+- `def name(parameters):` defines a function. The body is indented.
+- Defining does not run it. Call it with brackets: `name(arguments)`.
+- Arguments are matched to parameters by position, or by name (`amount=50`).
+- `return` gives a value back and leaves the function at once.
+- A function with no `return` gives back `None`.
+- Default values: `def deduct(balance, amount=5):`. This is how Python does "overloading".
+- Variables made inside a function do not exist outside it.
+
+## ⚠️ Common mistakes
+
+| Mistake | What happens |
+| --- | --- |
+| `print(...)` when the question says "returns" | The caller gets `None` |
+| `getMessage` instead of `getMessage()` | The function is not called |
+| Wrong number of arguments | `TypeError: ... missing 1 required positional argument` |
+| No `:` at the end of the `def` line | `SyntaxError` |
+| Body not indented | `IndentationError` |
+| Using a local variable outside the function | `NameError` |
+| Calling before the `def` has run | `NameError` |
+
+## 🎯 Looking ahead
+
+Soon you will write **classes**.
+A **method** is a function that belongs to an object.
+It is written inside the class with `def`, it has parameters, and it can `return` a value, exactly like the functions here.
+The only new thing is an extra first parameter called `self`.
+
+Next: **03_Decisions**.

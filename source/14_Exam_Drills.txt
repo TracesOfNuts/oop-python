@@ -1,0 +1,1365 @@
+@@ md
+# 14 - Exam Drills
+
+**What you will practise**
+
+- "Error or output?" questions, the kind that appear in every exam paper.
+- Multiple choice questions like the ones in the JUL 2025 paper.
+- Finding and fixing the bugs that lose marks most often.
+- The theory sentences that the exam asks you to write.
+
+**Why this matters for the exam**
+
+Code reading is worth about 15 to 20 marks in every paper.
+The same small set of tricks comes back again and again.
+If you know these tricks, these are some of the easiest marks in the paper.
+
+This notebook has no new topics.
+It mixes everything from notebooks 01 to 12, so it is a good test of what you remember.
+
+@@ md
+## How to answer "error or output?"
+
+For every line, ask yourself these questions in order.
+
+1. **Which object is this?** What class was it created from?
+2. **Can the object be created?** An abstract class, or a subclass that still has an abstract method, cannot be created.
+3. **Where does Python find the method or attribute?** Look in the object's own class first, then go up to the parent, then the grandparent.
+4. **Does the name exist?** A private `__name` cannot be read from outside. A missing `super().__init__()` means the parent attributes were never made.
+5. **Is it a property or a method?** A property is used without `()`. A method needs `()`.
+
+If there is an error, the exam wants three things:
+
+- **Which line** causes it.
+- **The type of error**, for example `TypeError` or `AttributeError`.
+- **Why**, in one sentence.
+
+If something was printed before the error, write that output too.
+
+💡 Write your answer on paper first, exactly as you would in the exam.
+Then run the cell and compare.
+
+@@ md
+## 1. Abstract classes
+
+Run this cell first.
+It defines the classes used by the next four exercises.
+Read them carefully, just like in the exam.
+
+@@ code
+from abc import ABC, abstractmethod
+
+class Appliance(ABC):
+    def __init__(self, brand):
+        self._brand = brand
+
+    @property
+    def brand(self):
+        return self._brand
+
+    @abstractmethod
+    def power(self):
+        pass
+
+    @abstractmethod
+    def describe(self):
+        pass
+
+class Fan(Appliance):
+    def power(self):
+        return 50
+
+    def describe(self):
+        return f"{self._brand} fan uses {self.power()}W"
+
+class Heater(Appliance):
+    def power(self):
+        return 2000
+
+class SmallFan(Fan):
+    def power(self):
+        return 20
+
+@@ predict Creating the abstract class
+Use the `Appliance` classes above.
+@@ run raises=TypeError
+a = Appliance("Philips")
+print(a.brand)
+@@ explain
+The error is on the line `a = Appliance("Philips")`.
+`Appliance` inherits from `ABC` and still has abstract methods (`power` and `describe`).
+You cannot create an object of an abstract class, so Python raises a **TypeError**.
+The `print` line is never reached, so nothing is printed.
+
+@@ predict A subclass that forgot one method
+Use the `Appliance` classes above.
+@@ run raises=TypeError
+h = Heater("Dyson")
+print(h.power())
+@@ explain
+The error is on the line `h = Heater("Dyson")`.
+`Heater` implements `power()` but **not** `describe()`.
+A subclass that does not implement **every** abstract method is still abstract.
+So `Heater` cannot be created either, and Python raises a **TypeError**.
+
+@@ predict A grandchild class
+Use the `Appliance` classes above.
+@@ run
+s = SmallFan("Mi")
+print(s.describe())
+print(s.brand)
+@@ output
+Mi fan uses 20W
+Mi
+@@ explain
+There is no error.
+`SmallFan` gets `describe()` from its parent `Fan`, so no abstract method is left.
+Inside `describe()`, `self.power()` runs the version from the **object's** class, `SmallFan`, so it is 20, not 50.
+This is polymorphism: the object decides which method runs.
+
+@@ predict Printing before the error
+Use the `Appliance` classes above.
+@@ run raises=TypeError
+print("start")
+devices = [Fan("KDK"), SmallFan("Mi")]
+total = 0
+for d in devices:
+    total += d.power()
+print(total)
+h = Heater("Dyson")
+print("end")
+@@ output
+start
+70
+@@ explain
+`Fan` and `SmallFan` can both be created, so the loop adds `50 + 20 = 70`.
+Then `Heater("Dyson")` fails with a **TypeError**, because `Heater` is still abstract.
+`end` is never printed.
+⚠️ In the exam, always write the output that came **before** the error.
+
+@@ md
+## 2. Properties and private attributes
+
+Run this cell first.
+It is used by the next four exercises.
+
+@@ code
+class Song:
+    def __init__(self, title, seconds):
+        self.__title = title
+        self.__seconds = seconds
+
+    @property
+    def title(self):
+        return self.__title
+
+    @property
+    def seconds(self):
+        return self.__seconds
+
+    @seconds.setter
+    def seconds(self, newSeconds):
+        if newSeconds > 0:
+            self.__seconds = newSeconds
+
+    @property
+    def minutes(self):
+        return self.__seconds / 60
+
+    def __str__(self):
+        return f"{self.__title} ({self.__seconds}s)"
+
+@@ predict A property with no setter
+Use the `Song` class above.
+@@ run raises=AttributeError
+s = Song("Hello", 300)
+s.title = "Bye"
+print(s)
+@@ explain
+The error is on the line `s.title = "Bye"`.
+`title` has a getter (`@property`) but **no setter** (`@title.setter`).
+So it is read only, and assigning to it raises an **AttributeError**.
+
+@@ predict The setter checks the value
+Use the `Song` class above.
+@@ run
+s = Song("Hello", 300)
+s.seconds = -5
+print(s)
+s.seconds = 240
+print(s.seconds)
+@@ output
+Hello (300s)
+240
+@@ explain
+There is no error, because `seconds` has a setter.
+The setter only changes the value if it is more than 0.
+So `-5` is ignored and the song stays at 300 seconds.
+Then `240` is accepted.
+
+@@ predict Calling a property like a method
+Use the `Song` class above.
+@@ run raises=TypeError
+s = Song("Hello", 150)
+print(s.minutes)
+print(s.minutes())
+@@ output
+2.5
+@@ explain
+`s.minutes` (no brackets) runs the property and gives `2.5`.
+`s.minutes()` first gets `2.5`, then tries to **call** it like a function.
+A float cannot be called, so Python raises `TypeError: 'float' object is not callable`.
+🎯 This exact trap has appeared in past papers. Properties never use `()`.
+
+@@ predict Reading and writing a private attribute from outside
+Use the `Song` class above.
+@@ run raises=AttributeError
+s = Song("Hello", 300)
+print(s.title)
+s.__seconds = 999
+print(s.seconds, s.__seconds)
+print(s.__title)
+@@ output
+Hello
+300 999
+@@ explain
+`s.title` uses the property, so `Hello` is printed.
+Inside the class, Python secretly renames `__seconds` to `_Song__seconds` (this is called **name mangling**).
+So `s.__seconds = 999` outside the class does **not** change the real balance.
+It creates a brand new attribute that happens to be called `__seconds`.
+That is why `s.seconds` is still 300, while `s.__seconds` is the new 999.
+The last line reads `s.__title`, which was never created outside the class, so it raises an **AttributeError**.
+
+@@ md
+## 3. Class variables
+
+@@ predict A shared counter
+@@ run
+class Counter:
+    _count = 0
+
+    def __init__(self):
+        Counter._count += 1
+
+a = Counter()
+b = Counter()
+print(Counter._count, a._count, b._count)
+@@ output
+2 2 2
+@@ explain
+`Counter._count += 1` changes the **class** variable, which is shared by all objects.
+Two objects were created, so it is 2.
+`a._count` and `b._count` have no copy of their own, so Python looks up to the class and finds 2.
+
+@@ predict Changing a class variable through an object
+@@ run
+class Bus:
+    _fare = 2
+
+    def __init__(self, number):
+        self.number = number
+
+b1 = Bus(12)
+b2 = Bus(190)
+b1._fare = 5
+print(b1._fare, b2._fare, Bus._fare)
+Bus._fare = 3
+print(b1._fare, b2._fare, Bus._fare)
+@@ output
+5 2 2
+5 3 3
+@@ explain
+`b1._fare = 5` does **not** change the class variable.
+It gives `b1` its own instance variable called `_fare`.
+`b2` and the class still have 2.
+Then `Bus._fare = 3` changes the class variable.
+`b2` has no copy of its own, so it now sees 3.
+`b1` keeps its own 5.
+
+@@ predict Using self to count
+@@ run
+class Member:
+    _total = 0
+
+    def __init__(self, name):
+        self.name = name
+        self._total += 1
+
+m1 = Member("Ali")
+m2 = Member("Bala")
+print(m1._total, m2._total, Member._total)
+@@ output
+1 1 0
+@@ explain
+`self._total += 1` means `self._total = self._total + 1`.
+The right side reads the class value (0).
+The left side then **creates an instance variable** on that object, set to 1.
+So each member has its own `_total` of 1, and the class variable stays 0.
+To count all members, write `Member._total += 1` (or `type(self)._total += 1`).
+
+@@ predict A class variable used as a plain name
+@@ run raises=NameError
+class Shop:
+    _GST = 0.09
+
+    def priceWithGst(self, price):
+        return price * (1 + _GST)
+
+shop = Shop()
+print(shop.priceWithGst(100))
+@@ explain
+The error happens inside `priceWithGst`, on the `return` line.
+`_GST` belongs to the class, so it must be written `Shop._GST`, `type(self)._GST` or `self._GST`.
+A plain `_GST` is not found, so Python raises a **NameError**.
+
+@@ md
+## 4. Overloading and default parameters
+
+@@ predict A method defined twice
+@@ run raises=TypeError
+class Calculator:
+    def add(self, a, b):
+        return a + b
+
+    def add(self, a, b, c):
+        return a + b + c
+
+calc = Calculator()
+print(calc.add(1, 2, 3))
+print(calc.add(1, 2))
+@@ output
+6
+@@ explain
+Python does not keep two methods with the same name.
+The **second** `add` replaces the first one.
+So `add` now always needs 3 numbers.
+`calc.add(1, 2, 3)` prints 6, but `calc.add(1, 2)` raises a **TypeError** (missing argument `c`).
+
+@@ exercise Fix the overloading (JUL 2025 style)
+Fix `Calculator` so that `add` works with **2 or 3** numbers.
+Use **one** method with a default parameter.
+@@ starter
+class Calculator:
+    def add(self, a, b):
+        return a + b
+
+    def add(self, a, b, c):
+        return a + b + c
+@@ check
+calc = Calculator()
+assert calc.add(1, 2) == 3, "❌ add(1, 2) should return 3"
+assert calc.add(1, 2, 3) == 6, "❌ add(1, 2, 3) should return 6"
+assert calc.add(4, 5, 0) == 9, "❌ add(4, 5, 0) should return 9"
+@@ hint
+Write only one `add`.
+Give the third parameter a default: `def add(self, a, b, c=None):`
+If `c is None`, return `a + b`, otherwise return `a + b + c`.
+@@ solution
+class Calculator:
+    def add(self, a, b, c=None):
+        if c is None:
+            return a + b
+        return a + b + c
+
+@@ predict Default values
+@@ run
+class Card:
+    def __init__(self, cardId, amount=20):
+        self.cardId = cardId
+        self.amount = amount
+
+    def deduct(self, amount=5):
+        self.amount -= amount
+
+c = Card("A")
+c.deduct()
+c.deduct(10)
+print(c.amount)
+@@ output
+5
+@@ explain
+`Card("A")` uses the default amount, 20.
+`deduct()` uses the default 5, so 15.
+`deduct(10)` takes away 10, so 5.
+
+@@ md
+## 5. Inheritance and overriding
+
+@@ predict Forgetting super().__init__()
+@@ run raises=AttributeError
+class Account:
+    def __init__(self, owner):
+        self._owner = owner
+        self._balance = 0
+
+    def deposit(self, amount):
+        self._balance += amount
+
+class Savings(Account):
+    def __init__(self, owner, rate):
+        self._rate = rate
+
+s = Savings("Tan", 0.02)
+print(s._rate)
+s.deposit(100)
+@@ output
+0.02
+@@ explain
+`Savings` has its own `__init__`, so the parent `__init__` does **not** run automatically.
+It never calls `super().__init__(owner)`, so `_owner` and `_balance` were never created.
+`s._rate` works, so `0.02` is printed.
+`deposit` tries to read `self._balance`, which does not exist, so Python raises an **AttributeError**.
+
+@@ predict A private parent attribute in a subclass
+@@ run raises=AttributeError
+class Wallet:
+    def __init__(self):
+        self.__balance = 100
+
+    @property
+    def balance(self):
+        return self.__balance
+
+class BonusWallet(Wallet):
+    def addBonus(self):
+        self.__balance = self.__balance + 10
+
+w = BonusWallet()
+print(w.balance)
+w.addBonus()
+print(w.balance)
+@@ output
+100
+@@ explain
+In `Wallet`, `self.__balance` is really stored as `_Wallet__balance`.
+In `BonusWallet`, `self.__balance` means `_BonusWallet__balance`, a **different** name that does not exist.
+So `addBonus` raises an **AttributeError** when it reads it.
+Fix: in the subclass, use the parent's property (`self.balance`), or make the parent attribute protected (`self._balance`).
+
+@@ predict Refinement and replacement
+@@ run
+class Drink:
+    def __init__(self, name, price):
+        self._name = name
+        self._price = price
+
+    def finalPrice(self):
+        return self._price
+
+    def __str__(self):
+        return f"{self._name} ${self.finalPrice():.2f}"
+
+class LargeDrink(Drink):
+    def finalPrice(self):
+        return super().finalPrice() + 1
+
+class PromoDrink(LargeDrink):
+    def finalPrice(self):
+        return 2.0
+
+drinks = [Drink("Tea", 3), LargeDrink("Tea", 3), PromoDrink("Coffee", 5)]
+for d in drinks:
+    print(d)
+@@ output
+Tea $3.00
+Tea $4.00
+Coffee $2.00
+@@ explain
+All three use `__str__` from `Drink`, but `self.finalPrice()` runs the version from the object's own class.
+`LargeDrink.finalPrice` calls `super().finalPrice()` and adds 1. This is overriding by **refinement**.
+`PromoDrink.finalPrice` does not call `super()`. It replaces the price completely. This is overriding by **replacement**.
+
+@@ predict Trace main() (JAN 2025 style)
+This question is like Question 2 of the JAN 2025 paper.
+Take it slowly and trace each object one at a time.
+@@ run
+class Dish:
+    def __init__(self, cost):
+        self.__cost = cost
+
+    @property
+    def cost(self):
+        return self.__cost
+
+    def label(self):
+        return "Rice"
+
+    def show(self):
+        return f"{self.label()} ${self.cost}"
+
+class ChickenDish(Dish):
+    def label(self):
+        return "Chicken " + super().label()
+
+class SpicyDish(ChickenDish):
+    def show(self):
+        return "Spicy " + super().show()
+
+class RoastDish(SpicyDish):
+    def label(self):
+        return "Roasted " + super().label()
+
+def main():
+    for dish in [Dish(3), ChickenDish(5), SpicyDish(6), RoastDish(7)]:
+        print(dish.show())
+
+main()
+@@ output
+Rice $3
+Chicken Rice $5
+Spicy Chicken Rice $6
+Spicy Roasted Chicken Rice $7
+@@ explain
+- `Dish(3)`: `show` and `label` both come from `Dish`, so `Rice $3`.
+- `ChickenDish(5)`: `show` comes from `Dish`, but `self.label()` is `ChickenDish.label`, which gives `Chicken Rice`.
+- `SpicyDish(6)`: `SpicyDish.show` adds `Spicy ` and then calls `Dish.show`. `label` comes from `ChickenDish`.
+- `RoastDish(7)`: `show` comes from `SpicyDish`. `self.label()` is `RoastDish.label`, which adds `Roasted ` and then calls `ChickenDish.label`, which adds `Chicken ` and then calls `Dish.label`.
+
+Each `super()` climbs exactly **one** level from the class where it is written.
+
+@@ predict A method only the subclass has
+@@ run raises=AttributeError
+class Card:
+    def __init__(self, balance):
+        self._balance = balance
+
+    def pay(self, amount):
+        self._balance -= amount
+        return self._balance
+
+class MemberCard(Card):
+    def __init__(self, balance):
+        super().__init__(balance)
+        self._points = 0
+
+    def pay(self, amount):
+        self._points += int(amount)
+        return super().pay(amount)
+
+    def points(self):
+        return self._points
+
+cards = [MemberCard(50), Card(30)]
+for c in cards:
+    print(c.pay(10.5))
+for c in cards:
+    print(c.points())
+@@ output
+39.5
+19.5
+10
+@@ explain
+Both classes have `pay`, so the first loop works for both objects.
+`MemberCard.pay` adds `int(10.5) = 10` points, then calls the parent `pay`.
+In the second loop, the `MemberCard` prints 10.
+The plain `Card` has no `points` method, so Python raises an **AttributeError**.
+
+@@ md
+## 6. Exceptions
+
+@@ predict try, except, else and finally
+@@ run
+def divide(a, b):
+    try:
+        print("start")
+        result = a / b
+        print("result", result)
+    except ZeroDivisionError:
+        print("cannot divide")
+    else:
+        print("no problem")
+    finally:
+        print("done")
+
+divide(6, 3)
+divide(1, 0)
+@@ output
+start
+result 2.0
+no problem
+done
+start
+cannot divide
+done
+@@ explain
+With no error, the `try` block finishes, then `else`, then `finally`.
+With an error, the rest of `try` is skipped, `except` runs, `else` is skipped, and `finally` still runs.
+`finally` **always** runs.
+
+@@ predict return inside try
+@@ run
+def check(text):
+    try:
+        value = int(text)
+        return value * 2
+    except ValueError:
+        print("bad")
+        return -1
+    finally:
+        print("finally")
+
+print(check("4"))
+print(check("four"))
+@@ output
+finally
+8
+bad
+finally
+-1
+@@ explain
+Even when `try` hits a `return`, the `finally` block runs **before** the function really ends.
+So `finally` is printed first, and then the outer `print` shows the returned 8.
+For `"four"`, `int()` fails, `except` prints `bad`, then `finally` runs, then -1 is returned and printed.
+
+@@ md
+The next two exercises use these exception classes.
+Run this cell first.
+
+@@ code
+class ShopException(Exception):
+    pass
+
+class StockException(ShopException):
+    pass
+
+def buy(qty):
+    if qty > 5:
+        raise StockException("Not enough stock")
+    if qty <= 0:
+        raise ShopException("Invalid quantity")
+    return qty * 2
+
+@@ predict Catching the right exception
+Use `buy` and the exception classes above.
+@@ run
+for q in [3, 9, 0]:
+    try:
+        print(buy(q))
+    except StockException as e:
+        print("Stock:", e)
+    except ShopException as e:
+        print("Shop:", e)
+@@ output
+6
+Stock: Not enough stock
+Shop: Invalid quantity
+@@ explain
+`buy(3)` returns 6.
+`buy(9)` raises a `StockException`, which matches the first `except`.
+`buy(0)` raises a `ShopException`. It is **not** a `StockException`, so it skips the first `except` and matches the second.
+Because there is a `try` inside the loop, the loop keeps going after each error.
+
+@@ predict Wrong order of except blocks
+Use `buy` and the exception classes above.
+@@ run
+for q in [9, 0]:
+    try:
+        print(buy(q))
+    except ShopException as e:
+        print("Shop:", e)
+    except StockException as e:
+        print("Stock:", e)
+@@ output
+Shop: Not enough stock
+Shop: Invalid quantity
+@@ explain
+`StockException` is a subclass of `ShopException`, so a `StockException` **is a** `ShopException`.
+Python uses the **first** `except` that matches, so both errors are caught by `except ShopException`.
+The `StockException` block can never run.
+Always put the more specific exception first.
+
+@@ predict An exception travels up
+@@ run
+def level2():
+    raise ValueError("deep problem")
+
+def level1():
+    print("level1 start")
+    level2()
+    print("level1 end")
+
+try:
+    level1()
+except ValueError as e:
+    print("caught:", e)
+print("program continues")
+@@ output
+level1 start
+caught: deep problem
+program continues
+@@ explain
+`level2` raises the error and does not handle it.
+So the error goes up to `level1`, which does not handle it either, so `level1 end` is skipped.
+The error reaches the `try` at the bottom, where it is caught.
+🎯 When the paper says "do not handle the exception in this method", this is what it means: no `try` inside, let it go up to the caller.
+
+@@ predict An exception in the constructor
+@@ run
+class Box:
+    def __init__(self, items):
+        if items > 10:
+            raise ValueError("Too many items")
+        self.items = items
+
+box = Box(4)
+try:
+    box = Box(20)
+except ValueError as e:
+    print(e)
+print(box.items)
+@@ output
+Too many items
+4
+@@ explain
+`Box(20)` raises the error inside `__init__`, so no new object is made and the assignment `box = ...` never happens.
+`box` still refers to the first box, which has 4 items.
+
+@@ md
+## 7. Multiple choice (JUL 2025 style)
+
+In these questions, choose **one** option, A, B, C or D.
+Each is worth 3 marks in the exam.
+
+@@ predict Class hierarchy values
+What is the output?
+
+- A. `Parent value: 5 Child value: 5`
+- B. `Parent value: 10 Child value: 10`
+- C. `Parent value: 5 Child value: 10`
+- D. `Parent value: 10 Child value: 5`
+@@ run
+class Parent:
+    def __init__(self):
+        self.value = 5
+
+    def show(self):
+        return f"Parent value: {self.value}"
+
+class Child(Parent):
+    def __init__(self):
+        super().__init__()
+        self.value = 10
+
+    def show(self):
+        return super().show() + f" Child value: {self.value}"
+
+print(Child().show())
+@@ output
+Parent value: 10 Child value: 10
+@@ explain
+**Answer: B.**
+There is only **one** object, and it has only **one** `value`.
+`super().__init__()` sets it to 5, then the next line changes it to 10.
+`Parent.show` runs on the same object, so it also sees 10.
+
+@@ write Which line shows composition?
+Study this code.
+
+```python
+class Engine:
+    def start(self):
+        return "Engine started"
+
+class Car:
+    def __init__(self, model, engine):
+        self.__model = model
+        self.__engine = engine
+
+    def start(self):
+        return self.__engine.start()
+```
+
+Which line demonstrates composition?
+
+- A. `self.__model = model`
+- B. `self.__engine = engine`
+- C. `def start(self):`
+- D. `class Car:`
+@@ answer
+**Answer: B.**
+Composition means one object **has** another object inside it.
+`self.__engine = engine` stores an `Engine` object inside the `Car`, so a Car "has an" Engine.
+`model` is just a piece of text, not another object of our classes.
+
+@@ write What forces a subclass to implement a method?
+```python
+1  from abc import ABC, abstractmethod
+2
+3  class Vehicle(ABC):
+4      @abstractmethod
+5      def start(self):
+6          pass
+7
+8  class Bike(Vehicle):
+9      def start(self):
+10         return "Pedal"
+```
+
+Which part of the code forces every concrete subclass to implement `start`?
+
+- A. Line 1
+- B. Line 3
+- C. Line 4
+- D. Line 8
+@@ answer
+**Answer: C** (`@abstractmethod` on line 4).
+`ABC` on line 3 makes the class abstract, but it is the `@abstractmethod` decorator that marks **this** method as one that subclasses must implement.
+
+@@ predict Where is the error handled?
+What is printed when `childMethod` is called?
+
+- A. `An error occurred in Child.` then `An error occurred in Parent.`
+- B. `An error occurred in Parent.` then `An error occurred in Child.`
+- C. `An error occurred in Child.`
+- D. `An error occurred in Parent.`
+@@ run
+class Parent:
+    def risky(self):
+        try:
+            raise ValueError("oops")
+        except ValueError:
+            print("An error occurred in Parent.")
+
+class Child(Parent):
+    def childMethod(self):
+        try:
+            self.risky()
+        except ValueError:
+            print("An error occurred in Child.")
+
+Child().childMethod()
+@@ output
+An error occurred in Parent.
+@@ explain
+**Answer: D.**
+The error is raised and **caught** inside `risky`.
+Once it is caught, it is finished. It does not travel up to `childMethod`.
+So only the Parent message is printed.
+
+@@ predict A missing abstract method
+What happens when this code runs?
+
+- A. It prints `Meow`.
+- B. It prints nothing.
+- C. `TypeError: Can't instantiate abstract class Cat ...`
+- D. `AttributeError: 'Cat' object has no attribute 'sound'`
+@@ run raises=TypeError
+from abc import ABC, abstractmethod
+
+class Animal(ABC):
+    @abstractmethod
+    def sound(self):
+        pass
+
+    @abstractmethod
+    def move(self):
+        pass
+
+class Cat(Animal):
+    def move(self):
+        return "Walk"
+
+c = Cat()
+print("Meow")
+@@ explain
+**Answer: C.**
+`Cat` does not implement `sound()`, so it is still abstract and `Cat()` raises a **TypeError**.
+The error happens before `print`, so nothing is printed.
+
+@@ write Pick the correct method
+```python
+class Bird:
+    pass
+
+bird = Bird()
+print(bird.fly())
+```
+
+Which method, added to `Bird`, makes the code print exactly `Flapping wings`?
+
+- A. `def fly(self): return "Flapping wings"`
+- B. `def flap(self): print("Flapping wings")`
+- C. `def fly(self): print("Flapping wings")`
+- D. `def flap(self): return "Flapping wings"`
+@@ answer
+**Answer: A.**
+The code calls `bird.fly()`, so the method must be called `fly` (this removes B and D).
+`print(bird.fly())` prints whatever `fly` **returns**.
+Option C prints the text, but then returns `None`, so the output would be `Flapping wings` followed by `None`.
+
+@@ md
+## 8. Spot and fix the bug
+
+Each class below has **one** bug that would cost marks in the exam.
+Find it and fix it.
+Then run the check.
+
+@@ exercise A class method that uses self
+`updatePrice` should add a new plan or change the price of an existing plan.
+It crashes.
+Fix it.
+@@ starter
+class Subscription:
+    _PRICES = {"Basic": 20}
+
+    @classmethod
+    def updatePrice(cls, plan, price):
+        self._PRICES[plan] = price
+
+    @classmethod
+    def getPrice(cls, plan):
+        return cls._PRICES.get(plan)
+@@ check
+Subscription.updatePrice("Pro", 35)
+assert Subscription.getPrice("Pro") == 35, "❌ After updatePrice('Pro', 35), getPrice('Pro') should be 35"
+Subscription.updatePrice("Basic", 25)
+assert Subscription.getPrice("Basic") == 25, "❌ updatePrice should also change an existing plan"
+@@ hint
+Inside a class method there is no `self`.
+The first parameter is `cls`, so use `cls._PRICES`.
+@@ solution
+class Subscription:
+    _PRICES = {"Basic": 20}
+
+    @classmethod
+    def updatePrice(cls, plan, price):
+        cls._PRICES[plan] = price
+
+    @classmethod
+    def getPrice(cls, plan):
+        return cls._PRICES.get(plan)
+
+@@ exercise The running ID that never moves
+Every new order should get the next ID: 1, 2, 3, ...
+At the moment every order gets ID 1.
+Fix it.
+@@ starter
+class Order:
+    _nextId = 1
+
+    def __init__(self, item):
+        self.__orderId = Order._nextId
+        self.__item = item
+
+    @property
+    def orderId(self):
+        return self.__orderId
+@@ check
+Order._nextId = 1
+o1 = Order("Tea")
+o2 = Order("Coffee")
+o3 = Order("Juice")
+assert (o1.orderId, o2.orderId, o3.orderId) == (1, 2, 3), f"❌ IDs should be 1, 2, 3 but they are {o1.orderId}, {o2.orderId}, {o3.orderId}"
+@@ hint
+After using `_nextId`, add 1 to the **class** variable: `Order._nextId += 1`.
+@@ solution
+class Order:
+    _nextId = 1
+
+    def __init__(self, item):
+        self.__orderId = Order._nextId
+        Order._nextId += 1
+        self.__item = item
+
+    @property
+    def orderId(self):
+        return self.__orderId
+
+@@ exercise One too many
+The rule is: "an item cannot be added if this addition results in more than `_MAX_ITEMS` items".
+`addItem` returns `True` if the item is added and `False` if not.
+The cart below lets in one item too many.
+Fix the check.
+@@ starter
+class Cart:
+    _MAX_ITEMS = 3
+
+    def __init__(self):
+        self.__items = []
+
+    def addItem(self, item):
+        if len(self.__items) > Cart._MAX_ITEMS:
+            return False
+        self.__items.append(item)
+        return True
+@@ check
+cart = Cart()
+results = []
+for x in ["a", "b", "c", "d"]:
+    results.append(cart.addItem(x))
+assert results == [True, True, True, False], f"❌ Adding 4 items should give [True, True, True, False], but gave {results}"
+@@ hint
+Ask "if I add this one, how many will there be?"
+That is `len(self.__items) + 1`.
+Compare that with the maximum.
+@@ solution
+class Cart:
+    _MAX_ITEMS = 3
+
+    def __init__(self):
+        self.__items = []
+
+    def addItem(self, item):
+        if len(self.__items) + 1 > Cart._MAX_ITEMS:
+            return False
+        self.__items.append(item)
+        return True
+
+@@ exercise The hard coded number
+The marker looks for the class variable, not the number.
+Change `cost` so it uses `_RATE_PER_KG`.
+@@ starter
+class Parcel:
+    _RATE_PER_KG = 2.5
+
+    def __init__(self, weight):
+        self.__weight = weight
+
+    def cost(self):
+        return self.__weight * 2.5
+@@ check
+p = Parcel(4)
+assert p.cost() == 10, "❌ A 4 kg parcel should cost 10.0"
+Parcel._RATE_PER_KG = 3
+try:
+    assert p.cost() == 12, "❌ cost() still uses 2.5. Use the class variable Parcel._RATE_PER_KG"
+finally:
+    Parcel._RATE_PER_KG = 2.5
+@@ solution
+class Parcel:
+    _RATE_PER_KG = 2.5
+
+    def __init__(self, weight):
+        self.__weight = weight
+
+    def cost(self):
+        return self.__weight * Parcel._RATE_PER_KG
+
+@@ exercise The missing return
+`removeFood(name)` should remove the food with that name and **return the removed object**.
+If no food has that name, it should return `None`.
+Fix it.
+@@ starter
+class Food:
+    def __init__(self, name):
+        self.name = name
+
+class Fridge:
+    def __init__(self):
+        self.__foods = []
+
+    def addFood(self, food):
+        self.__foods.append(food)
+
+    def removeFood(self, name):
+        for f in self.__foods:
+            if f.name == name:
+                self.__foods.remove(f)
+@@ check
+fridge = Fridge()
+milk = Food("Milk")
+fridge.addFood(Food("Egg"))
+fridge.addFood(milk)
+assert fridge.removeFood("Milk") is milk, "❌ removeFood('Milk') should return the Milk object"
+assert fridge.removeFood("Milk") is None, "❌ Removing Milk a second time should return None"
+@@ hint
+Add `return f` right after removing it.
+After the loop, `return None`.
+@@ solution
+class Food:
+    def __init__(self, name):
+        self.name = name
+
+class Fridge:
+    def __init__(self):
+        self.__foods = []
+
+    def addFood(self, food):
+        self.__foods.append(food)
+
+    def removeFood(self, name):
+        for f in self.__foods:
+            if f.name == name:
+                self.__foods.remove(f)
+                return f
+        return None
+
+@@ exercise The subclass that forgot its parent
+`Manager` should have a `name`, a `salary` and a `bonus`.
+`totalPay()` should return salary plus bonus.
+It crashes.
+Fix the `Manager` constructor.
+@@ starter
+class Employee:
+    def __init__(self, name, salary):
+        self._name = name
+        self._salary = salary
+
+    @property
+    def name(self):
+        return self._name
+
+class Manager(Employee):
+    def __init__(self, name, salary, bonus):
+        self._bonus = bonus
+
+    def totalPay(self):
+        return self._salary + self._bonus
+@@ check
+m = Manager("Siti", 5000, 800)
+assert m.name == "Siti", "❌ m.name should be 'Siti'"
+assert m.totalPay() == 5800, "❌ totalPay() should be 5800"
+@@ hint
+The first line of the subclass constructor should be `super().__init__(name, salary)`.
+@@ solution
+class Employee:
+    def __init__(self, name, salary):
+        self._name = name
+        self._salary = salary
+
+    @property
+    def name(self):
+        return self._name
+
+class Manager(Employee):
+    def __init__(self, name, salary, bonus):
+        super().__init__(name, salary)
+        self._bonus = bonus
+
+    def totalPay(self):
+        return self._salary + self._bonus
+
+@@ exercise Case insensitive search
+The paper says: "the search is **case insensitive**".
+So `searchGuest("amy")` must find the guest called `"Amy"`.
+Fix `searchGuest`.
+@@ starter
+class Guest:
+    def __init__(self, name):
+        self.name = name
+
+class GuestList:
+    def __init__(self):
+        self.__guests = []
+
+    def addGuest(self, guest):
+        self.__guests.append(guest)
+
+    def searchGuest(self, name):
+        for g in self.__guests:
+            if g.name == name:
+                return g
+        return None
+@@ check
+guests = GuestList()
+amy = Guest("Amy")
+guests.addGuest(Guest("Ben"))
+guests.addGuest(amy)
+assert guests.searchGuest("amy") is amy, "❌ searchGuest('amy') should find Amy"
+assert guests.searchGuest("AMY") is amy, "❌ searchGuest('AMY') should find Amy"
+assert guests.searchGuest("Zoe") is None, "❌ searchGuest('Zoe') should return None"
+@@ hint
+Turn **both** names into lower case before comparing: `g.name.lower() == name.lower()`.
+@@ solution
+class Guest:
+    def __init__(self, name):
+        self.name = name
+
+class GuestList:
+    def __init__(self):
+        self.__guests = []
+
+    def addGuest(self, guest):
+        self.__guests.append(guest)
+
+    def searchGuest(self, name):
+        for g in self.__guests:
+            if g.name.lower() == name.lower():
+                return g
+        return None
+
+@@ exercise A __str__ that prints
+`print(t)` should show `Task: Revise (2 hours)`.
+At the moment it crashes with `TypeError: __str__ returned non-string`.
+Fix it.
+@@ starter
+class Task:
+    def __init__(self, title, hours):
+        self.__title = title
+        self.__hours = hours
+
+    def __str__(self):
+        print(f"Task: {self.__title} ({self.__hours} hours)")
+@@ check
+t = Task("Revise", 2)
+assert str(t) == "Task: Revise (2 hours)", f"❌ str(t) should be 'Task: Revise (2 hours)'"
+@@ hint
+`__str__` must **return** the text.
+It should never print.
+@@ solution
+class Task:
+    def __init__(self, title, hours):
+        self.__title = title
+        self.__hours = hours
+
+    def __str__(self):
+        return f"Task: {self.__title} ({self.__hours} hours)"
+
+@@ md
+## 9. Theory answers to learn by heart
+
+These questions are worth 3 to 6 marks each.
+The marker looks for the key words, so learn the model answers well.
+Try to write each answer yourself first.
+
+@@ write What is polymorphism?
+Explain polymorphism, and give **one line of code** that shows it.
+Use the `Shape` example: `shapes` is a list of `Circle`, `Rectangle` and `Triangle` objects.
+@@ answer
+Polymorphism means "many forms".
+The same method call can do different things, depending on the class of the object it is called on.
+
+```python
+for s in shapes:
+    print(s.area())
+```
+
+`s` can be a Circle, a Rectangle or a Triangle.
+`s.area()` runs the `area` method of whichever class `s` belongs to.
+
+@@ write Replacement or refinement?
+```python
+class CashCard:
+    def deduct(self, amount):
+        if self._balance >= amount:
+            self._balance -= amount
+            return True
+        return False
+
+class MemberCashCard(CashCard):
+    def deduct(self, amount):
+        if super().deduct(amount):
+            self._points += int(amount)
+            return True
+        return False
+
+    def __str__(self):
+        return f"Points: {self._points}"
+```
+
+(a) Which type of overriding is `MemberCashCard.deduct`? Explain.
+
+(b) Which type of overriding is `MemberCashCard.__str__`? Explain.
+@@ answer
+(a) **Overriding by refinement.**
+`deduct` has the same name and parameters as the parent method, and it **calls the parent version** with `super().deduct(amount)`, then adds more work (adding points).
+
+(b) **Overriding by replacement.**
+`__str__` overrides the `__str__` of its parent (from `object` or `CashCard`), but it does **not** call `super().__str__()`.
+It completely replaces the parent version.
+
+@@ write Composition or inheritance?
+For each pair, say whether you would use composition or inheritance, and give a one line reason.
+
+1. `Manager` and `Employee`
+2. `Car` and `Engine`
+3. `Playlist` and `Song`
+4. `SavingsAccount` and `BankAccount`
+@@ answer
+1. **Inheritance.** A Manager **is an** Employee.
+2. **Composition.** A Car **has an** Engine. An engine is not a kind of car.
+3. **Composition.** A Playlist **has** Songs (it keeps a list of Song objects).
+4. **Inheritance.** A SavingsAccount **is a** BankAccount.
+
+Rule: "is a" means inheritance, "has a" means composition.
+
+@@ write Overloading in Python
+Explain how method overloading is done in Python.
+@@ answer
+Python does not allow two methods with the same name in one class.
+If you write two, the second one replaces the first.
+Instead, we use **one** method with **default parameters**, for example `def add(self, a, b, c=None):`.
+The method can then be called with 2 or 3 arguments, and inside it we check `if c is None`.
+
+@@ write Encapsulation
+What is encapsulation, and how is it done in Python?
+@@ answer
+Encapsulation means keeping an object's data and the methods that work on that data together inside the class, and **hiding the data** from the outside.
+In Python we make attributes private with two underscores, for example `self.__balance`.
+Outside code reads them through `@property` getters and changes them only through setters or methods, which can check the value first (for example, a balance cannot be negative).
+
+@@ write Abstract classes
+What is an abstract class, and why do we use one?
+@@ answer
+An abstract class is a general class that is used only as a base for other classes.
+No object can be created from it.
+In Python it inherits from `ABC`, and it has at least one method marked `@abstractmethod`.
+We use it to make sure that every subclass implements certain methods, for example every `Shape` must have an `area()` method, while each subclass calculates it in its own way.
+
+@@ write Why a class variable?
+A `CashCard` class has `_bonusRate = 0.01`.
+Why is it a class variable and not an instance variable?
+@@ answer
+The bonus rate is the same for **all** cash cards.
+A class variable has only **one copy** that is shared by every object, so it is stored once and can be changed in one place.
+An instance variable would give every card its own copy, which wastes memory and could become different from card to card.
+
+@@ write Find the design error
+A student drew this design for a cinema booking system:
+
+- `Booking` inherits from `Customer`, because every booking belongs to a customer.
+- `Booking` has a list of `Seat` objects.
+- `VipCustomer` inherits from `Customer`.
+
+Find **one** design error and explain how to fix it.
+@@ answer
+`Booking` should **not** inherit from `Customer`.
+A booking is not a kind of customer ("is a" fails).
+A booking **has a** customer, so use composition: store a `Customer` object as an attribute of `Booking`, for example `self.__customer = customer`.
+The other two are correct: a Booking has Seats (composition), and a VipCustomer is a Customer (inheritance).
+
+@@ md
+## 📝 Mark-saving checklist
+
+Read this list the night before the exam, and again in the first minute of the exam.
+
+**Writing classes**
+
+- [ ] Every method has `self` as its first parameter (`cls` for a class method).
+- [ ] Every attribute inside a method is written with `self.` in front.
+- [ ] Private attributes use `__`, exactly as the class diagram shows.
+- [ ] Properties use `@property`, setters use `@name.setter`, and the setter has the same name as the property.
+- [ ] `__str__` **returns** a string. It never prints.
+- [ ] Money is shown with `${value:.2f}`. Copy the sample output exactly, including spaces.
+
+**Class variables**
+
+- [ ] Use the class variable, never the number: `Cart._MAX_ITEMS`, not `3`.
+- [ ] Change a shared value with `ClassName._x += 1`, never `self._x += 1`.
+- [ ] Running IDs: use the current value, **then** add 1.
+- [ ] A class method uses `cls`, not `self`.
+
+**Inheritance**
+
+- [ ] The subclass constructor starts with `super().__init__(...)` with the right arguments.
+- [ ] In a subclass, use the parent's property (`self.balance`), not the parent's private `self.__balance`.
+- [ ] Abstract class: `from abc import ABC, abstractmethod`, `class X(ABC):` and `@abstractmethod` on each abstract method.
+
+**Collections and exceptions**
+
+- [ ] The list or dictionary is created **inside** `__init__`, so each object has its own.
+- [ ] "Results in more than the maximum" means `len(list) + 1 > MAX`.
+- [ ] Follow the **order** of the checks in the question, and copy the exact error messages.
+- [ ] Use `.lower()` on **both** sides when the search is case insensitive.
+- [ ] Methods that should return something (`True` / `False`, the removed object) have a `return` on **every** path.
+- [ ] When the question says "raise", use `raise XException("message")`, not `print`.
+- [ ] "Do not handle the exception here" means no `try` in that method.
+- [ ] In `main`, wrap the calls in `try` / `except XException as e:` and `print(e)`.
+
+**Reading code**
+
+- [ ] Write the output that was printed **before** an error.
+- [ ] Give the line, the error type and the reason.
+- [ ] Properties have no `()`, methods do.
+
+Next: **15_Mock_Exam**.

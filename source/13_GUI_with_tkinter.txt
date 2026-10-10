@@ -1,0 +1,2399 @@
+@@ md
+# 13 - GUI with tkinter
+
+**What you will learn**
+
+- How to build a window with labels, entry boxes and buttons.
+- How to place widgets neatly with `grid`.
+- How to make a button **do something** when it is clicked (a "callback").
+- How to show messages in a ScrolledText box.
+- How to check the user's input in the right order.
+- How to use radio buttons and list boxes.
+- How to connect the window to **your own classes**.
+
+**Why this matters for the exam**
+
+Every past paper has a tkinter question worth **16 to 25 marks**.
+The questions are very similar every time:
+
+- "Write the lines that place the widgets" (layout with `grid` or `pack`).
+- "Write the callback for the button" (read the entry, check it, show a message).
+- "Fill in the missing line".
+- "What changes if `columnspan` or `sticky` is removed?"
+
+After this notebook you will have practised all of them.
+
+@@ md
+## ⚠️ Read this first: windows in Jupyter
+
+tkinter opens a **real window** on your computer, outside the browser.
+
+- When a cell opens a window, the cell shows `[*]` on its left.
+  That means "still running".
+- The notebook **waits** until you close the window.
+  You cannot run another cell while the window is open.
+- So: look at the window, try it, then **close it** with the X button.
+  The `[*]` then changes into a number, and you can continue.
+- If you cannot see the window, look for it in the taskbar at the bottom of the screen.
+  It sometimes opens behind the browser.
+- If the notebook gets stuck, use **Kernel → Restart Kernel**.
+
+tkinter needs Jupyter on **your own computer**.
+It does **not** work in Google Colab, because Colab runs on a server with no screen.
+
+💡 You do not need to open a window to test your exercises.
+The check cells test your code **without** opening a window.
+
+@@ md
+## 1. Your first window
+
+Every tkinter program in this course follows the same recipe.
+Learn it by heart, because the exam always gives you code in this shape.
+
+```python
+import tkinter as tk                      # 1. import tkinter
+from tkinter import scrolledtext
+
+class HelloGUI:                           # 2. the window is a class
+    def __init__(self):
+        win = tk.Tk()                     # 3. create the main window
+        self.__msgLabel = tk.Label(win, text="Hello!")   # 4. create a widget (the window comes FIRST)
+        self.__msgLabel.grid(row=0, column=0)            # 5. place it in the window
+        win.title("Hello")                # 6. give the window a title
+        win.mainloop()                    # 7. show the window and wait for clicks
+
+def main():
+    HelloGUI()                            # 8. create the object, which opens the window
+
+main()
+```
+
+A few new words:
+
+- A **widget** is anything you can see in a window: a label, a box to type in, a button.
+- The first argument of every widget is its **parent**, the thing it sits inside. Here it is `win`.
+- `mainloop()` keeps the window open and waits for the user to click or type.
+  Nothing after `mainloop()` runs until the window is closed.
+
+Run the cell below.
+A small window opens.
+Close it to continue.
+
+@@ code
+import tkinter as tk
+from tkinter import scrolledtext
+
+class HelloGUI:
+    def __init__(self):
+        win = tk.Tk()
+        self.__msgLabel = tk.Label(win, text="Hello! Close me to continue.")
+        self.__msgLabel.grid(row=0, column=0, padx=20, pady=20)
+        win.title("Hello")
+        win.mainloop()
+
+def main():
+    HelloGUI()
+
+main()
+
+@@ md
+⚠️ **A widget does not appear until you place it.**
+If you create a label but forget `.grid(...)` (or `.pack()`), the window is empty.
+This is a very common exam mistake.
+
+💡 In the course demos the window is a local variable `win`.
+In this notebook we often store it as `self.__win` instead.
+Then other methods in the class can also use the window.
+Both styles are correct in the exam.
+
+@@ exercise My first app
+Complete the class `FirstGUI` so that:
+
+- the window is stored in `self.__win`
+- the window title is `My First App`
+- a label called `self.__msgLabel` shows the text `Hello, ICT162!`
+- the label is placed with `grid` in row 0, column 0
+- the last line of `__init__` calls `mainloop()`
+@@ starter
+import tkinter as tk
+
+class FirstGUI:
+    def __init__(self):
+        self.__win = tk.Tk()
+        # create self.__msgLabel inside self.__win
+        ...
+        # place it in row 0, column 0
+        ...
+        # set the title
+        ...
+        self.__win.mainloop()
+@@ check
+import tkinter as tk
+_roots = []
+_saved = tk.Misc.mainloop
+tk.Misc.mainloop = lambda self, n=0: _roots.append(self)   # test mode: the window does not wait
+try:
+    _app = FirstGUI()
+    assert _roots, "❌ __init__ should end with self.__win.mainloop()"
+    assert _roots[0].title() == "My First App", f"❌ The title is {_roots[0].title()!r}, it should be 'My First App'"
+    _label = _app._FirstGUI__msgLabel
+    assert _label.cget("text") == "Hello, ICT162!", f"❌ The label text is {_label.cget('text')!r}"
+    assert _label.winfo_manager() == "grid", "❌ The label is not placed. Did you call .grid(...)?"
+    _info = _label.grid_info()
+    assert (_info["row"], _info["column"]) == (0, 0), "❌ The label should be in row 0, column 0"
+finally:
+    tk.Misc.mainloop = _saved
+    for _root in _roots:
+        _root.destroy()
+@@ hint
+Create the label with `self.__msgLabel = tk.Label(self.__win, text="Hello, ICT162!")`.
+Place it with `self.__msgLabel.grid(row=0, column=0)`.
+Set the title with `self.__win.title("My First App")`.
+@@ solution
+import tkinter as tk
+
+class FirstGUI:
+    def __init__(self):
+        self.__win = tk.Tk()
+        self.__msgLabel = tk.Label(self.__win, text="Hello, ICT162!")
+        self.__msgLabel.grid(row=0, column=0)
+        self.__win.title("My First App")
+        self.__win.mainloop()
+
+@@ md
+👀 Want to see your window?
+Run the cell below, then close the window.
+
+@@ code
+FirstGUI()
+
+@@ md
+## 2. Entry boxes and labels
+
+An **Entry** is a one line box where the user types.
+A **Label** shows text that the user cannot edit.
+
+| What you want | Code |
+| --- | --- |
+| Read what the user typed | `text = self.__nameEntry.get()` |
+| Empty the entry box | `self.__nameEntry.delete(0, tk.END)` |
+| Put text into the entry box | `self.__nameEntry.insert(0, "Amy")` |
+| Change the text of a label | `self.__msgLabel.config(text="Done")` |
+| Read the text of a label | `self.__msgLabel.cget("text")` |
+
+`tk.END` means "the end of the text".
+So `delete(0, tk.END)` deletes from the first character to the end.
+
+💡 `config` and `configure` are the same thing. You will see both in exam code.
+
+You can try widgets **without** opening the window properly.
+Create the window, play with the widgets, then `destroy()` the window.
+The window may flash for a moment.
+
+@@ code
+import tkinter as tk
+
+win = tk.Tk()
+nameEntry = tk.Entry(win)
+msgLabel = tk.Label(win, text="")
+
+nameEntry.insert(0, "Siti")          # pretend the user typed "Siti"
+name = nameEntry.get()               # read it back
+msgLabel.config(text=f"Hi {name}")   # change the label
+print(msgLabel.cget("text"))
+
+win.destroy()                        # close the window
+
+@@ predict get() gives text
+@@ run
+import tkinter as tk
+
+win = tk.Tk()
+ageEntry = tk.Entry(win)
+ageEntry.insert(0, "25")
+age = ageEntry.get()
+print(type(age))
+print(age * 2)
+win.destroy()
+@@ output
+<class 'str'>
+2525
+@@ explain
+`get()` **always** gives text, even if the user typed digits.
+`"25" * 2` repeats the text, so it becomes `"2525"`.
+To do maths you must convert first: `float(ageEntry.get()) * 2` gives `50.0`.
+🎯 Forgetting to convert is one of the most common exam mistakes.
+
+@@ exercise Read an entry, update a label
+The user typed `"Ravi"` into `nameEntry`.
+
+1. Read the entry into a variable `name`.
+2. Change `msgLabel` so it shows `Welcome, Ravi!`.
+3. Store the label's text in `shown` using `cget`.
+@@ starter
+import tkinter as tk
+
+win = tk.Tk()
+nameEntry = tk.Entry(win)
+msgLabel = tk.Label(win, text="")
+nameEntry.insert(0, "Ravi")      # the user typed this
+
+name = ...
+# change msgLabel here
+
+shown = ...
+print(shown)
+win.destroy()
+@@ check
+assert name == "Ravi", f"❌ name should be 'Ravi' (use nameEntry.get()), but it is {name!r}"
+assert shown == "Welcome, Ravi!", f"❌ shown should be 'Welcome, Ravi!', but it is {shown!r}"
+@@ hint
+`name = nameEntry.get()`
+`msgLabel.config(text=f"Welcome, {name}!")`
+`shown = msgLabel.cget("text")`
+@@ solution
+import tkinter as tk
+
+win = tk.Tk()
+nameEntry = tk.Entry(win)
+msgLabel = tk.Label(win, text="")
+nameEntry.insert(0, "Ravi")
+
+name = nameEntry.get()
+msgLabel.config(text=f"Welcome, {name}!")
+
+shown = msgLabel.cget("text")
+print(shown)
+win.destroy()
+
+@@ exercise Clear an entry box
+After a form is submitted, the entry box should be empty again.
+Empty `priceEntry`, then store what is left in it in `leftOver` (it should be `""`).
+@@ starter
+import tkinter as tk
+
+win = tk.Tk()
+priceEntry = tk.Entry(win)
+priceEntry.insert(0, "12.50")
+
+# empty priceEntry here
+
+leftOver = priceEntry.get()
+print(repr(leftOver))
+win.destroy()
+@@ check
+assert leftOver == "", f"❌ The entry still contains {leftOver!r}. Use delete(0, tk.END)."
+@@ solution
+import tkinter as tk
+
+win = tk.Tk()
+priceEntry = tk.Entry(win)
+priceEntry.insert(0, "12.50")
+
+priceEntry.delete(0, tk.END)
+
+leftOver = priceEntry.get()
+print(repr(leftOver))
+win.destroy()
+
+@@ md
+## 3. Buttons and callbacks
+
+A button is useless until it **does** something.
+The method that runs when the button is clicked is called a **callback**.
+
+There are two ways to connect a button to its callback.
+
+**Way 1: `command=`** (the easiest)
+
+```python
+self.__helloButton = tk.Button(win, text="Hello", command=self.sayHello)
+
+def sayHello(self):          # no extra parameter
+    ...
+```
+
+**Way 2: `bind`** (used in the seminar slides)
+
+```python
+self.__helloButton = tk.Button(win, text="Hello")
+self.__helloButton.bind('<Button-1>', self.sayHello)   # '<Button-1>' means a left mouse click
+
+def sayHello(self, evt):     # bind always passes an event object, so we need evt
+    ...
+```
+
+⚠️ Write `self.sayHello` **without brackets**.
+You are giving tkinter the method so it can call it **later**, when the user clicks.
+With brackets, `self.sayHello()` runs the method **immediately**, while the window is being built.
+
+Here is a complete example with `command=`.
+Run it, type your name, click the button, then close the window.
+
+@@ code
+import tkinter as tk
+
+class GreetDemo:
+    def __init__(self):
+        win = tk.Tk()
+        self.__nameLabel = tk.Label(win, text="Name:")
+        self.__nameEntry = tk.Entry(win, width=18)
+        self.__helloButton = tk.Button(win, text="Hello", command=self.sayHello)
+        self.__outputLabel = tk.Label(win, text="")
+
+        self.__nameLabel.grid(row=0, column=0, padx=5, pady=5)
+        self.__nameEntry.grid(row=0, column=1, padx=5, pady=5)
+        self.__helloButton.grid(row=1, column=0, columnspan=2, pady=5)
+        self.__outputLabel.grid(row=2, column=0, columnspan=2, pady=5)
+
+        win.title("Greeter")
+        win.mainloop()
+
+    def sayHello(self):
+        name = self.__nameEntry.get()
+        self.__outputLabel.config(text="Hello " + name)
+
+GreetDemo()
+
+@@ md
+Look at what the callback does.
+This is the pattern for almost every exam callback:
+
+1. **Read** from the entry with `get()`.
+2. **Work out** the answer.
+3. **Show** it with `config(text=...)` (or in a ScrolledText, see later).
+
+@@ exercise Complete a callback
+The layout of `GreetGUI` is done.
+Write the body of `sayHello` so that the label `self.__outputLabel` shows `Hello, Amy!` when the user typed `Amy`.
+
+Use `.strip()` to remove spaces the user typed by mistake.
+@@ starter
+import tkinter as tk
+
+class GreetGUI:
+    def __init__(self):
+        self.__win = tk.Tk()
+        self.__nameEntry = tk.Entry(self.__win)
+        self.__helloButton = tk.Button(self.__win, text="Hello", command=self.sayHello)
+        self.__outputLabel = tk.Label(self.__win, text="")
+        self.__nameEntry.grid(row=0, column=0)
+        self.__helloButton.grid(row=0, column=1)
+        self.__outputLabel.grid(row=1, column=0, columnspan=2)
+        self.__win.title("Greeter")
+        self.__win.mainloop()
+
+    def sayHello(self):
+        ...
+@@ check
+import tkinter as tk
+_roots = []
+_saved = tk.Misc.mainloop
+tk.Misc.mainloop = lambda self, n=0: _roots.append(self)   # test mode: the window does not wait
+try:
+    _app = GreetGUI()
+    _app._GreetGUI__nameEntry.insert(0, "  Amy ")
+    _app._GreetGUI__helloButton.invoke()                     # pretend the user clicked
+    _text = _app._GreetGUI__outputLabel.cget("text")
+    assert _text == "Hello, Amy!", f"❌ After typing '  Amy ' and clicking, the label shows {_text!r}"
+finally:
+    tk.Misc.mainloop = _saved
+    for _root in _roots:
+        _root.destroy()
+@@ hint
+`name = self.__nameEntry.get().strip()`
+Then `self.__outputLabel.config(text=f"Hello, {name}!")`
+@@ solution
+import tkinter as tk
+
+class GreetGUI:
+    def __init__(self):
+        self.__win = tk.Tk()
+        self.__nameEntry = tk.Entry(self.__win)
+        self.__helloButton = tk.Button(self.__win, text="Hello", command=self.sayHello)
+        self.__outputLabel = tk.Label(self.__win, text="")
+        self.__nameEntry.grid(row=0, column=0)
+        self.__helloButton.grid(row=0, column=1)
+        self.__outputLabel.grid(row=1, column=0, columnspan=2)
+        self.__win.title("Greeter")
+        self.__win.mainloop()
+
+    def sayHello(self):
+        name = self.__nameEntry.get().strip()
+        self.__outputLabel.config(text=f"Hello, {name}!")
+
+@@ exercise Fix the button bug
+This app should count clicks.
+But when it starts, the label already says `Clicks: 1`, and clicking does nothing.
+
+Find the bug in `__init__` and fix it.
+Do not change the `click` method.
+@@ starter
+import tkinter as tk
+
+class ClickGUI:
+    def __init__(self):
+        self.__win = tk.Tk()
+        self.__count = 0
+        self.__countLabel = tk.Label(self.__win, text="Clicks: 0")
+        self.__clickButton = tk.Button(self.__win, text="Click me", command=self.click())
+        self.__countLabel.grid(row=0, column=0)
+        self.__clickButton.grid(row=1, column=0)
+        self.__win.title("Counter")
+        self.__win.mainloop()
+
+    def click(self):
+        self.__count += 1
+        self.__countLabel.config(text=f"Clicks: {self.__count}")
+@@ check
+import tkinter as tk
+_roots = []
+_saved = tk.Misc.mainloop
+tk.Misc.mainloop = lambda self, n=0: _roots.append(self)   # test mode: the window does not wait
+try:
+    _app = ClickGUI()
+    _label = _app._ClickGUI__countLabel
+    assert _label.cget("text") == "Clicks: 0", f"❌ At the start the label shows {_label.cget('text')!r}. click() ran too early."
+    _app._ClickGUI__clickButton.invoke()
+    _app._ClickGUI__clickButton.invoke()
+    assert _label.cget("text") == "Clicks: 2", f"❌ After 2 clicks the label shows {_label.cget('text')!r}"
+finally:
+    tk.Misc.mainloop = _saved
+    for _root in _roots:
+        _root.destroy()
+@@ hint
+Look at `command=self.click()`.
+The brackets make `click` run right away, while the window is being built.
+@@ solution
+import tkinter as tk
+
+class ClickGUI:
+    def __init__(self):
+        self.__win = tk.Tk()
+        self.__count = 0
+        self.__countLabel = tk.Label(self.__win, text="Clicks: 0")
+        self.__clickButton = tk.Button(self.__win, text="Click me", command=self.click)
+        self.__countLabel.grid(row=0, column=0)
+        self.__clickButton.grid(row=1, column=0)
+        self.__win.title("Counter")
+        self.__win.mainloop()
+
+    def click(self):
+        self.__count += 1
+        self.__countLabel.config(text=f"Clicks: {self.__count}")
+
+@@ exercise Change command= into bind
+`ByeGUI` uses `command=`.
+Change it to use `bind` instead:
+
+1. Remove `command=self.sayBye` from the button.
+2. After the button is created, bind a left click (`'<Button-1>'`) to `self.sayBye`.
+3. Add the extra `evt` parameter to `sayBye`.
+@@ starter
+import tkinter as tk
+
+class ByeGUI:
+    def __init__(self):
+        self.__win = tk.Tk()
+        self.__byeButton = tk.Button(self.__win, text="Bye", command=self.sayBye)
+        self.__msgLabel = tk.Label(self.__win, text="")
+        self.__byeButton.grid(row=0, column=0)
+        self.__msgLabel.grid(row=1, column=0)
+        self.__win.title("Bye")
+        self.__win.mainloop()
+
+    def sayBye(self):
+        self.__msgLabel.config(text="Goodbye!")
+@@ check
+import tkinter as tk
+_roots = []
+_saved = tk.Misc.mainloop
+tk.Misc.mainloop = lambda self, n=0: _roots.append(self)   # test mode: the window does not wait
+try:
+    _app = ByeGUI()
+    _button = _app._ByeGUI__byeButton
+    assert str(_button.cget("command")) == "", "❌ The button still uses command=. Remove it."
+    assert _button.bind("<Button-1>"), "❌ No left click is bound. Use .bind('<Button-1>', self.sayBye)"
+    _app.sayBye(None)    # bind passes an event object. Here we pass None instead.
+    assert _app._ByeGUI__msgLabel.cget("text") == "Goodbye!", "❌ sayBye should still show 'Goodbye!'"
+finally:
+    tk.Misc.mainloop = _saved
+    for _root in _roots:
+        _root.destroy()
+@@ hint
+`self.__byeButton.bind('<Button-1>', self.sayBye)`
+and `def sayBye(self, evt):`
+@@ solution
+import tkinter as tk
+
+class ByeGUI:
+    def __init__(self):
+        self.__win = tk.Tk()
+        self.__byeButton = tk.Button(self.__win, text="Bye")
+        self.__byeButton.bind('<Button-1>', self.sayBye)
+        self.__msgLabel = tk.Label(self.__win, text="")
+        self.__byeButton.grid(row=0, column=0)
+        self.__msgLabel.grid(row=1, column=0)
+        self.__win.title("Bye")
+        self.__win.mainloop()
+
+    def sayBye(self, evt):
+        self.__msgLabel.config(text="Goodbye!")
+
+@@ write command= or bind?
+Explain the difference between connecting a button with `command=self.save` and with `.bind('<Button-1>', self.save)`.
+Mention what the `save` method must look like in each case.
+@@ answer
+With `command=self.save`, tkinter calls `save()` with no extra argument, so the method is `def save(self):`.
+With `.bind('<Button-1>', self.save)`, tkinter passes an event object when the mouse button is clicked, so the method must be `def save(self, evt):`.
+In both cases we write `self.save` without brackets, so the method runs only when the user clicks.
+
+@@ md
+## 4. Placing widgets with grid
+
+`grid` puts widgets in a table of **rows** and **columns**.
+Rows and columns start at 0.
+
+```text
+             column 0        column 1
+row 0     [ Username: ]   [ entry box   ]
+row 1     [ Password: ]   [ entry box   ]
+row 2     [        Login button         ]   <- columnspan=2: it uses both columns
+```
+
+| Option | Meaning | Example |
+| --- | --- | --- |
+| `row`, `column` | which cell | `row=1, column=0` |
+| `columnspan` | how many columns the widget covers | `columnspan=2` |
+| `sticky` | which side of the cell the widget sticks to | `sticky=tk.E` (right), `tk.W` (left) |
+| `padx`, `pady` | empty space around the widget, in pixels | `padx=5, pady=5` |
+
+For `sticky`, think of a compass: `N` top, `S` bottom, `E` right (east), `W` left (west).
+You can combine them: `sticky="ew"` stretches the widget from left to right.
+Without `sticky`, the widget sits in the **centre** of its cell.
+
+💡 A common neat layout: labels in column 0 with `sticky=tk.E`, entries in column 1 with `sticky=tk.W`.
+Then each label sits right next to its entry box.
+
+⚠️ Use only **one** layout manager in the same container.
+Do not mix `grid` and `pack` for widgets that share the same parent, or the window freezes.
+
+@@ exercise Lay out a login form
+All the widgets of `LoginGUI` are created.
+Write the 5 `grid` lines so the window matches the picture above:
+
+- `self.__userLabel`: row 0, column 0, `sticky=tk.E`
+- `self.__userEntry`: row 0, column 1, `sticky=tk.W`
+- `self.__pwLabel`: row 1, column 0, `sticky=tk.E`
+- `self.__pwEntry`: row 1, column 1, `sticky=tk.W`
+- `self.__loginButton`: row 2, column 0, spanning 2 columns
+
+Give every widget `padx=5, pady=5`.
+@@ starter
+import tkinter as tk
+
+class LoginGUI:
+    def __init__(self):
+        self.__win = tk.Tk()
+        self.__userLabel = tk.Label(self.__win, text="Username:")
+        self.__userEntry = tk.Entry(self.__win)
+        self.__pwLabel = tk.Label(self.__win, text="Password:")
+        self.__pwEntry = tk.Entry(self.__win, show="*")
+        self.__loginButton = tk.Button(self.__win, text="Login")
+
+        # write the 5 grid lines here
+
+        self.__win.title("Login")
+        self.__win.mainloop()
+@@ check
+import tkinter as tk
+_roots = []
+_saved = tk.Misc.mainloop
+tk.Misc.mainloop = lambda self, n=0: _roots.append(self)   # test mode: the window does not wait
+try:
+    _app = LoginGUI()
+    _expected = {"userLabel": (0, 0, 1, "e"), "userEntry": (0, 1, 1, "w"),
+                 "pwLabel": (1, 0, 1, "e"), "pwEntry": (1, 1, 1, "w"),
+                 "loginButton": (2, 0, 2, None)}
+    for _name, (_row, _col, _span, _sticky) in _expected.items():
+        _widget = getattr(_app, f"_LoginGUI__{_name}")
+        _info = _widget.grid_info()
+        assert _info, f"❌ self.__{_name} is not placed with grid"
+        assert (_info["row"], _info["column"]) == (_row, _col), f"❌ self.__{_name} should be in row {_row}, column {_col}"
+        assert _info["columnspan"] == _span, f"❌ self.__{_name} should have columnspan={_span}"
+        if _sticky:
+            assert _info["sticky"] == _sticky, f"❌ self.__{_name} should have sticky=tk.{_sticky.upper()}"
+        assert _info["padx"] == 5 and _info["pady"] == 5, f"❌ self.__{_name} should have padx=5, pady=5"
+finally:
+    tk.Misc.mainloop = _saved
+    for _root in _roots:
+        _root.destroy()
+@@ hint
+The first line is:
+`self.__userLabel.grid(row=0, column=0, sticky=tk.E, padx=5, pady=5)`
+The button needs `columnspan=2`.
+@@ solution
+import tkinter as tk
+
+class LoginGUI:
+    def __init__(self):
+        self.__win = tk.Tk()
+        self.__userLabel = tk.Label(self.__win, text="Username:")
+        self.__userEntry = tk.Entry(self.__win)
+        self.__pwLabel = tk.Label(self.__win, text="Password:")
+        self.__pwEntry = tk.Entry(self.__win, show="*")
+        self.__loginButton = tk.Button(self.__win, text="Login")
+
+        self.__userLabel.grid(row=0, column=0, sticky=tk.E, padx=5, pady=5)
+        self.__userEntry.grid(row=0, column=1, sticky=tk.W, padx=5, pady=5)
+        self.__pwLabel.grid(row=1, column=0, sticky=tk.E, padx=5, pady=5)
+        self.__pwEntry.grid(row=1, column=1, sticky=tk.W, padx=5, pady=5)
+        self.__loginButton.grid(row=2, column=0, columnspan=2, padx=5, pady=5)
+
+        self.__win.title("Login")
+        self.__win.mainloop()
+
+@@ md
+👀 Run the cell below to see your login form, then close it.
+
+@@ code
+LoginGUI()
+
+@@ write Remove columnspan
+In `LoginGUI`, the login button is placed with:
+
+```python
+self.__loginButton.grid(row=2, column=0, columnspan=2, padx=5, pady=5)
+```
+
+How does the window change if `columnspan=2` is removed?
+@@ answer
+Without `columnspan=2`, the button only uses **column 0**.
+So it sits under the labels on the left side, instead of being centred under both columns.
+With `columnspan=2`, the button covers columns 0 and 1, so it is centred across the whole width.
+
+@@ write Remove sticky
+The username label is placed with `sticky=tk.E`.
+What happens if `sticky=tk.E` is removed?
+@@ answer
+Without `sticky`, the label is placed in the **centre** of its cell.
+If column 0 is wider than the label (for example because `Password:` is longer), the label moves away from its entry box.
+With `sticky=tk.E`, the label sticks to the right (east) side of its cell, so it sits right next to the entry box.
+
+@@ md
+## 5. Frames and pack
+
+A **Frame** is an invisible box that holds other widgets.
+Use it to group widgets, for example a row of buttons.
+
+- Create the widgets **inside the frame**: the frame is their parent.
+- Place the widgets inside the frame (often with `pack`).
+- Place the frame itself in the window (often with `grid`).
+
+`pack` is a simpler layout manager.
+`pack()` stacks widgets from top to bottom, in the order you call it.
+`pack(side=tk.LEFT)` puts them side by side, from left to right.
+
+@@ code
+import tkinter as tk
+
+class FrameDemo:
+    def __init__(self):
+        win = tk.Tk()
+        self.__titleLabel = tk.Label(win, text="Two buttons in a frame")
+
+        buttonFrame = tk.Frame(win)                         # the frame lives in win
+        self.__okButton = tk.Button(buttonFrame, text="OK")          # the buttons live in the frame
+        self.__cancelButton = tk.Button(buttonFrame, text="Cancel")
+        self.__okButton.pack(side=tk.LEFT, padx=5)          # pack inside the frame
+        self.__cancelButton.pack(side=tk.LEFT, padx=5)
+
+        self.__titleLabel.grid(row=0, column=0, padx=10, pady=5)    # grid inside win
+        buttonFrame.grid(row=1, column=0, pady=5)
+
+        win.title("Frame demo")
+        win.mainloop()
+
+FrameDemo()
+
+@@ md
+Notice: inside the frame we use `pack`, and inside `win` we use `grid`.
+That is allowed, because they are **different** containers.
+
+@@ exercise A row of buttons
+Complete `SaveGUI`:
+
+1. Create a frame `self.__buttonFrame` inside `self.__win`.
+2. Create `self.__saveButton` (text `Save`) and `self.__cancelButton` (text `Cancel`) **inside the frame**.
+3. Pack both buttons inside the frame with `side=tk.LEFT`, Save first.
+4. Place the frame in row 1, column 0 of the window with `grid`.
+@@ starter
+import tkinter as tk
+
+class SaveGUI:
+    def __init__(self):
+        self.__win = tk.Tk()
+        self.__msgLabel = tk.Label(self.__win, text="Save your work?")
+        self.__msgLabel.grid(row=0, column=0)
+
+        # 1. the frame
+        ...
+        # 2. the two buttons, inside the frame
+        ...
+        # 3. pack the buttons side by side
+        ...
+        # 4. place the frame
+        ...
+
+        self.__win.title("Save")
+        self.__win.mainloop()
+@@ check
+import tkinter as tk
+_roots = []
+_saved = tk.Misc.mainloop
+tk.Misc.mainloop = lambda self, n=0: _roots.append(self)   # test mode: the window does not wait
+try:
+    _app = SaveGUI()
+    _frame = _app._SaveGUI__buttonFrame
+    _save, _cancel = _app._SaveGUI__saveButton, _app._SaveGUI__cancelButton
+    assert _save.master is _frame and _cancel.master is _frame, "❌ Both buttons must be created inside the frame: tk.Button(self.__buttonFrame, ...)"
+    assert _save.cget("text") == "Save" and _cancel.cget("text") == "Cancel", "❌ Check the button texts"
+    assert _frame.pack_slaves() == [_save, _cancel], "❌ Pack Save first, then Cancel, inside the frame"
+    assert _save.pack_info()["side"] == "left", "❌ Use side=tk.LEFT so the buttons sit side by side"
+    assert _frame.winfo_manager() == "grid" and _frame.grid_info()["row"] == 1, "❌ Place the frame with grid in row 1, column 0"
+finally:
+    tk.Misc.mainloop = _saved
+    for _root in _roots:
+        _root.destroy()
+@@ hint
+`self.__buttonFrame = tk.Frame(self.__win)`
+`self.__saveButton = tk.Button(self.__buttonFrame, text="Save")`
+`self.__saveButton.pack(side=tk.LEFT)`
+`self.__buttonFrame.grid(row=1, column=0)`
+@@ solution
+import tkinter as tk
+
+class SaveGUI:
+    def __init__(self):
+        self.__win = tk.Tk()
+        self.__msgLabel = tk.Label(self.__win, text="Save your work?")
+        self.__msgLabel.grid(row=0, column=0)
+
+        self.__buttonFrame = tk.Frame(self.__win)
+        self.__saveButton = tk.Button(self.__buttonFrame, text="Save")
+        self.__cancelButton = tk.Button(self.__buttonFrame, text="Cancel")
+        self.__saveButton.pack(side=tk.LEFT, padx=5)
+        self.__cancelButton.pack(side=tk.LEFT, padx=5)
+        self.__buttonFrame.grid(row=1, column=0, pady=5)
+
+        self.__win.title("Save")
+        self.__win.mainloop()
+
+@@ exercise Fill in the missing lines (pack)
+🎯 This is the style of JUL 2025 Question 11a.
+
+The list box and the label of `FruitGUI` are created, but lines 9 and 10 are missing, so the window is empty.
+The finished window shows the list box **on top** and the label **below** it.
+Write the two missing lines using `pack()`.
+@@ starter
+import tkinter as tk
+
+class FruitGUI:
+    def __init__(self):
+        self.__win = tk.Tk()
+        self.__fruitList = tk.Listbox(self.__win)
+        self.__statusLabel = tk.Label(self.__win, text="Selected: none")
+        # line 9 (missing)
+        # line 10 (missing)
+        self.__win.title("Fruits")
+        self.__win.mainloop()
+@@ check
+import tkinter as tk
+_roots = []
+_saved = tk.Misc.mainloop
+tk.Misc.mainloop = lambda self, n=0: _roots.append(self)   # test mode: the window does not wait
+try:
+    _app = FruitGUI()
+    _slaves = _roots[0].pack_slaves() if _roots else []
+    assert _slaves == [_app._FruitGUI__fruitList, _app._FruitGUI__statusLabel], "❌ Pack the list box first, then the label"
+finally:
+    tk.Misc.mainloop = _saved
+    for _root in _roots:
+        _root.destroy()
+@@ hint
+`pack()` stacks widgets from top to bottom in the order you call it.
+@@ solution
+import tkinter as tk
+
+class FruitGUI:
+    def __init__(self):
+        self.__win = tk.Tk()
+        self.__fruitList = tk.Listbox(self.__win)
+        self.__statusLabel = tk.Label(self.__win, text="Selected: none")
+        self.__fruitList.pack()
+        self.__statusLabel.pack()
+        self.__win.title("Fruits")
+        self.__win.mainloop()
+
+@@ md
+## 6. ScrolledText: a box for messages
+
+A **ScrolledText** is a big text box with a scroll bar.
+In the exam it is the usual place to show results and error messages.
+
+```python
+from tkinter import scrolledtext
+
+self.__output = scrolledtext.ScrolledText(win, width=40, height=5, wrap=tk.WORD)
+self.__output.config(state=tk.DISABLED)     # the user cannot type in it
+```
+
+The positions in a text box are written `"line.character"`, so `"1.0"` means line 1, character 0 (the very start).
+
+To write a message you need **four steps**:
+
+```python
+self.__output.config(state=tk.NORMAL)        # 1. unlock it
+self.__output.delete("1.0", tk.END)          # 2. remove the old text
+self.__output.insert(tk.END, "Your message") # 3. write the new text at the end
+self.__output.config(state=tk.DISABLED)      # 4. lock it again
+```
+
+⚠️ A **disabled** text box ignores `insert` and `delete` completely.
+There is no error message: the text just does not appear.
+Forgetting step 1 is one of the most common exam mistakes.
+
+@@ predict Writing into a locked box
+@@ run
+import tkinter as tk
+from tkinter import scrolledtext
+
+win = tk.Tk()
+box = scrolledtext.ScrolledText(win, width=30, height=3)
+box.config(state=tk.DISABLED)
+box.insert(tk.END, "First")
+print(repr(box.get("1.0", tk.END)))
+
+box.config(state=tk.NORMAL)
+box.insert(tk.END, "Second")
+print(repr(box.get("1.0", tk.END)))
+win.destroy()
+@@ output
+'\n'
+'Second\n'
+@@ explain
+The box is disabled when `"First"` is inserted, so it is silently ignored.
+The box only holds the empty line `'\n'` that every text box has at the end.
+After `state=tk.NORMAL`, the insert works, so the box holds `'Second\n'`.
+
+@@ exercise A helper to show messages
+In the exam you often write messages from several callbacks.
+A small helper method saves time.
+
+Write the method `showMessage(self, message)` in `NoteGUI`.
+It must do the four steps: unlock, delete the old text, insert `message`, lock again.
+@@ starter
+import tkinter as tk
+from tkinter import scrolledtext
+
+class NoteGUI:
+    def __init__(self):
+        self.__win = tk.Tk()
+        self.__output = scrolledtext.ScrolledText(self.__win, width=40, height=5, wrap=tk.WORD)
+        self.__output.grid(row=0, column=0)
+        self.__output.config(state=tk.DISABLED)
+        self.__win.title("Notes")
+        self.__win.mainloop()
+
+    def showMessage(self, message):
+        ...
+@@ check
+import tkinter as tk
+_roots = []
+_saved = tk.Misc.mainloop
+tk.Misc.mainloop = lambda self, n=0: _roots.append(self)   # test mode: the window does not wait
+try:
+    _app = NoteGUI()
+    _box = _app._NoteGUI__output
+    _app.showMessage("First message")
+    _app.showMessage("Second message")
+    _text = _box.get("1.0", tk.END).strip()
+    assert _text == "Second message", f"❌ The box holds {_text!r}. It should only hold the newest message."
+    assert str(_box.cget("state")) == "disabled", "❌ Lock the box again at the end: config(state=tk.DISABLED)"
+finally:
+    tk.Misc.mainloop = _saved
+    for _root in _roots:
+        _root.destroy()
+@@ hint
+If the box stays empty, you forgot to unlock it first with `config(state=tk.NORMAL)`.
+If both messages appear, you forgot `delete("1.0", tk.END)`.
+@@ solution
+import tkinter as tk
+from tkinter import scrolledtext
+
+class NoteGUI:
+    def __init__(self):
+        self.__win = tk.Tk()
+        self.__output = scrolledtext.ScrolledText(self.__win, width=40, height=5, wrap=tk.WORD)
+        self.__output.grid(row=0, column=0)
+        self.__output.config(state=tk.DISABLED)
+        self.__win.title("Notes")
+        self.__win.mainloop()
+
+    def showMessage(self, message):
+        self.__output.config(state=tk.NORMAL)
+        self.__output.delete("1.0", tk.END)
+        self.__output.insert(tk.END, message)
+        self.__output.config(state=tk.DISABLED)
+
+@@ md
+## 7. Checking the user's input
+
+Users type anything: nothing at all, letters, negative numbers.
+An exam callback must check the input **in a fixed order**, and the paper tells you the order.
+The usual order is:
+
+1. Is it **empty**? Then show a message and stop.
+2. Is it a **number**? Use `try` with `float(...)`. If there is a `ValueError`, show a message and stop.
+3. Is it **positive**? If not, show a message and stop.
+4. Everything is fine: work out the answer and show it.
+
+`return` inside a method stops the method right there.
+It is a clean way to "stop" after showing an error message.
+
+@@ predict The order of the checks
+This is the same checking logic as a callback, written as a normal function so you can see the results.
+@@ run
+def checkAmount(text):
+    text = text.strip()
+    if text == "":
+        return "Please enter an amount"
+    try:
+        amount = float(text)
+    except ValueError:
+        return "Amount must be a number"
+    if amount <= 0:
+        return "Amount must be more than 0"
+    return f"OK: ${amount:.2f}"
+
+print(checkAmount("   "))
+print(checkAmount("ten"))
+print(checkAmount("-3"))
+print(checkAmount("0"))
+print(checkAmount("4.5"))
+@@ output
+Please enter an amount
+Amount must be a number
+Amount must be more than 0
+Amount must be more than 0
+OK: $4.50
+@@ explain
+`"   ".strip()` is `""`, so the first check catches it.
+`float("ten")` raises a `ValueError`, so the second message is returned.
+`-3` and `0` are numbers, but not more than 0.
+`4.5` passes every check.
+
+@@ exercise GST calculator callback
+🎯 This is the most common exam callback.
+
+`GstGUI` has an entry `self.__priceEntry`, a button, and a message box.
+The helper `showMessage` is already written.
+Write the callback `calculate` so it shows exactly:
+
+| The user typed | Message |
+| --- | --- |
+| nothing (or only spaces) | `Please enter a price` |
+| `abc` | `Price must be a number` |
+| `0` or `-5` | `Price must be more than 0` |
+| `25` | `GST: $2.25 Total: $27.25` |
+
+Use the class variable `_GST_RATE`, do not type `0.09` in your callback.
+@@ starter
+import tkinter as tk
+from tkinter import scrolledtext
+
+class GstGUI:
+    _GST_RATE = 0.09
+
+    def __init__(self):
+        self.__win = tk.Tk()
+        self.__priceLabel = tk.Label(self.__win, text="Price:")
+        self.__priceEntry = tk.Entry(self.__win)
+        self.__calcButton = tk.Button(self.__win, text="Calculate", command=self.calculate)
+        self.__output = scrolledtext.ScrolledText(self.__win, width=30, height=3, wrap=tk.WORD)
+        self.__priceLabel.grid(row=0, column=0, sticky=tk.E, padx=5, pady=5)
+        self.__priceEntry.grid(row=0, column=1, sticky=tk.W, padx=5, pady=5)
+        self.__calcButton.grid(row=1, column=0, columnspan=2, pady=5)
+        self.__output.grid(row=2, column=0, columnspan=2, padx=5, pady=5)
+        self.__output.config(state=tk.DISABLED)
+        self.__win.title("GST")
+        self.__win.mainloop()
+
+    def showMessage(self, message):
+        self.__output.config(state=tk.NORMAL)
+        self.__output.delete("1.0", tk.END)
+        self.__output.insert(tk.END, message)
+        self.__output.config(state=tk.DISABLED)
+
+    def calculate(self):
+        ...
+@@ check
+import tkinter as tk
+_roots = []
+_saved = tk.Misc.mainloop
+tk.Misc.mainloop = lambda self, n=0: _roots.append(self)   # test mode: the window does not wait
+try:
+    _app = GstGUI()
+    _entry, _button, _box = _app._GstGUI__priceEntry, _app._GstGUI__calcButton, _app._GstGUI__output
+    for _typed, _wanted in [("", "Please enter a price"), ("   ", "Please enter a price"),
+                            ("abc", "Price must be a number"), ("0", "Price must be more than 0"),
+                            ("-5", "Price must be more than 0"), ("25", "GST: $2.25 Total: $27.25"),
+                            ("40", "GST: $3.60 Total: $43.60")]:
+        _entry.delete(0, tk.END)
+        _entry.insert(0, _typed)
+        _button.invoke()
+        _shown = _box.get("1.0", tk.END).strip()
+        assert _shown == _wanted, f"❌ When the user types {_typed!r}, the box shows {_shown!r} instead of {_wanted!r}"
+finally:
+    tk.Misc.mainloop = _saved
+    for _root in _roots:
+        _root.destroy()
+@@ hint
+Start with `text = self.__priceEntry.get().strip()`.
+Follow the 4 step order from the predict exercise above, and use `self.showMessage(...)` with `return` after each error.
+The GST is `price * GstGUI._GST_RATE`.
+@@ solution
+import tkinter as tk
+from tkinter import scrolledtext
+
+class GstGUI:
+    _GST_RATE = 0.09
+
+    def __init__(self):
+        self.__win = tk.Tk()
+        self.__priceLabel = tk.Label(self.__win, text="Price:")
+        self.__priceEntry = tk.Entry(self.__win)
+        self.__calcButton = tk.Button(self.__win, text="Calculate", command=self.calculate)
+        self.__output = scrolledtext.ScrolledText(self.__win, width=30, height=3, wrap=tk.WORD)
+        self.__priceLabel.grid(row=0, column=0, sticky=tk.E, padx=5, pady=5)
+        self.__priceEntry.grid(row=0, column=1, sticky=tk.W, padx=5, pady=5)
+        self.__calcButton.grid(row=1, column=0, columnspan=2, pady=5)
+        self.__output.grid(row=2, column=0, columnspan=2, padx=5, pady=5)
+        self.__output.config(state=tk.DISABLED)
+        self.__win.title("GST")
+        self.__win.mainloop()
+
+    def showMessage(self, message):
+        self.__output.config(state=tk.NORMAL)
+        self.__output.delete("1.0", tk.END)
+        self.__output.insert(tk.END, message)
+        self.__output.config(state=tk.DISABLED)
+
+    def calculate(self):
+        text = self.__priceEntry.get().strip()
+        if text == "":
+            self.showMessage("Please enter a price")
+            return
+        try:
+            price = float(text)
+        except ValueError:
+            self.showMessage("Price must be a number")
+            return
+        if price <= 0:
+            self.showMessage("Price must be more than 0")
+            return
+        gst = price * GstGUI._GST_RATE
+        self.showMessage(f"GST: ${gst:.2f} Total: ${price + gst:.2f}")
+
+@@ md
+👀 Try your calculator for real: type different prices and click the button.
+Close the window when you are done.
+
+@@ code
+GstGUI()
+
+@@ md
+## 8. Using your own classes in a callback
+
+In the exam, the GUI usually works with a class you wrote earlier (an account, a budget, a shipment).
+Keep the jobs separate:
+
+- **Your class** does the real work and the business rules (and raises exceptions).
+- **The GUI** reads the input, calls your class, and shows the result or the error message.
+
+Run the cell below.
+It creates a `BankAccount` class that is used in the next exercise.
+
+@@ code
+class BankException(Exception):
+    pass
+
+class BankAccount:
+    def __init__(self, accountId, balance):
+        self.__accountId = accountId
+        self.__balance = balance
+
+    @property
+    def balance(self):
+        return self.__balance
+
+    def deposit(self, amount):
+        if amount <= 0:
+            raise BankException("Amount must be positive")
+        self.__balance += amount
+
+    def withdraw(self, amount):
+        if amount <= 0:
+            raise BankException("Amount must be positive")
+        if amount > self.__balance:
+            raise BankException("Not enough balance")
+        self.__balance -= amount
+
+@@ exercise Withdraw button
+`BankGUI` receives a `BankAccount` object and stores it in `self.__account`.
+The `deposit` callback is done for you.
+Read it carefully, then write `withdraw` in the same way:
+
+- If the amount is not a number, show `Amount must be a number` in `self.__msgLabel`.
+- If the account raises a `BankException`, show the exception's message.
+- If it works, show `Withdrawal done`.
+- In every case, update `self.__balanceLabel` to show the balance, like `Balance: $70.00`.
+@@ starter
+import tkinter as tk
+
+class BankGUI:
+    def __init__(self, account):
+        self.__account = account
+        self.__win = tk.Tk()
+        self.__amountEntry = tk.Entry(self.__win)
+        self.__depositButton = tk.Button(self.__win, text="Deposit", command=self.deposit)
+        self.__withdrawButton = tk.Button(self.__win, text="Withdraw", command=self.withdraw)
+        self.__balanceLabel = tk.Label(self.__win, text=f"Balance: ${account.balance:.2f}")
+        self.__msgLabel = tk.Label(self.__win, text="")
+        self.__amountEntry.grid(row=0, column=0, columnspan=2, padx=5, pady=5)
+        self.__depositButton.grid(row=1, column=0, padx=5, pady=5)
+        self.__withdrawButton.grid(row=1, column=1, padx=5, pady=5)
+        self.__balanceLabel.grid(row=2, column=0, columnspan=2)
+        self.__msgLabel.grid(row=3, column=0, columnspan=2)
+        self.__win.title("Bank")
+        self.__win.mainloop()
+
+    def deposit(self):
+        try:
+            amount = float(self.__amountEntry.get())
+            self.__account.deposit(amount)
+            self.__msgLabel.config(text="Deposit done")
+        except ValueError:
+            self.__msgLabel.config(text="Amount must be a number")
+        except BankException as e:
+            self.__msgLabel.config(text=str(e))
+        self.__balanceLabel.config(text=f"Balance: ${self.__account.balance:.2f}")
+
+    def withdraw(self):
+        ...
+@@ check
+import tkinter as tk
+_roots = []
+_saved = tk.Misc.mainloop
+tk.Misc.mainloop = lambda self, n=0: _roots.append(self)   # test mode: the window does not wait
+try:
+    _acct = BankAccount("A1", 100.0)
+    _app = BankGUI(_acct)
+    _entry = _app._BankGUI__amountEntry
+    _msg, _bal = _app._BankGUI__msgLabel, _app._BankGUI__balanceLabel
+    for _typed, _wantMsg, _wantBal in [("abc", "Amount must be a number", "Balance: $100.00"),
+                                       ("30", "Withdrawal done", "Balance: $70.00"),
+                                       ("500", "Not enough balance", "Balance: $70.00"),
+                                       ("-2", "Amount must be positive", "Balance: $70.00")]:
+        _entry.delete(0, tk.END)
+        _entry.insert(0, _typed)
+        _app._BankGUI__withdrawButton.invoke()
+        assert _msg.cget("text") == _wantMsg, f"❌ Typing {_typed!r}: the message is {_msg.cget('text')!r} instead of {_wantMsg!r}"
+        assert _bal.cget("text") == _wantBal, f"❌ Typing {_typed!r}: the balance label is {_bal.cget('text')!r} instead of {_wantBal!r}"
+finally:
+    tk.Misc.mainloop = _saved
+    for _root in _roots:
+        _root.destroy()
+@@ hint
+Copy the structure of `deposit`.
+Change `deposit(amount)` to `withdraw(amount)` and the success message to `Withdrawal done`.
+@@ solution
+import tkinter as tk
+
+class BankGUI:
+    def __init__(self, account):
+        self.__account = account
+        self.__win = tk.Tk()
+        self.__amountEntry = tk.Entry(self.__win)
+        self.__depositButton = tk.Button(self.__win, text="Deposit", command=self.deposit)
+        self.__withdrawButton = tk.Button(self.__win, text="Withdraw", command=self.withdraw)
+        self.__balanceLabel = tk.Label(self.__win, text=f"Balance: ${account.balance:.2f}")
+        self.__msgLabel = tk.Label(self.__win, text="")
+        self.__amountEntry.grid(row=0, column=0, columnspan=2, padx=5, pady=5)
+        self.__depositButton.grid(row=1, column=0, padx=5, pady=5)
+        self.__withdrawButton.grid(row=1, column=1, padx=5, pady=5)
+        self.__balanceLabel.grid(row=2, column=0, columnspan=2)
+        self.__msgLabel.grid(row=3, column=0, columnspan=2)
+        self.__win.title("Bank")
+        self.__win.mainloop()
+
+    def deposit(self):
+        try:
+            amount = float(self.__amountEntry.get())
+            self.__account.deposit(amount)
+            self.__msgLabel.config(text="Deposit done")
+        except ValueError:
+            self.__msgLabel.config(text="Amount must be a number")
+        except BankException as e:
+            self.__msgLabel.config(text=str(e))
+        self.__balanceLabel.config(text=f"Balance: ${self.__account.balance:.2f}")
+
+    def withdraw(self):
+        try:
+            amount = float(self.__amountEntry.get())
+            self.__account.withdraw(amount)
+            self.__msgLabel.config(text="Withdrawal done")
+        except ValueError:
+            self.__msgLabel.config(text="Amount must be a number")
+        except BankException as e:
+            self.__msgLabel.config(text=str(e))
+        self.__balanceLabel.config(text=f"Balance: ${self.__account.balance:.2f}")
+
+@@ md
+👀 Try the bank app with an account that starts with $100.
+
+@@ code
+BankGUI(BankAccount("A1", 100.0))
+
+@@ md
+### Class methods in a callback
+
+🎯 JAN 2024 and JAN 2025 both combined **class methods** with a GUI.
+The class keeps a dictionary in a class variable, and the callback calls the class methods **on the class**, not on an object.
+
+Run the cell below.
+It creates the `Expense` class for the next exercise.
+
+@@ code
+class Expense:
+    _BUDGET = {"Food": 300.0, "Transport": 120.0}
+
+    @classmethod
+    def getBudget(cls, category):
+        return cls._BUDGET.get(category)      # None if the category is not there
+
+    @classmethod
+    def updateBudget(cls, category, amount):
+        cls._BUDGET[category] = amount        # adds a new category or changes an old one
+
+@@ exercise Budget check and update (exam style)
+Write the callback `action` of `BudgetGUI`.
+It reads `self.__categoryEntry` and `self.__amountEntry` and checks them **in this order**:
+
+1. Category is blank: show `Category should not be blank`.
+2. Amount is blank: this is a **check**. Look up the budget with `Expense.getBudget(category)`.
+   - If the result is `None`: show `No budget for this category`.
+   - Otherwise: show `Budget for Food is $300.00` (using the real category and amount).
+3. Amount is not a number, or is 0 or less: show `Amount should be a positive number`.
+4. Otherwise this is an **update**: call `Expense.updateBudget(category, amount)` and show `Budget for Food is updated to $350.00`.
+
+Use `self.showMessage(...)` for every message, and remove extra spaces with `.strip()`.
+@@ starter
+import tkinter as tk
+from tkinter import scrolledtext
+
+class BudgetGUI:
+    def __init__(self):
+        self.__win = tk.Tk()
+        self.__categoryLabel = tk.Label(self.__win, text="Category:")
+        self.__categoryEntry = tk.Entry(self.__win)
+        self.__amountLabel = tk.Label(self.__win, text="Amount:")
+        self.__amountEntry = tk.Entry(self.__win)
+        self.__goButton = tk.Button(self.__win, text="Check / Update", command=self.action)
+        self.__output = scrolledtext.ScrolledText(self.__win, width=40, height=3, wrap=tk.WORD)
+        self.__categoryLabel.grid(row=0, column=0, sticky=tk.E, padx=5, pady=5)
+        self.__categoryEntry.grid(row=0, column=1, sticky=tk.W, padx=5, pady=5)
+        self.__amountLabel.grid(row=1, column=0, sticky=tk.E, padx=5, pady=5)
+        self.__amountEntry.grid(row=1, column=1, sticky=tk.W, padx=5, pady=5)
+        self.__goButton.grid(row=2, column=0, columnspan=2, pady=5)
+        self.__output.grid(row=3, column=0, columnspan=2, padx=5, pady=5)
+        self.__output.config(state=tk.DISABLED)
+        self.__win.title("Budget")
+        self.__win.mainloop()
+
+    def showMessage(self, message):
+        self.__output.config(state=tk.NORMAL)
+        self.__output.delete("1.0", tk.END)
+        self.__output.insert(tk.END, message)
+        self.__output.config(state=tk.DISABLED)
+
+    def action(self):
+        ...
+@@ check
+import tkinter as tk
+Expense._BUDGET = {"Food": 300.0, "Transport": 120.0}     # start every check with the same data
+_roots = []
+_saved = tk.Misc.mainloop
+tk.Misc.mainloop = lambda self, n=0: _roots.append(self)   # test mode: the window does not wait
+try:
+    _app = BudgetGUI()
+    _cat, _amt = _app._BudgetGUI__categoryEntry, _app._BudgetGUI__amountEntry
+    _box = _app._BudgetGUI__output
+    for _c, _a, _wanted in [("", "", "Category should not be blank"),
+                            ("  ", "50", "Category should not be blank"),
+                            ("Gifts", "", "No budget for this category"),
+                            ("Food", "", "Budget for Food is $300.00"),
+                            ("Food", "0", "Amount should be a positive number"),
+                            ("Food", "abc", "Amount should be a positive number"),
+                            ("Food", "-3", "Amount should be a positive number"),
+                            ("Food", "350", "Budget for Food is updated to $350.00"),
+                            ("Food", "", "Budget for Food is $350.00"),
+                            ("Gifts", "80", "Budget for Gifts is updated to $80.00")]:
+        _cat.delete(0, tk.END)
+        _cat.insert(0, _c)
+        _amt.delete(0, tk.END)
+        _amt.insert(0, _a)
+        _app._BudgetGUI__goButton.invoke()
+        _shown = _box.get("1.0", tk.END).strip()
+        assert _shown == _wanted, f"❌ Category {_c!r}, amount {_a!r}: the box shows {_shown!r} instead of {_wanted!r}"
+finally:
+    tk.Misc.mainloop = _saved
+    for _root in _roots:
+        _root.destroy()
+    Expense._BUDGET = {"Food": 300.0, "Transport": 120.0}
+@@ hint
+Read both entries first:
+`category = self.__categoryEntry.get().strip()` and `amountText = self.__amountEntry.get().strip()`.
+For step 3, put `float(amountText)` in a `try`.
+Both "not a number" and "0 or less" show the same message.
+@@ solution
+import tkinter as tk
+from tkinter import scrolledtext
+
+class BudgetGUI:
+    def __init__(self):
+        self.__win = tk.Tk()
+        self.__categoryLabel = tk.Label(self.__win, text="Category:")
+        self.__categoryEntry = tk.Entry(self.__win)
+        self.__amountLabel = tk.Label(self.__win, text="Amount:")
+        self.__amountEntry = tk.Entry(self.__win)
+        self.__goButton = tk.Button(self.__win, text="Check / Update", command=self.action)
+        self.__output = scrolledtext.ScrolledText(self.__win, width=40, height=3, wrap=tk.WORD)
+        self.__categoryLabel.grid(row=0, column=0, sticky=tk.E, padx=5, pady=5)
+        self.__categoryEntry.grid(row=0, column=1, sticky=tk.W, padx=5, pady=5)
+        self.__amountLabel.grid(row=1, column=0, sticky=tk.E, padx=5, pady=5)
+        self.__amountEntry.grid(row=1, column=1, sticky=tk.W, padx=5, pady=5)
+        self.__goButton.grid(row=2, column=0, columnspan=2, pady=5)
+        self.__output.grid(row=3, column=0, columnspan=2, padx=5, pady=5)
+        self.__output.config(state=tk.DISABLED)
+        self.__win.title("Budget")
+        self.__win.mainloop()
+
+    def showMessage(self, message):
+        self.__output.config(state=tk.NORMAL)
+        self.__output.delete("1.0", tk.END)
+        self.__output.insert(tk.END, message)
+        self.__output.config(state=tk.DISABLED)
+
+    def action(self):
+        category = self.__categoryEntry.get().strip()
+        amountText = self.__amountEntry.get().strip()
+
+        if category == "":
+            self.showMessage("Category should not be blank")
+            return
+
+        if amountText == "":
+            budget = Expense.getBudget(category)
+            if budget is None:
+                self.showMessage("No budget for this category")
+            else:
+                self.showMessage(f"Budget for {category} is ${budget:.2f}")
+            return
+
+        try:
+            amount = float(amountText)
+        except ValueError:
+            self.showMessage("Amount should be a positive number")
+            return
+        if amount <= 0:
+            self.showMessage("Amount should be a positive number")
+            return
+
+        Expense.updateBudget(category, amount)
+        self.showMessage(f"Budget for {category} is updated to ${amount:.2f}")
+
+@@ md
+## 9. Radio buttons
+
+**Radio buttons** let the user pick **one** option from a group.
+All the radio buttons in a group share one **variable**.
+Each radio button puts its own `value` into that variable when it is clicked.
+
+```python
+self.__sizeVar = tk.IntVar(win, value=1)    # value=1 means option 1 is chosen at the start
+self.__smallRadio = tk.Radiobutton(win, text="Small", variable=self.__sizeVar, value=1)
+self.__largeRadio = tk.Radiobutton(win, text="Large", variable=self.__sizeVar, value=2)
+
+choice = self.__sizeVar.get()               # read the choice: 1 or 2
+self.__sizeVar.set(1)                       # choose option 1 from code (for a reset button)
+```
+
+Use `tk.IntVar` for number values and `tk.StringVar` for text values.
+
+💡 Pass the window as the first argument: `tk.IntVar(win, value=1)`.
+In exam code you may see `IntVar()` with no window.
+That works when the program has only one window, but in a notebook always pass the window.
+
+@@ exercise Drink size chooser
+Complete `DrinkGUI`:
+
+1. Create `self.__mediumRadio` (text `Medium`, value `2`) and `self.__largeRadio` (text `Large`, value `3`).
+   They must share `self.__sizeVar` with the Small button.
+   Place them in row 0, columns 1 and 2.
+2. Write the callback `showPrice`: read the chosen size, look up the price in the class variable `_PRICES`, and show it in `self.__priceLabel` like `Price: $5.00`.
+@@ starter
+import tkinter as tk
+
+class DrinkGUI:
+    _PRICES = {1: 4.00, 2: 5.00, 3: 6.20}
+
+    def __init__(self):
+        self.__win = tk.Tk()
+        self.__sizeVar = tk.IntVar(self.__win, value=1)
+        self.__smallRadio = tk.Radiobutton(self.__win, text="Small", variable=self.__sizeVar, value=1)
+        # create the Medium and Large radio buttons here
+
+        self.__priceButton = tk.Button(self.__win, text="Price", command=self.showPrice)
+        self.__priceLabel = tk.Label(self.__win, text="")
+        self.__smallRadio.grid(row=0, column=0)
+        # place the Medium and Large radio buttons here
+
+        self.__priceButton.grid(row=1, column=0, columnspan=3)
+        self.__priceLabel.grid(row=2, column=0, columnspan=3)
+        self.__win.title("Drinks")
+        self.__win.mainloop()
+
+    def showPrice(self):
+        ...
+@@ check
+import tkinter as tk
+_roots = []
+_saved = tk.Misc.mainloop
+tk.Misc.mainloop = lambda self, n=0: _roots.append(self)   # test mode: the window does not wait
+try:
+    _app = DrinkGUI()
+    _label, _button = _app._DrinkGUI__priceLabel, _app._DrinkGUI__priceButton
+    _button.invoke()
+    assert _label.cget("text") == "Price: $4.00", f"❌ With Small chosen, the label shows {_label.cget('text')!r}"
+    _app._DrinkGUI__largeRadio.invoke()      # pretend the user clicks Large
+    _button.invoke()
+    assert _label.cget("text") == "Price: $6.20", f"❌ With Large chosen, the label shows {_label.cget('text')!r}"
+    _app._DrinkGUI__mediumRadio.invoke()
+    _button.invoke()
+    assert _label.cget("text") == "Price: $5.00", f"❌ With Medium chosen, the label shows {_label.cget('text')!r}"
+    assert _app._DrinkGUI__largeRadio.grid_info()["column"] == 2, "❌ Place the Large button in row 0, column 2"
+finally:
+    tk.Misc.mainloop = _saved
+    for _root in _roots:
+        _root.destroy()
+@@ hint
+`self.__mediumRadio = tk.Radiobutton(self.__win, text="Medium", variable=self.__sizeVar, value=2)`
+In `showPrice`: `price = DrinkGUI._PRICES[self.__sizeVar.get()]`
+@@ solution
+import tkinter as tk
+
+class DrinkGUI:
+    _PRICES = {1: 4.00, 2: 5.00, 3: 6.20}
+
+    def __init__(self):
+        self.__win = tk.Tk()
+        self.__sizeVar = tk.IntVar(self.__win, value=1)
+        self.__smallRadio = tk.Radiobutton(self.__win, text="Small", variable=self.__sizeVar, value=1)
+        self.__mediumRadio = tk.Radiobutton(self.__win, text="Medium", variable=self.__sizeVar, value=2)
+        self.__largeRadio = tk.Radiobutton(self.__win, text="Large", variable=self.__sizeVar, value=3)
+
+        self.__priceButton = tk.Button(self.__win, text="Price", command=self.showPrice)
+        self.__priceLabel = tk.Label(self.__win, text="")
+        self.__smallRadio.grid(row=0, column=0)
+        self.__mediumRadio.grid(row=0, column=1)
+        self.__largeRadio.grid(row=0, column=2)
+
+        self.__priceButton.grid(row=1, column=0, columnspan=3)
+        self.__priceLabel.grid(row=2, column=0, columnspan=3)
+        self.__win.title("Drinks")
+        self.__win.mainloop()
+
+    def showPrice(self):
+        price = DrinkGUI._PRICES[self.__sizeVar.get()]
+        self.__priceLabel.config(text=f"Price: ${price:.2f}")
+
+@@ md
+## 10. List boxes
+
+A **Listbox** shows a list of lines, and the user can click one.
+
+| What you want | Code |
+| --- | --- |
+| Add a line at the end | `self.__fruitList.insert(tk.END, "Apple")` |
+| Which line is selected? | `self.__fruitList.curselection()` gives a tuple such as `(2,)`, or `()` if none |
+| Run a method when the user selects a line | `self.__fruitList.bind('<<ListboxSelect>>', self.onSelect)` |
+
+`curselection()` gives a **tuple** of positions.
+Use `[0]` to get the first position as a number.
+Then use that number as an index into your own list of objects.
+
+@@ predict curselection gives a tuple
+@@ run
+import tkinter as tk
+
+win = tk.Tk()
+fruitList = tk.Listbox(win)
+for fruit in ["Apple", "Banana", "Cherry"]:
+    fruitList.insert(tk.END, fruit)
+
+print(fruitList.curselection())
+fruitList.selection_set(1)            # pretend the user clicked Banana
+selected = fruitList.curselection()
+print(selected)
+print(selected[0])
+win.destroy()
+@@ output
+()
+(1,)
+1
+@@ explain
+Before anything is selected, `curselection()` is an empty tuple `()`.
+After the second line (position 1) is selected, it is the tuple `(1,)`.
+The comma shows it is a tuple with one item.
+`selected[0]` takes that item out, so we get the number `1`.
+
+@@ exercise Fill in the missing line (Listbox)
+🎯 This is the style of JUL 2025 Question 11b.
+
+`MenuGUI` shows a list of dishes.
+When the user selects a dish, `onSelect` runs.
+**One line is missing** in `onSelect`.
+It must change `self.__statusLabel` to show the chosen dish, like `Selected: Laksa`.
+@@ starter
+import tkinter as tk
+
+class MenuGUI:
+    def __init__(self, dishes):
+        self.__dishes = dishes
+        self.__win = tk.Tk()
+        self.__dishList = tk.Listbox(self.__win)
+        for dish in self.__dishes:
+            self.__dishList.insert(tk.END, dish)
+        self.__statusLabel = tk.Label(self.__win, text="Selected: none")
+        self.__dishList.pack()
+        self.__statusLabel.pack()
+        self.__dishList.bind('<<ListboxSelect>>', self.onSelect)
+        self.__win.title("Menu")
+        self.__win.mainloop()
+
+    def onSelect(self, evt):
+        selected = self.__dishList.curselection()
+        if selected:
+            dish = self.__dishes[selected[0]]
+            # the missing line goes here
+@@ check
+import tkinter as tk
+_roots = []
+_saved = tk.Misc.mainloop
+tk.Misc.mainloop = lambda self, n=0: _roots.append(self)   # test mode: the window does not wait
+try:
+    _app = MenuGUI(["Chicken Rice", "Laksa", "Satay"])
+    _app._MenuGUI__dishList.selection_set(1)    # pretend the user clicks Laksa
+    _app.onSelect(None)
+    _text = _app._MenuGUI__statusLabel.cget("text")
+    assert _text == "Selected: Laksa", f"❌ After selecting Laksa, the label shows {_text!r}"
+finally:
+    tk.Misc.mainloop = _saved
+    for _root in _roots:
+        _root.destroy()
+@@ hint
+Use `config(text=...)` on the label, with an f-string that uses `dish`.
+@@ solution
+import tkinter as tk
+
+class MenuGUI:
+    def __init__(self, dishes):
+        self.__dishes = dishes
+        self.__win = tk.Tk()
+        self.__dishList = tk.Listbox(self.__win)
+        for dish in self.__dishes:
+            self.__dishList.insert(tk.END, dish)
+        self.__statusLabel = tk.Label(self.__win, text="Selected: none")
+        self.__dishList.pack()
+        self.__statusLabel.pack()
+        self.__dishList.bind('<<ListboxSelect>>', self.onSelect)
+        self.__win.title("Menu")
+        self.__win.mainloop()
+
+    def onSelect(self, evt):
+        selected = self.__dishList.curselection()
+        if selected:
+            dish = self.__dishes[selected[0]]
+            self.__statusLabel.config(text=f"Selected: {dish}")
+
+@@ md
+👀 Click on the dishes to see the label change.
+
+@@ code
+MenuGUI(["Chicken Rice", "Laksa", "Satay"])
+
+@@ md
+## 11. One callback for several buttons, and disabling buttons
+
+With `bind`, the event object `evt` knows **which widget** was clicked: `evt.widget`.
+So several buttons can share one callback.
+
+```python
+def change(self, evt):
+    if evt.widget == self.__plusButton:
+        ...
+    elif evt.widget == self.__minusButton:
+        ...
+```
+
+A button can be switched off and on:
+
+```python
+self.__resetButton.config(state=tk.DISABLED)   # greyed out, clicking does nothing
+self.__resetButton.config(state=tk.NORMAL)     # works again
+```
+
+@@ exercise Plus and minus with one callback
+`CounterGUI` has a `+` button and a `-` button.
+Both are bound to the **same** method `change`.
+
+Write `change(self, evt)` so that:
+
+- the `+` button adds 1 to `self.__count`
+- the `-` button takes 1 away from `self.__count`
+- after either click, `self.__countLabel` shows the count, like `Count: 2`
+@@ starter
+import tkinter as tk
+
+class CounterGUI:
+    def __init__(self):
+        self.__count = 0
+        self.__win = tk.Tk()
+        self.__plusButton = tk.Button(self.__win, text="+", width=4)
+        self.__minusButton = tk.Button(self.__win, text="-", width=4)
+        self.__countLabel = tk.Label(self.__win, text="Count: 0")
+        self.__plusButton.bind('<Button-1>', self.change)
+        self.__minusButton.bind('<Button-1>', self.change)
+        self.__plusButton.grid(row=0, column=0, padx=5, pady=5)
+        self.__minusButton.grid(row=0, column=1, padx=5, pady=5)
+        self.__countLabel.grid(row=1, column=0, columnspan=2)
+        self.__win.title("Counter")
+        self.__win.mainloop()
+
+    def change(self, evt):
+        ...
+@@ check
+import tkinter as tk
+from types import SimpleNamespace
+_roots = []
+_saved = tk.Misc.mainloop
+tk.Misc.mainloop = lambda self, n=0: _roots.append(self)   # test mode: the window does not wait
+try:
+    _app = CounterGUI()
+    _plus = SimpleNamespace(widget=_app._CounterGUI__plusButton)     # a pretend click on +
+    _minus = SimpleNamespace(widget=_app._CounterGUI__minusButton)   # a pretend click on -
+    _label = _app._CounterGUI__countLabel
+    _app.change(_plus)
+    _app.change(_plus)
+    _app.change(_plus)
+    assert _label.cget("text") == "Count: 3", f"❌ After 3 clicks on +, the label shows {_label.cget('text')!r}"
+    _app.change(_minus)
+    assert _label.cget("text") == "Count: 2", f"❌ After 3 clicks on + and 1 on -, the label shows {_label.cget('text')!r}"
+finally:
+    tk.Misc.mainloop = _saved
+    for _root in _roots:
+        _root.destroy()
+@@ hint
+Compare `evt.widget == self.__plusButton`.
+After the `if` / `elif`, update the label once.
+@@ solution
+import tkinter as tk
+
+class CounterGUI:
+    def __init__(self):
+        self.__count = 0
+        self.__win = tk.Tk()
+        self.__plusButton = tk.Button(self.__win, text="+", width=4)
+        self.__minusButton = tk.Button(self.__win, text="-", width=4)
+        self.__countLabel = tk.Label(self.__win, text="Count: 0")
+        self.__plusButton.bind('<Button-1>', self.change)
+        self.__minusButton.bind('<Button-1>', self.change)
+        self.__plusButton.grid(row=0, column=0, padx=5, pady=5)
+        self.__minusButton.grid(row=0, column=1, padx=5, pady=5)
+        self.__countLabel.grid(row=1, column=0, columnspan=2)
+        self.__win.title("Counter")
+        self.__win.mainloop()
+
+    def change(self, evt):
+        if evt.widget == self.__plusButton:
+            self.__count += 1
+        elif evt.widget == self.__minusButton:
+            self.__count -= 1
+        self.__countLabel.config(text=f"Count: {self.__count}")
+
+@@ exercise A Reset button that disables itself
+`GuestGUI` collects guest names.
+The Reset button starts **disabled**.
+
+Write the two callbacks:
+
+- `addGuest`: if the name entry is not blank, add the name and a new line (`"Amy\n"`) to the **end** of the output box (do not delete the old text).
+  Then empty the entry, and **enable** the Reset button.
+  If the name is blank, do nothing.
+- `reset`: empty the entry, empty the output box, then **disable** the Reset button.
+
+Remember to unlock and lock the output box.
+@@ starter
+import tkinter as tk
+from tkinter import scrolledtext
+
+class GuestGUI:
+    def __init__(self):
+        self.__win = tk.Tk()
+        self.__nameEntry = tk.Entry(self.__win)
+        self.__addButton = tk.Button(self.__win, text="Add", command=self.addGuest)
+        self.__resetButton = tk.Button(self.__win, text="Reset", command=self.reset, state=tk.DISABLED)
+        self.__output = scrolledtext.ScrolledText(self.__win, width=30, height=5)
+        self.__nameEntry.grid(row=0, column=0, columnspan=2, padx=5, pady=5)
+        self.__addButton.grid(row=1, column=0, pady=5)
+        self.__resetButton.grid(row=1, column=1, pady=5)
+        self.__output.grid(row=2, column=0, columnspan=2, padx=5, pady=5)
+        self.__output.config(state=tk.DISABLED)
+        self.__win.title("Guests")
+        self.__win.mainloop()
+
+    def addGuest(self):
+        ...
+
+    def reset(self):
+        ...
+@@ check
+import tkinter as tk
+_roots = []
+_saved = tk.Misc.mainloop
+tk.Misc.mainloop = lambda self, n=0: _roots.append(self)   # test mode: the window does not wait
+try:
+    _app = GuestGUI()
+    _entry, _box = _app._GuestGUI__nameEntry, _app._GuestGUI__output
+    _add, _reset = _app._GuestGUI__addButton, _app._GuestGUI__resetButton
+    _app.addGuest()
+    assert str(_reset.cget("state")) == "disabled", "❌ Adding a blank name should do nothing (Reset stays disabled)"
+    for _name in ["Amy", "Ben"]:
+        _entry.insert(0, _name)
+        _add.invoke()
+    _text = _box.get("1.0", tk.END).strip()
+    assert _text == "Amy\nBen", f"❌ After adding Amy and Ben, the box holds {_text!r}"
+    assert _entry.get() == "", "❌ Empty the entry after adding a guest"
+    assert str(_reset.cget("state")) == "normal", "❌ Enable the Reset button after adding a guest"
+    assert str(_box.cget("state")) == "disabled", "❌ Lock the output box again after writing"
+    _entry.insert(0, "half typed")
+    _reset.invoke()
+    assert _box.get("1.0", tk.END).strip() == "", "❌ Reset should empty the output box"
+    assert _entry.get() == "", "❌ Reset should empty the entry"
+    assert str(_reset.cget("state")) == "disabled", "❌ Reset should disable itself"
+finally:
+    tk.Misc.mainloop = _saved
+    for _root in _roots:
+        _root.destroy()
+@@ hint
+To add to the end without deleting: unlock, `insert(tk.END, name + "\n")`, lock.
+Enable with `self.__resetButton.config(state=tk.NORMAL)`.
+@@ solution
+import tkinter as tk
+from tkinter import scrolledtext
+
+class GuestGUI:
+    def __init__(self):
+        self.__win = tk.Tk()
+        self.__nameEntry = tk.Entry(self.__win)
+        self.__addButton = tk.Button(self.__win, text="Add", command=self.addGuest)
+        self.__resetButton = tk.Button(self.__win, text="Reset", command=self.reset, state=tk.DISABLED)
+        self.__output = scrolledtext.ScrolledText(self.__win, width=30, height=5)
+        self.__nameEntry.grid(row=0, column=0, columnspan=2, padx=5, pady=5)
+        self.__addButton.grid(row=1, column=0, pady=5)
+        self.__resetButton.grid(row=1, column=1, pady=5)
+        self.__output.grid(row=2, column=0, columnspan=2, padx=5, pady=5)
+        self.__output.config(state=tk.DISABLED)
+        self.__win.title("Guests")
+        self.__win.mainloop()
+
+    def addGuest(self):
+        name = self.__nameEntry.get().strip()
+        if name == "":
+            return
+        self.__output.config(state=tk.NORMAL)
+        self.__output.insert(tk.END, name + "\n")
+        self.__output.config(state=tk.DISABLED)
+        self.__nameEntry.delete(0, tk.END)
+        self.__resetButton.config(state=tk.NORMAL)
+
+    def reset(self):
+        self.__nameEntry.delete(0, tk.END)
+        self.__output.config(state=tk.NORMAL)
+        self.__output.delete("1.0", tk.END)
+        self.__output.config(state=tk.DISABLED)
+        self.__resetButton.config(state=tk.DISABLED)
+
+@@ md
+## 12. A dictionary of objects behind the buttons
+
+🎯 Lab 6 and several papers keep a **dictionary of objects** inside the GUI class.
+The key is something unique (an email, an id), and the value is the object.
+The Add, Search and List buttons each work on that dictionary.
+
+Run the cell below.
+It creates the `Instructor` class for the next exercise.
+
+@@ code
+class Instructor:
+    def __init__(self, email, name, ratePerDay):
+        self.__email = email
+        self.__name = name
+        self.__ratePerDay = ratePerDay
+
+    @property
+    def email(self):
+        return self.__email
+
+    def __str__(self):
+        return f"Instructor email: {self.__email} Name: {self.__name} Rate: ${self.__ratePerDay:.2f}"
+
+@@ exercise Add, Search and List
+`TrainingGUI` stores instructors in the dictionary `self.__instructors` (email to Instructor object).
+The layout and `showMessage` are done.
+Write the three callbacks:
+
+- `add`: create an `Instructor` from the three entries (the rate is a number, so use `float`).
+  If the email is already a key in the dictionary, show `Instructor already added!`.
+  Otherwise add it and show `Instructor added!`.
+- `search`: look up the email in the email entry.
+  If found, show the instructor (its `__str__`).
+  If not, show `No instructor with this email!`.
+- `listAll`: show all instructors, **one per line**.
+  If the dictionary is empty, show `No instructors`.
+
+You may assume the entries are never blank and the rate is always a valid number.
+@@ starter
+import tkinter as tk
+from tkinter import scrolledtext
+
+class TrainingGUI:
+    def __init__(self):
+        self.__instructors = {}
+        self.__win = tk.Tk()
+        self.__emailEntry = tk.Entry(self.__win)
+        self.__nameEntry = tk.Entry(self.__win)
+        self.__rateEntry = tk.Entry(self.__win)
+        buttonFrame = tk.Frame(self.__win)
+        self.__addButton = tk.Button(buttonFrame, text="Add", command=self.add)
+        self.__searchButton = tk.Button(buttonFrame, text="Search", command=self.search)
+        self.__listButton = tk.Button(buttonFrame, text="List", command=self.listAll)
+        self.__output = scrolledtext.ScrolledText(self.__win, width=60, height=6, wrap=tk.WORD)
+        for row, text in enumerate(["Email:", "Name:", "Rate per day:"]):
+            tk.Label(self.__win, text=text).grid(row=row, column=0, sticky=tk.E, padx=5, pady=2)
+        self.__emailEntry.grid(row=0, column=1, sticky=tk.W, padx=5, pady=2)
+        self.__nameEntry.grid(row=1, column=1, sticky=tk.W, padx=5, pady=2)
+        self.__rateEntry.grid(row=2, column=1, sticky=tk.W, padx=5, pady=2)
+        self.__addButton.pack(side=tk.LEFT, padx=5)
+        self.__searchButton.pack(side=tk.LEFT, padx=5)
+        self.__listButton.pack(side=tk.LEFT, padx=5)
+        buttonFrame.grid(row=3, column=0, columnspan=2, pady=5)
+        self.__output.grid(row=4, column=0, columnspan=2, padx=5, pady=5)
+        self.__output.config(state=tk.DISABLED)
+        self.__win.title("Training Provider")
+        self.__win.mainloop()
+
+    def showMessage(self, message):
+        self.__output.config(state=tk.NORMAL)
+        self.__output.delete("1.0", tk.END)
+        self.__output.insert(tk.END, message)
+        self.__output.config(state=tk.DISABLED)
+
+    def add(self):
+        ...
+
+    def search(self):
+        ...
+
+    def listAll(self):
+        ...
+@@ check
+import tkinter as tk
+_roots = []
+_saved = tk.Misc.mainloop
+tk.Misc.mainloop = lambda self, n=0: _roots.append(self)   # test mode: the window does not wait
+try:
+    _app = TrainingGUI()
+    _email, _name, _rate = _app._TrainingGUI__emailEntry, _app._TrainingGUI__nameEntry, _app._TrainingGUI__rateEntry
+    _box = _app._TrainingGUI__output
+    def _shown():
+        return _box.get("1.0", tk.END).strip()
+    def _fill(email, name, rate):
+        for _entry, _value in [(_email, email), (_name, name), (_rate, rate)]:
+            _entry.delete(0, tk.END)
+            _entry.insert(0, _value)
+    _app.listAll()
+    assert _shown() == "No instructors", f"❌ List with no instructors shows {_shown()!r}"
+    _fill("joe@suss.edu", "Joe", "200")
+    _app.add()
+    assert _shown() == "Instructor added!", f"❌ Adding Joe shows {_shown()!r}"
+    _fill("joe@suss.edu", "Joe Again", "150")
+    _app.add()
+    assert _shown() == "Instructor already added!", f"❌ Adding the same email twice shows {_shown()!r}"
+    _fill("amy@suss.edu", "Amy", "180.5")
+    _app.add()
+    _fill("joe@suss.edu", "", "")
+    _app.search()
+    assert _shown() == "Instructor email: joe@suss.edu Name: Joe Rate: $200.00", f"❌ Searching for Joe shows {_shown()!r}"
+    _fill("nobody@suss.edu", "", "")
+    _app.search()
+    assert _shown() == "No instructor with this email!", f"❌ Searching for an unknown email shows {_shown()!r}"
+    _app.listAll()
+    _wanted = ("Instructor email: joe@suss.edu Name: Joe Rate: $200.00\n"
+               "Instructor email: amy@suss.edu Name: Amy Rate: $180.50")
+    assert _shown() == _wanted, f"❌ List shows {_shown()!r}"
+finally:
+    tk.Misc.mainloop = _saved
+    for _root in _roots:
+        _root.destroy()
+@@ hint
+`add`: check `if email in self.__instructors:` before adding with `self.__instructors[email] = instructor`.
+`search`: `self.__instructors.get(email)` gives `None` when the email is not there.
+`listAll`: build a string in a loop over `self.__instructors.values()`, adding `str(instructor) + "\n"` each time.
+@@ solution
+import tkinter as tk
+from tkinter import scrolledtext
+
+class TrainingGUI:
+    def __init__(self):
+        self.__instructors = {}
+        self.__win = tk.Tk()
+        self.__emailEntry = tk.Entry(self.__win)
+        self.__nameEntry = tk.Entry(self.__win)
+        self.__rateEntry = tk.Entry(self.__win)
+        buttonFrame = tk.Frame(self.__win)
+        self.__addButton = tk.Button(buttonFrame, text="Add", command=self.add)
+        self.__searchButton = tk.Button(buttonFrame, text="Search", command=self.search)
+        self.__listButton = tk.Button(buttonFrame, text="List", command=self.listAll)
+        self.__output = scrolledtext.ScrolledText(self.__win, width=60, height=6, wrap=tk.WORD)
+        for row, text in enumerate(["Email:", "Name:", "Rate per day:"]):
+            tk.Label(self.__win, text=text).grid(row=row, column=0, sticky=tk.E, padx=5, pady=2)
+        self.__emailEntry.grid(row=0, column=1, sticky=tk.W, padx=5, pady=2)
+        self.__nameEntry.grid(row=1, column=1, sticky=tk.W, padx=5, pady=2)
+        self.__rateEntry.grid(row=2, column=1, sticky=tk.W, padx=5, pady=2)
+        self.__addButton.pack(side=tk.LEFT, padx=5)
+        self.__searchButton.pack(side=tk.LEFT, padx=5)
+        self.__listButton.pack(side=tk.LEFT, padx=5)
+        buttonFrame.grid(row=3, column=0, columnspan=2, pady=5)
+        self.__output.grid(row=4, column=0, columnspan=2, padx=5, pady=5)
+        self.__output.config(state=tk.DISABLED)
+        self.__win.title("Training Provider")
+        self.__win.mainloop()
+
+    def showMessage(self, message):
+        self.__output.config(state=tk.NORMAL)
+        self.__output.delete("1.0", tk.END)
+        self.__output.insert(tk.END, message)
+        self.__output.config(state=tk.DISABLED)
+
+    def add(self):
+        email = self.__emailEntry.get().strip()
+        name = self.__nameEntry.get().strip()
+        rate = float(self.__rateEntry.get())
+        if email in self.__instructors:
+            self.showMessage("Instructor already added!")
+        else:
+            self.__instructors[email] = Instructor(email, name, rate)
+            self.showMessage("Instructor added!")
+
+    def search(self):
+        email = self.__emailEntry.get().strip()
+        instructor = self.__instructors.get(email)
+        if instructor is None:
+            self.showMessage("No instructor with this email!")
+        else:
+            self.showMessage(str(instructor))
+
+    def listAll(self):
+        if len(self.__instructors) == 0:
+            self.showMessage("No instructors")
+            return
+        result = ""
+        for instructor in self.__instructors.values():
+            result += str(instructor) + "\n"
+        self.showMessage(result.strip())
+
+@@ md
+## 13. Exam practice: parking fee calculator
+
+🎯 This question is written like a real exam GUI question (20 marks).
+Try it **on paper first**, without running anything, then type it in.
+
+A car park charges by the hour.
+Run the cell below to create the `ParkingTicket` class that the GUI uses.
+
+@@ code
+class ParkingTicket:
+    _RATES = {"Car": 2.40, "Motorcycle": 0.80}
+
+    def __init__(self, vehicleType, hours):
+        self.__vehicleType = vehicleType
+        self.__hours = hours
+
+    def fee(self):
+        return ParkingTicket._RATES[self.__vehicleType] * self.__hours
+
+    def __str__(self):
+        return f"{self.__vehicleType} parked {self.__hours:.1f} hours: ${self.fee():.2f}"
+
+@@ md
+The finished window looks like this:
+
+```text
+             column 0              column 1
+row 0          [ Hours: ]   [ hours entry    ]
+row 1      (o) Car              ( ) Motorcycle
+row 2          [ Calculate ]  [ Reset ]          <- one frame, spanning 2 columns
+row 3      [ output box, spanning 2 columns    ]
+```
+
+@@ exercise Parking GUI part (a): the layout (8 marks)
+All the widgets of `ParkingGUI` are created.
+Write the `grid` lines for the window (the two buttons are already packed inside `buttonFrame`):
+
+- `self.__hoursLabel`: row 0, column 0, sticky to the right
+- `self.__hoursEntry`: row 0, column 1, sticky to the left
+- `self.__carRadio`: row 1, column 0
+- `self.__motorRadio`: row 1, column 1
+- `buttonFrame`: row 2, column 0, across 2 columns
+- `self.__output`: row 3, column 0, across 2 columns
+
+Use `padx=5, pady=5` for each (this is not checked).
+@@ starter
+import tkinter as tk
+from tkinter import scrolledtext
+
+class ParkingGUI:
+    def __init__(self):
+        self.__win = tk.Tk()
+        self.__hoursLabel = tk.Label(self.__win, text="Hours:")
+        self.__hoursEntry = tk.Entry(self.__win, width=10)
+        self.__vehicleVar = tk.StringVar(self.__win, value="Car")
+        self.__carRadio = tk.Radiobutton(self.__win, text="Car", variable=self.__vehicleVar, value="Car")
+        self.__motorRadio = tk.Radiobutton(self.__win, text="Motorcycle", variable=self.__vehicleVar, value="Motorcycle")
+        buttonFrame = tk.Frame(self.__win)
+        self.__calcButton = tk.Button(buttonFrame, text="Calculate", command=self.calculate)
+        self.__resetButton = tk.Button(buttonFrame, text="Reset", command=self.reset, state=tk.DISABLED)
+        self.__calcButton.pack(side=tk.LEFT, padx=5)
+        self.__resetButton.pack(side=tk.LEFT, padx=5)
+        self.__output = scrolledtext.ScrolledText(self.__win, width=40, height=3, wrap=tk.WORD)
+
+        # write the 6 grid lines here
+
+        self.__output.config(state=tk.DISABLED)
+        self.__win.title("Parking")
+        self.__win.mainloop()
+
+    def showMessage(self, message):
+        self.__output.config(state=tk.NORMAL)
+        self.__output.delete("1.0", tk.END)
+        self.__output.insert(tk.END, message)
+        self.__output.config(state=tk.DISABLED)
+
+    def calculate(self):
+        pass      # part (b)
+
+    def reset(self):
+        pass      # part (b)
+@@ check
+import tkinter as tk
+_roots = []
+_saved = tk.Misc.mainloop
+tk.Misc.mainloop = lambda self, n=0: _roots.append(self)   # test mode: the window does not wait
+try:
+    _app = ParkingGUI()
+    _frame = _app._ParkingGUI__calcButton.master
+    _expected = [("self.__hoursLabel", _app._ParkingGUI__hoursLabel, 0, 0, 1, "e"),
+                 ("self.__hoursEntry", _app._ParkingGUI__hoursEntry, 0, 1, 1, "w"),
+                 ("self.__carRadio", _app._ParkingGUI__carRadio, 1, 0, 1, None),
+                 ("self.__motorRadio", _app._ParkingGUI__motorRadio, 1, 1, 1, None),
+                 ("buttonFrame", _frame, 2, 0, 2, None),
+                 ("self.__output", _app._ParkingGUI__output, 3, 0, 2, None)]
+    for _name, _widget, _row, _col, _span, _sticky in _expected:
+        _info = _widget.grid_info()
+        assert _info, f"❌ {_name} is not placed with grid"
+        assert (_info["row"], _info["column"]) == (_row, _col), f"❌ {_name} should be in row {_row}, column {_col}"
+        assert _info["columnspan"] == _span, f"❌ {_name} should have columnspan={_span}"
+        if _sticky:
+            assert _info["sticky"] == _sticky, f"❌ {_name} should have sticky=tk.{_sticky.upper()}"
+finally:
+    tk.Misc.mainloop = _saved
+    for _root in _roots:
+        _root.destroy()
+@@ hint
+"Sticky to the right" is `sticky=tk.E`.
+"Across 2 columns" is `columnspan=2`.
+`buttonFrame` is a local variable, so it has no `self.`
+@@ solution
+import tkinter as tk
+from tkinter import scrolledtext
+
+class ParkingGUI:
+    def __init__(self):
+        self.__win = tk.Tk()
+        self.__hoursLabel = tk.Label(self.__win, text="Hours:")
+        self.__hoursEntry = tk.Entry(self.__win, width=10)
+        self.__vehicleVar = tk.StringVar(self.__win, value="Car")
+        self.__carRadio = tk.Radiobutton(self.__win, text="Car", variable=self.__vehicleVar, value="Car")
+        self.__motorRadio = tk.Radiobutton(self.__win, text="Motorcycle", variable=self.__vehicleVar, value="Motorcycle")
+        buttonFrame = tk.Frame(self.__win)
+        self.__calcButton = tk.Button(buttonFrame, text="Calculate", command=self.calculate)
+        self.__resetButton = tk.Button(buttonFrame, text="Reset", command=self.reset, state=tk.DISABLED)
+        self.__calcButton.pack(side=tk.LEFT, padx=5)
+        self.__resetButton.pack(side=tk.LEFT, padx=5)
+        self.__output = scrolledtext.ScrolledText(self.__win, width=40, height=3, wrap=tk.WORD)
+
+        self.__hoursLabel.grid(row=0, column=0, sticky=tk.E, padx=5, pady=5)
+        self.__hoursEntry.grid(row=0, column=1, sticky=tk.W, padx=5, pady=5)
+        self.__carRadio.grid(row=1, column=0, padx=5, pady=5)
+        self.__motorRadio.grid(row=1, column=1, padx=5, pady=5)
+        buttonFrame.grid(row=2, column=0, columnspan=2, padx=5, pady=5)
+        self.__output.grid(row=3, column=0, columnspan=2, padx=5, pady=5)
+
+        self.__output.config(state=tk.DISABLED)
+        self.__win.title("Parking")
+        self.__win.mainloop()
+
+    def showMessage(self, message):
+        self.__output.config(state=tk.NORMAL)
+        self.__output.delete("1.0", tk.END)
+        self.__output.insert(tk.END, message)
+        self.__output.config(state=tk.DISABLED)
+
+    def calculate(self):
+        pass      # part (b)
+
+    def reset(self):
+        pass      # part (b)
+
+@@ exercise Parking GUI part (b): the callbacks (12 marks)
+Now write `calculate` and `reset`.
+The class below already contains your layout from part (a).
+
+`calculate` checks the hours **in this order** and shows:
+
+| Situation | Message |
+| --- | --- |
+| hours entry is blank | `Please enter the number of hours` |
+| hours is not a number | `Hours must be a number` |
+| hours is 0 or less | `Hours must be more than 0` |
+| otherwise | the `__str__` of a new `ParkingTicket`, for example `Car parked 2.5 hours: $6.00` |
+
+After a successful calculation, enable the Reset button.
+
+`reset` empties the hours entry, empties the output box, chooses `Car` again, and disables the Reset button.
+@@ starter
+import tkinter as tk
+from tkinter import scrolledtext
+
+class ParkingGUI:
+    def __init__(self):
+        self.__win = tk.Tk()
+        self.__hoursLabel = tk.Label(self.__win, text="Hours:")
+        self.__hoursEntry = tk.Entry(self.__win, width=10)
+        self.__vehicleVar = tk.StringVar(self.__win, value="Car")
+        self.__carRadio = tk.Radiobutton(self.__win, text="Car", variable=self.__vehicleVar, value="Car")
+        self.__motorRadio = tk.Radiobutton(self.__win, text="Motorcycle", variable=self.__vehicleVar, value="Motorcycle")
+        buttonFrame = tk.Frame(self.__win)
+        self.__calcButton = tk.Button(buttonFrame, text="Calculate", command=self.calculate)
+        self.__resetButton = tk.Button(buttonFrame, text="Reset", command=self.reset, state=tk.DISABLED)
+        self.__calcButton.pack(side=tk.LEFT, padx=5)
+        self.__resetButton.pack(side=tk.LEFT, padx=5)
+        self.__output = scrolledtext.ScrolledText(self.__win, width=40, height=3, wrap=tk.WORD)
+
+        self.__hoursLabel.grid(row=0, column=0, sticky=tk.E, padx=5, pady=5)
+        self.__hoursEntry.grid(row=0, column=1, sticky=tk.W, padx=5, pady=5)
+        self.__carRadio.grid(row=1, column=0, padx=5, pady=5)
+        self.__motorRadio.grid(row=1, column=1, padx=5, pady=5)
+        buttonFrame.grid(row=2, column=0, columnspan=2, padx=5, pady=5)
+        self.__output.grid(row=3, column=0, columnspan=2, padx=5, pady=5)
+
+        self.__output.config(state=tk.DISABLED)
+        self.__win.title("Parking")
+        self.__win.mainloop()
+
+    def showMessage(self, message):
+        self.__output.config(state=tk.NORMAL)
+        self.__output.delete("1.0", tk.END)
+        self.__output.insert(tk.END, message)
+        self.__output.config(state=tk.DISABLED)
+
+    def calculate(self):
+        ...
+
+    def reset(self):
+        ...
+@@ check
+import tkinter as tk
+_roots = []
+_saved = tk.Misc.mainloop
+tk.Misc.mainloop = lambda self, n=0: _roots.append(self)   # test mode: the window does not wait
+try:
+    _app = ParkingGUI()
+    _entry, _box = _app._ParkingGUI__hoursEntry, _app._ParkingGUI__output
+    _calc, _reset = _app._ParkingGUI__calcButton, _app._ParkingGUI__resetButton
+    def _shown():
+        return _box.get("1.0", tk.END).strip()
+    for _typed, _wanted in [("", "Please enter the number of hours"), ("two", "Hours must be a number"),
+                            ("0", "Hours must be more than 0"), ("-1", "Hours must be more than 0")]:
+        _entry.delete(0, tk.END)
+        _entry.insert(0, _typed)
+        _calc.invoke()
+        assert _shown() == _wanted, f"❌ Typing {_typed!r} shows {_shown()!r} instead of {_wanted!r}"
+        assert str(_reset.cget("state")) == "disabled", "❌ Reset should stay disabled after an error"
+    _entry.delete(0, tk.END)
+    _entry.insert(0, "2.5")
+    _calc.invoke()
+    assert _shown() == "Car parked 2.5 hours: $6.00", f"❌ A car for 2.5 hours shows {_shown()!r}"
+    assert str(_reset.cget("state")) == "normal", "❌ Enable the Reset button after a successful calculation"
+    _app._ParkingGUI__motorRadio.invoke()
+    _entry.delete(0, tk.END)
+    _entry.insert(0, "3")
+    _calc.invoke()
+    assert _shown() == "Motorcycle parked 3.0 hours: $2.40", f"❌ A motorcycle for 3 hours shows {_shown()!r}"
+    _reset.invoke()
+    assert _entry.get() == "" and _shown() == "", "❌ Reset should empty the entry and the output box"
+    assert _app._ParkingGUI__vehicleVar.get() == "Car", "❌ Reset should choose Car again"
+    assert str(_reset.cget("state")) == "disabled", "❌ Reset should disable itself"
+    assert str(_box.cget("state")) == "disabled", "❌ The output box should be locked again"
+finally:
+    tk.Misc.mainloop = _saved
+    for _root in _roots:
+        _root.destroy()
+@@ hint
+In `calculate`, after the three checks:
+`ticket = ParkingTicket(self.__vehicleVar.get(), hours)` and `self.showMessage(str(ticket))`.
+In `reset`, `self.showMessage("")` empties the box, and `self.__vehicleVar.set("Car")` chooses Car.
+@@ solution
+import tkinter as tk
+from tkinter import scrolledtext
+
+class ParkingGUI:
+    def __init__(self):
+        self.__win = tk.Tk()
+        self.__hoursLabel = tk.Label(self.__win, text="Hours:")
+        self.__hoursEntry = tk.Entry(self.__win, width=10)
+        self.__vehicleVar = tk.StringVar(self.__win, value="Car")
+        self.__carRadio = tk.Radiobutton(self.__win, text="Car", variable=self.__vehicleVar, value="Car")
+        self.__motorRadio = tk.Radiobutton(self.__win, text="Motorcycle", variable=self.__vehicleVar, value="Motorcycle")
+        buttonFrame = tk.Frame(self.__win)
+        self.__calcButton = tk.Button(buttonFrame, text="Calculate", command=self.calculate)
+        self.__resetButton = tk.Button(buttonFrame, text="Reset", command=self.reset, state=tk.DISABLED)
+        self.__calcButton.pack(side=tk.LEFT, padx=5)
+        self.__resetButton.pack(side=tk.LEFT, padx=5)
+        self.__output = scrolledtext.ScrolledText(self.__win, width=40, height=3, wrap=tk.WORD)
+
+        self.__hoursLabel.grid(row=0, column=0, sticky=tk.E, padx=5, pady=5)
+        self.__hoursEntry.grid(row=0, column=1, sticky=tk.W, padx=5, pady=5)
+        self.__carRadio.grid(row=1, column=0, padx=5, pady=5)
+        self.__motorRadio.grid(row=1, column=1, padx=5, pady=5)
+        buttonFrame.grid(row=2, column=0, columnspan=2, padx=5, pady=5)
+        self.__output.grid(row=3, column=0, columnspan=2, padx=5, pady=5)
+
+        self.__output.config(state=tk.DISABLED)
+        self.__win.title("Parking")
+        self.__win.mainloop()
+
+    def showMessage(self, message):
+        self.__output.config(state=tk.NORMAL)
+        self.__output.delete("1.0", tk.END)
+        self.__output.insert(tk.END, message)
+        self.__output.config(state=tk.DISABLED)
+
+    def calculate(self):
+        text = self.__hoursEntry.get().strip()
+        if text == "":
+            self.showMessage("Please enter the number of hours")
+            return
+        try:
+            hours = float(text)
+        except ValueError:
+            self.showMessage("Hours must be a number")
+            return
+        if hours <= 0:
+            self.showMessage("Hours must be more than 0")
+            return
+        ticket = ParkingTicket(self.__vehicleVar.get(), hours)
+        self.showMessage(str(ticket))
+        self.__resetButton.config(state=tk.NORMAL)
+
+    def reset(self):
+        self.__hoursEntry.delete(0, tk.END)
+        self.showMessage("")
+        self.__vehicleVar.set("Car")
+        self.__resetButton.config(state=tk.DISABLED)
+
+@@ md
+👀 Run the finished parking app and try every message.
+
+@@ code
+ParkingGUI()
+
+@@ write Parking GUI part (c): change the layout (3 marks)
+In `ParkingGUI`, the button frame is placed with:
+
+```python
+buttonFrame.grid(row=2, column=0, columnspan=2, padx=5, pady=5)
+```
+
+(i) What happens to the buttons if `columnspan=2` is removed?
+
+(ii) Why are the two buttons placed with `pack` while everything else uses `grid`? Is that allowed?
+@@ answer
+(i) The frame only uses column 0, so the two buttons sit on the left, under the Car option, instead of being centred under both columns.
+
+(ii) The buttons are inside `buttonFrame`, and the other widgets are inside the window.
+Each container may use its own layout manager, so `pack` inside the frame and `grid` inside the window is allowed.
+What is not allowed is mixing `pack` and `grid` for widgets inside the **same** container.
+
+@@ md
+## 📝 Key points
+
+- The recipe: `win = tk.Tk()`, create widgets with the window as the first argument, place them, `win.title(...)`, `win.mainloop()`.
+- A widget is invisible until you call `grid(...)` or `pack()` on it.
+- `entry.get()` always gives **text**. Convert with `float()` or `int()`, inside a `try`.
+- `entry.delete(0, tk.END)` empties an entry. `label.config(text=...)` changes a label.
+- `command=self.method` (no `evt`) or `.bind('<Button-1>', self.method)` (needs `evt`). Never put `()` after the method name.
+- `grid` options: `row`, `column`, `columnspan`, `sticky` (`tk.E` right, `tk.W` left), `padx`, `pady`.
+- ScrolledText: `NORMAL`, `delete("1.0", tk.END)`, `insert(tk.END, ...)`, `DISABLED`.
+- Check input in the order the paper gives: empty, then numeric, then positive.
+- Radio buttons share one `IntVar` or `StringVar`. Read it with `.get()`, change it with `.set()`.
+- Listbox: `curselection()` gives a tuple, so use `[0]`. The event is `'<<ListboxSelect>>'`.
+- `button.config(state=tk.DISABLED)` switches a button off. `tk.NORMAL` switches it on.
+
+## ⚠️ Common mistakes
+
+| Mistake | What happens |
+| --- | --- |
+| Forgetting `.grid(...)` or `.pack()` | The widget never appears |
+| `command=self.save()` with brackets | `save` runs once at start-up, then clicking does nothing |
+| `def save(self):` used with `bind` | `TypeError`: it is given an extra `evt` argument |
+| `float(self.__entry.get())` without `try` | The program crashes with a `ValueError` when the user types letters |
+| Inserting into a DISABLED ScrolledText | Nothing appears, and there is no error message |
+| Not deleting the old text first | Messages pile up in the box |
+| Forgetting `self.` before a widget name | `NameError` or `AttributeError` |
+| Mixing `grid` and `pack` in the same container | The window freezes |
+| Printing the result with `print()` | The answer appears in the notebook, not in the window |
+
+Next: **14_Exam_Drills**.

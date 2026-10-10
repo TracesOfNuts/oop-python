@@ -1,0 +1,1174 @@
+@@ md
+# 06 - Classes and Objects
+
+**What you will learn**
+
+- What a **class** and an **object** are.
+- How to write a class with a constructor (`__init__`).
+- What `self` means (this is the most important idea today).
+- How to write **methods**: functions that belong to an object.
+- How to make `print(obj)` show something useful with `__str__`.
+- How to keep many objects in a list and loop over them.
+
+**Why this matters for the exam**
+
+Every exam paper has a question that says "write the class".
+It gives you a class diagram and you must turn it into Python.
+This notebook teaches the building blocks of that answer.
+The next notebooks add the extra pieces (`__private` attributes, properties, class variables).
+
+@@ md
+## 1. Why classes?
+
+Think of a **form** for a cash card application.
+The empty form has boxes: "Card id" and "Balance".
+That empty form is like a **class**.
+It describes what every cash card has, but it is not a real card yet.
+
+When you fill in the form, you get a real card, for example id `123` with balance `$20`.
+A filled in form is like an **object**.
+You can fill in the same form many times, so one class can make many objects.
+
+| Word | Meaning | Example |
+| --- | --- | --- |
+| **class** | the blueprint or template | `CashCard` |
+| **object** (or **instance**) | one real thing made from the class | the card with id `123` |
+| **attribute** (or **instance variable**) | data that each object stores | `id`, `balance` |
+| **method** | something the object can do | `topUp`, `deduct` |
+
+Putting the data and the actions together in one class is called **abstraction**.
+We keep only what matters for our program.
+A cash card in our program needs an id and a balance, but not its colour.
+
+@@ md
+## 2. Your first class
+
+Here is a class for a cash card.
+
+@@ code
+class CashCard:
+    def __init__(self, id, amount):
+        self.id = id
+        self.balance = amount
+
+c1 = CashCard("123", 20.0)
+c2 = CashCard("456", 10.0)
+print(c1.id, c1.balance)
+print(c2.id, c2.balance)
+
+@@ md
+Let us read it slowly.
+
+- `class CashCard:` starts the class. Class names use CapitalWords.
+- `def __init__(self, id, amount):` is the **constructor**.
+  It runs automatically every time you create a new object.
+  Its job is to fill in the attributes.
+  (`__init__` has **two** underscores on each side.)
+- `self.id = id` means "store the value of `id` in **this object**, under the name `id`".
+- `c1 = CashCard("123", 20.0)` creates a new object and stores it in `c1`.
+
+**The arguments go in the same order as the constructor parameters, after `self`.**
+`"123"` goes into `id`, and `20.0` goes into `amount`.
+You never pass `self` yourself. Python does it for you.
+
+@@ md
+## 3. What is `self`?
+
+`self` means **"the object we are working on right now"**.
+
+When you write `c1 = CashCard("123", 20.0)`, this is what happens:
+
+1. Python makes a new, empty object.
+2. Python calls `__init__` and puts that new object into `self`.
+   So `self` **is** the new object, and `id` is `"123"`, and `amount` is `20.0`.
+3. `self.id = id` writes `"123"` into the new object.
+4. `self.balance = amount` writes `20.0` into the new object.
+5. The finished object is stored in `c1`.
+
+Then `CashCard("456", 10.0)` does the same again, but now `self` is a **different** new object.
+You can picture it like this:
+
+```text
+c1  ---->  [ id: "123"   balance: 20.0 ]
+c2  ---->  [ id: "456"   balance: 10.0 ]
+```
+
+Each object has its own boxes.
+`self.balance` means "the balance box of the object we are working on".
+
+💡 The word `self` is just a name, but everyone uses `self`, and so must you in the exam.
+
+@@ predict Two separate objects
+@@ run
+class Student:
+    def __init__(self, name, studentId):
+        self.name = name
+        self.studentId = studentId
+
+s1 = Student("Amy", "S001")
+s2 = Student("Ben", "S002")
+print(s2.name, s1.studentId)
+@@ output
+Ben S001
+@@ explain
+`s1` and `s2` are two different objects.
+`s2.name` is `"Ben"`, and `s1.studentId` is `"S001"`.
+
+@@ exercise Write a constructor
+Write a class `Student` whose constructor takes `name` and `studentId`.
+It must store them as `self.name` and `self.studentId`.
+@@ starter
+class Student:
+    pass   # replace this line with your constructor
+@@ check
+s = Student("Amy", "S001")
+assert s.name == "Amy", "❌ s.name should be \"Amy\". Did you write self.name = name?"
+assert s.studentId == "S001", "❌ s.studentId should be \"S001\""
+t = Student("Ben", "S002")
+assert s.name == "Amy" and t.name == "Ben", "❌ each object should keep its own name"
+@@ hint
+```python
+class Student:
+    def __init__(self, name, studentId):
+        self.name = ...
+        self.studentId = ...
+```
+@@ solution
+class Student:
+    def __init__(self, name, studentId):
+        self.name = name
+        self.studentId = studentId
+
+@@ exercise Create objects
+The class `BubbleTea` is written for you.
+Create two objects:
+
+- `order1`: flavour `"Brown Sugar"`, size `"L"`, price `5.20`
+- `order2`: flavour `"Matcha"`, size `"M"`, price `4.50`
+@@ starter
+class BubbleTea:
+    def __init__(self, flavour, size, price):
+        self.flavour = flavour
+        self.size = size
+        self.price = price
+
+order1 = ...
+order2 = ...
+print(order1.flavour, order2.price)
+@@ check
+assert isinstance(order1, BubbleTea), "❌ order1 should be a BubbleTea object: BubbleTea(...)"
+assert isinstance(order2, BubbleTea), "❌ order2 should be a BubbleTea object"
+assert (order1.flavour, order1.size, order1.price) == ("Brown Sugar", "L", 5.20), "❌ check the values of order1, in the order flavour, size, price"
+assert (order2.flavour, order2.size, order2.price) == ("Matcha", "M", 4.50), "❌ check the values of order2"
+@@ hint
+`order1 = BubbleTea("Brown Sugar", "L", 5.20)`
+@@ solution
+class BubbleTea:
+    def __init__(self, flavour, size, price):
+        self.flavour = flavour
+        self.size = size
+        self.price = price
+
+order1 = BubbleTea("Brown Sugar", "L", 5.20)
+order2 = BubbleTea("Matcha", "M", 4.50)
+print(order1.flavour, order2.price)
+
+@@ md
+Not every attribute has to come from a parameter.
+Some attributes always start with the same value.
+For example, a new library book is never borrowed yet:
+
+@@ code
+class Book:
+    def __init__(self, title, author):
+        self.title = title
+        self.author = author
+        self.isBorrowed = False      # every new book starts as not borrowed
+
+b = Book("Dune", "Frank Herbert")
+print(b.title, b.isBorrowed)
+
+@@ exercise Starting values
+Write a class `Player` whose constructor takes only `name`.
+It must also set:
+
+- `self.score` to `0`
+- `self.lives` to `3`
+@@ starter
+class Player:
+    pass
+@@ check
+p = Player("Mei")
+assert p.name == "Mei", "❌ p.name should be \"Mei\""
+assert p.score == 0, "❌ every new player should start with score 0"
+assert p.lives == 3, "❌ every new player should start with 3 lives"
+@@ solution
+class Player:
+    def __init__(self, name):
+        self.name = name
+        self.score = 0
+        self.lives = 3
+
+@@ predict Changing one object
+@@ run
+class Player:
+    def __init__(self, name):
+        self.name = name
+        self.score = 0
+
+p1 = Player("Mei")
+p2 = Player("Raj")
+p1.score = 50
+print(p1.score, p2.score)
+@@ output
+50 0
+@@ explain
+Changing `p1.score` only changes the score box of `p1`.
+`p2` has its own score box, which is still `0`.
+
+@@ md
+## 4. Methods: what an object can do
+
+A **method** is a function written inside a class.
+Its first parameter is always `self`, so the method knows which object it is working on.
+
+@@ code
+class CashCard:
+    def __init__(self, id, amount):
+        self.id = id
+        self.balance = amount
+
+    def topUp(self, amount):
+        self.balance += amount
+
+    def deduct(self, amount):
+        if self.balance >= amount:
+            self.balance -= amount
+
+c1 = CashCard("123", 20.0)
+c1.topUp(10)
+print(c1.balance)
+c1.deduct(5)
+print(c1.balance)
+
+@@ md
+When you write `c1.topUp(10)`, Python puts `c1` into `self` and `10` into `amount`.
+So inside the method, `self.balance += amount` means "add 10 to **c1's** balance".
+
+You call a method with **dot** and **brackets**: `object.method(arguments)`.
+The course calls this "sending a message to an object".
+
+@@ predict Top up and deduct
+@@ run
+class CashCard:
+    def __init__(self, id, amount):
+        self.id = id
+        self.balance = amount
+
+    def topUp(self, amount):
+        self.balance += amount
+
+    def deduct(self, amount):
+        if self.balance >= amount:
+            self.balance -= amount
+
+card = CashCard("777", 10.0)
+card.deduct(4)
+card.deduct(20)
+card.topUp(5)
+print(card.balance)
+@@ output
+11.0
+@@ explain
+10 minus 4 is 6.
+`deduct(20)` does nothing, because 6 is less than 20, so the `if` is False.
+Then 6 plus 5 is 11.
+
+@@ exercise A light switch
+Write a class `Light`:
+
+- The constructor takes `room` and sets `self.isOn` to `False`.
+- `switchOn(self)` sets `isOn` to `True`.
+- `switchOff(self)` sets `isOn` to `False`.
+@@ starter
+class Light:
+    pass
+@@ check
+light = Light("Kitchen")
+assert light.room == "Kitchen", "❌ light.room should be \"Kitchen\""
+assert light.isOn is False, "❌ a new light should start switched off"
+light.switchOn()
+assert light.isOn is True, "❌ after switchOn(), isOn should be True"
+light.switchOff()
+assert light.isOn is False, "❌ after switchOff(), isOn should be False"
+@@ hint
+Each method needs `self` as its parameter, and must use `self.isOn`.
+@@ solution
+class Light:
+    def __init__(self, room):
+        self.room = room
+        self.isOn = False
+
+    def switchOn(self):
+        self.isOn = True
+
+    def switchOff(self):
+        self.isOn = False
+
+@@ exercise Add points to a player
+Add a method `addPoints(self, points)` to `Player`.
+It adds `points` to the score.
+@@ starter
+class Player:
+    def __init__(self, name):
+        self.name = name
+        self.score = 0
+
+    # write addPoints here
+
+@@ check
+p = Player("Mei")
+p.addPoints(10)
+p.addPoints(5)
+assert p.score == 15, f"❌ after adding 10 and 5, score should be 15 but it is {p.score}"
+@@ solution
+class Player:
+    def __init__(self, name):
+        self.name = name
+        self.score = 0
+
+    def addPoints(self, points):
+        self.score += points
+
+@@ exercise Lose a life
+Add a method `loseLife(self)` to `Player`.
+It takes away one life, but **only if** the player has more than 0 lives.
+Lives must never go below 0.
+@@ starter
+class Player:
+    def __init__(self, name):
+        self.name = name
+        self.lives = 3
+
+    # write loseLife here
+
+@@ check
+p = Player("Raj")
+p.loseLife()
+assert p.lives == 2, f"❌ after one loseLife(), lives should be 2 but it is {p.lives}"
+for i in range(5):
+    p.loseLife()
+assert p.lives == 0, f"❌ lives should stop at 0 but it is {p.lives}"
+@@ hint
+```python
+def loseLife(self):
+    if self.lives > 0:
+        ...
+```
+@@ solution
+class Player:
+    def __init__(self, name):
+        self.name = name
+        self.lives = 3
+
+    def loseLife(self):
+        if self.lives > 0:
+            self.lives -= 1
+
+@@ md
+## 5. Methods that return a value
+
+Some methods **change** the object (like `topUp`).
+Other methods **answer a question** and `return` the answer.
+This is the same `return` you learned in notebook 02.
+
+@@ code
+class Rectangle:
+    def __init__(self, length, width):
+        self.length = length
+        self.width = width
+
+    def area(self):
+        return self.length * self.width
+
+r = Rectangle(4, 3)
+print(r.area())
+bigger = r.area() * 2
+print(bigger)
+
+@@ exercise Perimeter
+Add a method `perimeter(self)` to `Rectangle`.
+It returns `2 * (length + width)`.
+@@ starter
+class Rectangle:
+    def __init__(self, length, width):
+        self.length = length
+        self.width = width
+
+    def area(self):
+        return self.length * self.width
+
+    # write perimeter here
+
+@@ check
+r = Rectangle(4, 3)
+assert r.perimeter() == 14, f"❌ a 4 by 3 rectangle has perimeter 14, but you returned {r.perimeter()}"
+assert Rectangle(10, 1).perimeter() == 22, "❌ a 10 by 1 rectangle has perimeter 22"
+@@ hint
+Use `self.length` and `self.width`, and remember to `return`.
+@@ solution
+class Rectangle:
+    def __init__(self, length, width):
+        self.length = length
+        self.width = width
+
+    def area(self):
+        return self.length * self.width
+
+    def perimeter(self):
+        return 2 * (self.length + self.width)
+
+@@ exercise Total price of an order
+Add a method `totalPrice(self, cups)` to `BubbleTea`.
+It returns the price of one cup times `cups`.
+@@ starter
+class BubbleTea:
+    def __init__(self, flavour, size, price):
+        self.flavour = flavour
+        self.size = size
+        self.price = price
+
+    # write totalPrice here
+
+@@ check
+tea = BubbleTea("Matcha", "M", 4.50)
+assert tea.totalPrice(2) == 9.0, f"❌ 2 cups at 4.50 should be 9.0, but you returned {tea.totalPrice(2)}"
+assert tea.totalPrice(1) == 4.5, "❌ 1 cup at 4.50 should be 4.5"
+@@ solution
+class BubbleTea:
+    def __init__(self, flavour, size, price):
+        self.flavour = flavour
+        self.size = size
+        self.price = price
+
+    def totalPrice(self, cups):
+        return self.price * cups
+
+@@ exercise Can I afford it?
+In the course, `deduct` returns `True` if it worked and `False` if there was not enough money.
+Change `deduct` so that:
+
+- if the balance is enough, it takes away the amount and returns `True`
+- otherwise it changes nothing and returns `False`
+@@ starter
+class CashCard:
+    def __init__(self, id, amount):
+        self.id = id
+        self.balance = amount
+
+    def deduct(self, amount):
+        if self.balance >= amount:
+            self.balance -= amount
+@@ check
+c = CashCard("1", 10.0)
+assert c.deduct(4) is True, "❌ deduct(4) from 10.0 should return True"
+assert c.balance == 6.0, "❌ the balance should now be 6.0"
+assert c.deduct(50) is False, "❌ deduct(50) from 6.0 should return False"
+assert c.balance == 6.0, "❌ a failed deduct must not change the balance"
+@@ hint
+Add `return True` inside the `if`, and `return False` after it.
+@@ solution
+class CashCard:
+    def __init__(self, id, amount):
+        self.id = id
+        self.balance = amount
+
+    def deduct(self, amount):
+        if self.balance >= amount:
+            self.balance -= amount
+            return True
+        return False
+
+@@ predict Print or return?
+@@ run
+class Counter:
+    def __init__(self):
+        self.count = 0
+
+    def showCount(self):
+        print("Count is", self.count)
+
+    def getCount(self):
+        return self.count
+
+c = Counter()
+x = c.getCount()
+y = c.showCount()
+print(x, y)
+@@ output
+Count is 0
+0 None
+@@ explain
+`getCount()` returns `0`, so `x` is `0`.
+`showCount()` prints `Count is 0`, but it has no `return`, so it gives back `None`.
+So `y` is `None`.
+This is the same "print versus return" idea from notebook 02.
+
+@@ md
+## 6. Making `print(obj)` useful with `__str__`
+
+What happens if you print an object?
+
+@@ code
+class CashCard:
+    def __init__(self, id, amount):
+        self.id = id
+        self.balance = amount
+
+c1 = CashCard("123", 20.0)
+print(c1)
+
+@@ md
+You see something like `<__main__.CashCard object at 0x000001F2A3B4C5D0>`.
+That is Python saying "this is a CashCard object, stored at this memory address".
+The number changes every time, and it is not useful to a person.
+
+To fix this, write a special method called `__str__`.
+It must **return** a string that describes the object.
+Then `print(obj)` uses that string automatically.
+
+@@ code
+class CashCard:
+    def __init__(self, id, amount):
+        self.id = id
+        self.balance = amount
+
+    def __str__(self):
+        return f"Id: {self.id} Balance: ${self.balance:.2f}"
+
+c1 = CashCard("123", 20.0)
+print(c1)
+print(str(c1))
+message = f"My card -> {c1}"
+print(message)
+
+@@ md
+🎯 **In the exam**, almost every class needs a `__str__`.
+The paper shows the exact output, for example `Id: 123 Balance: $20.00`.
+Copy the spaces, colons and `$` exactly. Formatting is part of the marks.
+
+⚠️ `__str__` must **return** the string, not print it.
+If it prints and returns nothing, you get an error:
+
+@@ code raises=TypeError
+class Broken:
+    def __str__(self):
+        print("I am broken")
+
+print(Broken())
+
+@@ md
+Read the last line: `TypeError: __str__ returned non-string (type NoneType)`.
+The method printed, but returned `None`, and `print()` needs a string.
+
+@@ exercise __str__ for Student
+Add a `__str__` method to `Student` so that `print(Student("Amy", "S001"))` shows exactly:
+
+`Name: Amy ID: S001`
+@@ starter
+class Student:
+    def __init__(self, name, studentId):
+        self.name = name
+        self.studentId = studentId
+
+    # write __str__ here
+
+@@ check
+s = Student("Amy", "S001")
+assert str(s) == "Name: Amy ID: S001", f"❌ str(s) is {str(s)!r}"
+assert str(Student("Ben", "S002")) == "Name: Ben ID: S002", "❌ use self.name and self.studentId, not fixed text"
+@@ hint
+```python
+def __str__(self):
+    return f"Name: {self.name} ID: {self.studentId}"
+```
+@@ solution
+class Student:
+    def __init__(self, name, studentId):
+        self.name = name
+        self.studentId = studentId
+
+    def __str__(self):
+        return f"Name: {self.name} ID: {self.studentId}"
+
+@@ exercise __str__ with money
+Add `__str__` to `BubbleTea` so that it returns the flavour, the size in brackets, and the price with 2 decimals.
+For example: `Brown Sugar (L) $5.20`
+@@ starter
+class BubbleTea:
+    def __init__(self, flavour, size, price):
+        self.flavour = flavour
+        self.size = size
+        self.price = price
+
+    # write __str__ here
+
+@@ check
+assert str(BubbleTea("Brown Sugar", "L", 5.2)) == "Brown Sugar (L) $5.20", f"❌ got {str(BubbleTea('Brown Sugar', 'L', 5.2))!r}"
+assert str(BubbleTea("Matcha", "M", 4)) == "Matcha (M) $4.00", "❌ the price must always show 2 decimals"
+@@ solution
+class BubbleTea:
+    def __init__(self, flavour, size, price):
+        self.flavour = flavour
+        self.size = size
+        self.price = price
+
+    def __str__(self):
+        return f"{self.flavour} ({self.size}) ${self.price:.2f}"
+
+@@ predict __str__ after a change
+@@ run
+class CashCard:
+    def __init__(self, id, amount):
+        self.id = id
+        self.balance = amount
+
+    def topUp(self, amount):
+        self.balance += amount
+
+    def __str__(self):
+        return f"Id: {self.id} Balance: ${self.balance:.2f}"
+
+card = CashCard("9", 3)
+card.topUp(2.5)
+print(card)
+@@ output
+Id: 9 Balance: $5.50
+@@ explain
+3 plus 2.5 is 5.5.
+`__str__` is called when we print, so it uses the **current** balance.
+`:.2f` shows it as `5.50`.
+
+@@ md
+## 7. The Dice example from the course
+
+The course uses a `Dice` class.
+A dice has one value, from 1 to 6.
+`randint(1, 6)` gives a random whole number from 1 to 6.
+
+@@ code
+from random import randint
+
+class Dice:
+    def __init__(self):
+        self.value = randint(1, 6)
+
+    def roll(self):
+        self.value = randint(1, 6)
+
+    def __str__(self):
+        return f"Value: {self.value}"
+
+d1 = Dice()
+print(d1)
+d1.roll()
+print(d1)
+
+@@ md
+Notice that the constructor has **only** `self`.
+So you create a dice with `Dice()`, with empty brackets.
+Run the cell a few times. The values change, because they are random.
+
+@@ exercise A coin
+Write a class `Coin`:
+
+- The constructor sets `self.side` to `"Heads"`.
+- `flip(self)` sets `self.side` to `"Heads"` if `randint(1, 2)` gives `1`, otherwise `"Tails"`.
+- `__str__` returns `Coin shows Heads` (or `Tails`).
+@@ starter
+from random import randint
+
+class Coin:
+    pass
+@@ check
+c = Coin()
+assert c.side == "Heads", "❌ a new coin should start with side \"Heads\""
+assert str(c) == "Coin shows Heads", f"❌ str(c) is {str(c)!r}"
+seen = set()
+for i in range(100):
+    c.flip()
+    assert c.side in ("Heads", "Tails"), f"❌ side should be \"Heads\" or \"Tails\", not {c.side!r}"
+    seen.add(c.side)
+assert seen == {"Heads", "Tails"}, "❌ after 100 flips we should see both Heads and Tails"
+assert str(c) == f"Coin shows {c.side}", "❌ __str__ should use self.side"
+@@ hint
+```python
+def flip(self):
+    if randint(1, 2) == 1:
+        self.side = "Heads"
+    else:
+        self.side = "Tails"
+```
+@@ solution
+from random import randint
+
+class Coin:
+    def __init__(self):
+        self.side = "Heads"
+
+    def flip(self):
+        if randint(1, 2) == 1:
+            self.side = "Heads"
+        else:
+            self.side = "Tails"
+
+    def __str__(self):
+        return f"Coin shows {self.side}"
+
+@@ md
+## 8. Many objects in a list
+
+Objects can go into a list, just like numbers.
+Then you can loop over them.
+Each time round the loop, the loop variable **is** one object, so you can use its attributes and methods.
+
+@@ code
+class CashCard:
+    def __init__(self, id, amount):
+        self.id = id
+        self.balance = amount
+
+    def __str__(self):
+        return f"Id: {self.id} Balance: ${self.balance:.2f}"
+
+cards = []
+cards.append(CashCard("11", 10))
+cards.append(CashCard("12", 20))
+cards.append(CashCard("13", 30))
+
+for c in cards:      # each c is a CashCard object
+    print(c)
+
+@@ exercise Total balance
+Use a loop to add up the balance of every card in `cards`.
+Store the answer in `total`.
+@@ starter
+class CashCard:
+    def __init__(self, id, amount):
+        self.id = id
+        self.balance = amount
+
+cards = [CashCard("11", 10), CashCard("12", 20.5), CashCard("13", 30)]
+total = 0
+# loop over cards here
+
+print(total)
+@@ check
+assert total == 60.5, f"❌ total should be 60.5 but it is {total}"
+@@ hint
+```python
+for c in cards:
+    total += c.balance
+```
+@@ solution
+class CashCard:
+    def __init__(self, id, amount):
+        self.id = id
+        self.balance = amount
+
+cards = [CashCard("11", 10), CashCard("12", 20.5), CashCard("13", 30)]
+total = 0
+for c in cards:
+    total += c.balance
+
+print(total)
+
+@@ exercise Find a card by id
+Write a **function** (not a method) `findCard(cards, cardId)`.
+It returns the card whose `id` equals `cardId`.
+If there is no such card, it returns `None`.
+
+This is the "search" recipe from notebook 04.
+@@ starter
+class CashCard:
+    def __init__(self, id, amount):
+        self.id = id
+        self.balance = amount
+
+def findCard(cards, cardId):
+    ...
+@@ check
+cards = [CashCard("11", 10), CashCard("12", 20), CashCard("13", 30)]
+found = findCard(cards, "12")
+assert found is cards[1], "❌ findCard(cards, \"12\") should return the card object with id \"12\""
+assert findCard(cards, "13").balance == 30, "❌ findCard(cards, \"13\") should return the card with balance 30"
+assert findCard(cards, "99") is None, "❌ when no card matches, return None"
+@@ hint
+Loop over the cards.
+If `c.id == cardId`, `return c`.
+After the loop has finished, `return None`.
+@@ solution
+class CashCard:
+    def __init__(self, id, amount):
+        self.id = id
+        self.balance = amount
+
+def findCard(cards, cardId):
+    for c in cards:
+        if c.id == cardId:
+            return c
+    return None
+
+@@ exercise Richest card
+Write a function `richestCard(cards)` that returns the card with the **highest** balance.
+You can assume the list is not empty.
+@@ starter
+class CashCard:
+    def __init__(self, id, amount):
+        self.id = id
+        self.balance = amount
+
+def richestCard(cards):
+    ...
+@@ check
+cards = [CashCard("11", 10), CashCard("12", 50), CashCard("13", 30)]
+assert richestCard(cards) is cards[1], "❌ the card with id \"12\" has the highest balance (50)"
+assert richestCard([CashCard("1", 5)]).id == "1", "❌ with one card, return that card"
+@@ hint
+Start with `best = cards[0]`.
+Loop over the cards. If `c.balance > best.balance`, then `best = c`.
+Return `best` at the end.
+@@ solution
+class CashCard:
+    def __init__(self, id, amount):
+        self.id = id
+        self.balance = amount
+
+def richestCard(cards):
+    best = cards[0]
+    for c in cards:
+        if c.balance > best.balance:
+            best = c
+    return best
+
+@@ md
+## 9. Passing an object to a function
+
+When you pass an object to a function, the function gets **the same object**, not a copy.
+So if the function changes it, the original changes too.
+
+@@ predict The same object
+@@ run
+class CashCard:
+    def __init__(self, id, amount):
+        self.id = id
+        self.balance = amount
+
+def addBonus(card):
+    card.balance += 5
+
+myCard = CashCard("1", 10)
+addBonus(myCard)
+addBonus(myCard)
+print(myCard.balance)
+@@ output
+20
+@@ explain
+`card` and `myCard` are two names for the **same** object.
+Each call adds 5 to that object's balance, so 10 + 5 + 5 = 20.
+
+@@ exercise Describe a student
+Write a function `describe(student)` that **returns** the text `Amy has ID S001` for a student named Amy with ID S001.
+@@ starter
+class Student:
+    def __init__(self, name, studentId):
+        self.name = name
+        self.studentId = studentId
+
+def describe(student):
+    ...
+@@ check
+assert describe(Student("Amy", "S001")) == "Amy has ID S001", f"❌ got {describe(Student('Amy', 'S001'))!r}"
+assert describe(Student("Ben", "S002")) == "Ben has ID S002", "❌ use the attributes of the student you were given"
+@@ solution
+class Student:
+    def __init__(self, name, studentId):
+        self.name = name
+        self.studentId = studentId
+
+def describe(student):
+    return f"{student.name} has ID {student.studentId}"
+
+@@ md
+## 10. Common mistakes (and their error messages)
+
+**Mistake 1: forgetting `self` in the method definition.**
+
+@@ code raises=TypeError
+class Light:
+    def __init__(self):
+        self.isOn = False
+
+    def switchOn():            # no self!
+        self.isOn = True
+
+lamp = Light()
+lamp.switchOn()
+
+@@ md
+`TypeError: Light.switchOn() takes 0 positional arguments but 1 was given`.
+Python always passes the object into the first parameter.
+`switchOn` has no parameter to receive it, so Python complains.
+**Fix:** `def switchOn(self):`
+
+**Mistake 2: forgetting `self.` in front of an attribute.**
+
+@@ code raises=NameError
+class Light:
+    def __init__(self):
+        self.isOn = False
+
+    def isItOn(self):
+        return isOn            # should be self.isOn
+
+lamp = Light()
+print(lamp.isItOn())
+
+@@ md
+`NameError: name 'isOn' is not defined`.
+Inside a method, `isOn` alone is a normal variable, and there is none.
+The attribute lives in the object, so you must write `self.isOn`.
+
+**Mistake 3: the wrong number of arguments when creating an object.**
+
+@@ code raises=TypeError
+class CashCard:
+    def __init__(self, id, amount):
+        self.id = id
+        self.balance = amount
+
+c = CashCard("123")
+
+@@ md
+`TypeError: CashCard.__init__() missing 1 required positional argument: 'amount'`.
+The constructor wants `id` **and** `amount`.
+
+**Mistake 4: forgetting the brackets when calling a method.**
+
+@@ code
+class Rectangle:
+    def __init__(self, length, width):
+        self.length = length
+        self.width = width
+
+    def area(self):
+        return self.length * self.width
+
+r = Rectangle(4, 3)
+print(r.area)      # no brackets: the method is NOT called
+print(r.area())    # with brackets: the method runs
+
+@@ md
+Without brackets you get something like `<bound method Rectangle.area of ...>`.
+The method was not run. Always use `()` to call a method.
+
+@@ predict Too many arguments
+@@ run raises=TypeError
+class Dice:
+    def __init__(self):
+        self.value = 1
+
+print("making dice")
+d = Dice(6)
+print("done")
+@@ output
+making dice
+@@ explain
+The constructor only has `self`, so `Dice()` takes no arguments.
+`Dice(6)` gives one argument too many, so Python raises a `TypeError`.
+The message is `Dice.__init__() takes 1 positional argument but 2 were given` (the 2 are the object and the 6).
+
+@@ predict Missing self.
+@@ run raises=UnboundLocalError
+class Wallet:
+    def __init__(self, cash):
+        self.cash = cash
+
+    def spend(self, amount):
+        cash = cash - amount
+
+w = Wallet(10)
+print(w.cash)
+w.spend(3)
+print(w.cash)
+@@ output
+10
+@@ explain
+The constructor works, so `10` is printed.
+Inside `spend`, `cash` without `self.` is a new local variable.
+Python tries to read `cash` on the right side before it has a value, so it raises an `UnboundLocalError`.
+This is a special kind of `NameError`: "you used a local variable before giving it a value".
+The fix is `self.cash = self.cash - amount`, or `self.cash -= amount`.
+
+@@ exercise Fix the broken class
+This class has **three** mistakes.
+Fix them so that the check passes.
+@@ starter
+class Wallet:
+    def __init__(self, owner, cash):
+        self.owner = owner
+        cash = cash
+
+    def spend(amount):
+        if self.cash >= amount:
+            self.cash -= amount
+
+    def __str__(self):
+        print(f"{self.owner} has ${self.cash:.2f}")
+@@ check
+w = Wallet("Amy", 10)
+assert w.cash == 10, "❌ the constructor must store the cash in self.cash"
+w.spend(4)
+assert w.cash == 6, "❌ spend(4) should take 4 away from the cash"
+w.spend(100)
+assert w.cash == 6, "❌ spend should do nothing if there is not enough cash"
+assert str(w) == "Amy has $6.00", "❌ __str__ must RETURN the text, not print it"
+@@ hint
+1. Look at the last line of `__init__`.
+2. Look at the parameters of `spend`.
+3. Look at `print` versus `return` in `__str__`.
+@@ solution
+class Wallet:
+    def __init__(self, owner, cash):
+        self.owner = owner
+        self.cash = cash
+
+    def spend(self, amount):
+        if self.cash >= amount:
+            self.cash -= amount
+
+    def __str__(self):
+        return f"{self.owner} has ${self.cash:.2f}"
+
+@@ md
+## 11. Putting it together
+
+@@ exercise Bubble tea order (exam style)
+Write a class `Order` for a bubble tea shop.
+
+| Part | What it does |
+| --- | --- |
+| `__init__(self, customer, drink, unitPrice)` | Stores the three values. Sets `self.cups` to `1`. |
+| `addCup(self)` | Adds one cup. |
+| `removeCup(self)` | Takes away one cup, but only if there is more than 1 cup. Returns `True` if a cup was removed, otherwise `False`. |
+| `total(self)` | Returns `cups` times `unitPrice`. |
+| `__str__(self)` | Returns, for example, `Amy: 2 x Milk Tea = $9.60` |
+@@ starter
+class Order:
+    pass
+@@ check
+o = Order("Amy", "Milk Tea", 4.80)
+assert (o.customer, o.drink, o.unitPrice, o.cups) == ("Amy", "Milk Tea", 4.80, 1), "❌ check the constructor (cups should start at 1)"
+o.addCup()
+assert o.cups == 2, "❌ addCup() should add one cup"
+assert abs(o.total() - 9.6) < 0.0001, f"❌ total() should be 9.6 for 2 cups at 4.80, got {o.total()}"
+assert str(o) == "Amy: 2 x Milk Tea = $9.60", f"❌ str(o) is {str(o)!r}"
+assert o.removeCup() is True and o.cups == 1, "❌ removeCup() from 2 cups should leave 1 and return True"
+assert o.removeCup() is False and o.cups == 1, "❌ removeCup() with only 1 cup should change nothing and return False"
+@@ hint
+`__str__` can call another method: `{self.total():.2f}`.
+@@ solution
+class Order:
+    def __init__(self, customer, drink, unitPrice):
+        self.customer = customer
+        self.drink = drink
+        self.unitPrice = unitPrice
+        self.cups = 1
+
+    def addCup(self):
+        self.cups += 1
+
+    def removeCup(self):
+        if self.cups > 1:
+            self.cups -= 1
+            return True
+        return False
+
+    def total(self):
+        return self.cups * self.unitPrice
+
+    def __str__(self):
+        return f"{self.customer}: {self.cups} x {self.drink} = ${self.total():.2f}"
+
+@@ exercise Use your Order class
+Use the `Order` class from the exercise above (run that cell first).
+
+1. Create `o1` for `"Ben"`, `"Taro"`, `5.00`.
+2. Add two cups to `o1`, so it has 3 cups.
+3. Create `o2` for `"Cara"`, `"Matcha"`, `4.50`.
+4. Put both orders into a list called `orders`.
+5. Use a loop to add up the totals of all orders into `grandTotal`.
+@@ starter
+o1 = ...
+
+o2 = ...
+orders = ...
+grandTotal = 0
+
+print(grandTotal)
+@@ check
+assert o1.customer == "Ben" and o1.cups == 3, "❌ o1 should be Ben's order with 3 cups"
+assert o2.customer == "Cara" and o2.cups == 1, "❌ o2 should be Cara's order with 1 cup"
+assert orders == [o1, o2], "❌ orders should be the list [o1, o2]"
+assert abs(grandTotal - 19.5) < 0.0001, f"❌ grandTotal should be 19.50 (15.00 + 4.50) but it is {grandTotal}"
+@@ solution
+o1 = Order("Ben", "Taro", 5.00)
+o1.addCup()
+o1.addCup()
+o2 = Order("Cara", "Matcha", 4.50)
+orders = [o1, o2]
+grandTotal = 0
+for o in orders:
+    grandTotal += o.total()
+print(grandTotal)
+
+@@ write Class or object?
+In your own words, what is the difference between a **class** and an **object**?
+Give one example of each.
+@@ answer
+A class is a template (a blueprint) that says what data and methods every object of that kind has.
+An object is one real thing created from the class, with its own values.
+For example, `CashCard` is a class, and `c1 = CashCard("123", 20.0)` is an object of that class.
+One class can make many objects.
+
+@@ write What is self?
+Explain what `self` is in a method such as `def topUp(self, amount):`.
+@@ answer
+`self` is the object that the method is working on.
+When we call `c1.topUp(10)`, Python passes `c1` into `self` automatically.
+So `self.balance` inside the method means the balance of `c1`.
+
+@@ md
+## 📝 Key points
+
+- A **class** is a template. An **object** is one thing made from it.
+- `__init__(self, ...)` is the constructor. It runs when you create an object and sets the attributes.
+- `self` is the object being worked on. Write `self.name` to use an attribute inside the class.
+- Create an object with `ClassName(arguments)`. The arguments follow the constructor order, without `self`.
+- Every method has `self` as its first parameter.
+- Call a method with `obj.method(arguments)`, always with brackets.
+- `__str__` must **return** a string. Then `print(obj)` shows it.
+- A loop over a list of objects gives you one object at a time.
+
+## ⚠️ Common mistakes
+
+| Mistake | What happens |
+| --- | --- |
+| `def topUp(amount):` (no `self`) | `TypeError: ... takes 1 positional argument but 2 were given` |
+| `balance += 5` instead of `self.balance += 5` | `NameError` or `UnboundLocalError` |
+| `CashCard("123")` when the constructor needs 2 values | `TypeError: ... missing 1 required positional argument` |
+| `print(r.area)` | Prints `<bound method ...>` instead of calling it |
+| `__str__` that prints instead of returns | `TypeError: __str__ returned non-string` |
+| `_init_` with one underscore | The constructor never runs |
+
+Next: **07_Encapsulation_and_Properties**.
